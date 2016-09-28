@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import base64
 
@@ -25,7 +26,7 @@ class City(models.Model):
         verbose_name_plural = u'Települések'
 
     def __unicode__(self):
-        return self.name
+        return u'{} ({})'.format(self.name, self.zip)
 
 
 class Client(models.Model):
@@ -214,7 +215,7 @@ class TicketEvent(models.Model):
             ('Doku', u'Dokumentum feltöltés'),
         ),
         max_length=100,
-        verbose_name=u'Esemény',
+        verbose_name=u'Típus',
     )
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés')
@@ -226,8 +227,8 @@ class TicketEvent(models.Model):
 
     class Meta:
         db_table = 'jegy_esemeny'
-        verbose_name = u'Jegy esemény'
-        verbose_name_plural = u'Jegy események'
+        verbose_name = u'Esemény'
+        verbose_name_plural = u'Megjegyzések'
 
     def __unicode__(self):
         return self.event
@@ -235,10 +236,19 @@ class TicketEvent(models.Model):
 
 class Attachment(models.Model):
 
+    EXT_MAP = {
+        '.htm': 'text/html',
+        '.html': 'text/html',
+        '.jpg': 'image/jpeg',
+        '.png': 'image/png',
+        '.pdf': 'application/pdf',
+    }
+
     ticket = models.ForeignKey(Ticket, db_column='jegy',
                                verbose_name=u'Jegy')
     name = models.CharField(db_column='nev', max_length=120,
-                            verbose_name=u'Név')
+                            verbose_name=u'Név',
+                            null=True, blank=True)
     _data = models.TextField(db_column='adat',
                              verbose_name=u'Adat')
     remark = models.TextField(db_column='megjegyzes',
@@ -258,6 +268,11 @@ class Attachment(models.Model):
     @property
     def data(self):
         return base64.b64decode(self._data)
+
+    @property
+    def content_type(self):
+        _, ext = os.path.splitext(self.name)
+        return self.EXT_MAP.get(ext, 'text/html')
 
     def __unicode__(self):
         return self.name

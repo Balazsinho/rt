@@ -121,7 +121,7 @@ def download_attachment(request, attachment_id):
         att = Attachment.objects.get(pk=attachment_id)
         return HttpResponse(
             att.data,
-            content_type='text/html',
+            content_type=att.content_type,
         )
     except Attachment.DoesNotExist:
         return Response(json.dumps({'error': 'File not found'}))

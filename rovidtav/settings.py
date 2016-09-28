@@ -28,12 +28,18 @@ ALLOWED_HOSTS = []
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+# =============================================================================
+# JET SETTINGS
+# =============================================================================
+JET_SIDE_MENU_COMPACT = True
+
 # Application definition
 
 INSTALLED_APPS = (
     'rovidtav',
     # 'django_admin_bootstrapped.bootstrap3',
     # 'django_admin_bootstrapped',
+    'jet',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

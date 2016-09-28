@@ -8,6 +8,9 @@ from django.shortcuts import redirect
 # from django.contrib.admin.models import LogEntry
 from django_object_actions import DjangoObjectActions
 
+from django.contrib.admin.templatetags.admin_modify import *
+from django.contrib.admin.templatetags.admin_modify import submit_row as original_submit_row
+
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType)
 
@@ -43,18 +46,27 @@ class DeviceInLine(ReadOnlyInline):
 
 class AttachmentForm(forms.ModelForm):
 
-    _data = forms.CharField(widget=forms.FileInput())
+    _data = forms.CharField(label=u'File', widget=forms.FileInput())
+    # name = forms.CharField(
+    #    label=u'Név',
+    #    required=False,
+    #    widget=forms.TextInput(attrs={'placeholder': u'Maradhat üres'}))
+    name = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
-        fields = ('name', 'ticket', '_data', 'ticket')
+        fields = ('ticket', '_data', 'remark')
 
     def clean__data(self):
-        return self.files['_data'].read()
+        if '_data' in self.files:
+            return self.files['_data'].read()
+
+    def clean_name(self):
+        if '_data' in self.files:
+            return self.files['_data'].name
 
 
 class AttachmentAdmin(admin.ModelAdmin):
 
-    readonly_fields = ('created_by', )
     form = AttachmentForm
 
     def response_add(self, request, obj, post_url_continue=None):
@@ -82,6 +94,17 @@ class AttachmentInline(ReadOnlyInline):
 class ClientAdmin(admin.ModelAdmin):
 
     readonly_fields = ('created_by', )
+    list_display = ('name', 'mt_id', 'city_name', 'address', 'created_at_fmt')
+
+    def city_name(self, obj):
+        return u'{} ({})'.format(obj.city.name, obj.city.zip)
+
+    city_name.short_description = u'Település'
+
+    def created_at_fmt(self, obj):
+        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+
+    created_at_fmt.short_description = u'Létrehozva'
 
 
 class TicketEventAdmin(admin.ModelAdmin):

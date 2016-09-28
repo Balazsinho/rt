@@ -20,6 +20,7 @@ import api.v1.urls
 
 
 urlpatterns = [
+    url(r'^jet/', include('jet.urls', 'jet')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/v1/', include(api.v1.urls)),
 ]
