@@ -8,9 +8,6 @@ from django.shortcuts import redirect
 # from django.contrib.admin.models import LogEntry
 from django_object_actions import DjangoObjectActions
 
-from django.contrib.admin.templatetags.admin_modify import *
-from django.contrib.admin.templatetags.admin_modify import submit_row as original_submit_row
-
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType)
 
