@@ -122,6 +122,12 @@ class TicketEventAdmin(admin.ModelAdmin):
         return redirect('/admin/rovidtav/ticket/{}/change'
                         ''.format(obj.ticket.pk))
 
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        return {}
+
 
 class TicketEventInline(ReadOnlyInline):
 
@@ -145,7 +151,9 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     def ticket_type_short(self, obj):
         ttype = unicode(obj.ticket_type)
-        return ttype[:25] + u'...' if len(ttype) > 25 else ttype
+        return ttype[:25].strip() + u'...' if len(ttype) > 25 else ttype
+
+    ticket_type_short.short_description = u'Jegy típus'
 
     def client_name(self, obj):
         return obj.client.name
@@ -155,7 +163,7 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     def client_mt_id(self, obj):
         return obj.client.mt_id
 
-    client_mt_id.short_description = u'Ügyfél MT ID'
+    client_mt_id.short_description = u'MT ID'
 
     def city_name(self, obj):
         return u'{} ({})'.format(obj.city.name, obj.city.zip)
@@ -163,7 +171,8 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     city_name.short_description = u'Település'
 
     def created_at_fmt(self, obj):
-        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return obj.created_at.strftime('%Y.%m.%d')
 
     created_at_fmt.short_description = u'Létrehozva'
 

@@ -116,7 +116,7 @@ class Ticket(models.Model):
     NO_OWNER = u'Nincs'
 
     ext_id = models.CharField(db_column='kulso_id', max_length=20,
-                              verbose_name=u'Jegy azonosító')
+                              verbose_name=u'Jegy ID')
     client = models.ForeignKey(Client, db_column='ugyfel',
                                verbose_name=u'Ügyfél')
     ticket_type = models.ForeignKey(TicketType, db_column='tipus',
