@@ -32,6 +32,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # JET SETTINGS
 # =============================================================================
 JET_SIDE_MENU_COMPACT = True
+JET_DEFAULT_THEME = 'light-gray'
 
 # Application definition
 
