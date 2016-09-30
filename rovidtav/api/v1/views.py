@@ -77,6 +77,14 @@ def create_ticket(request):
             created_by=request.user,
         )
 
+    if Fields.COLLECTABLE_MONEY in data and data[Fields.COLLECTABLE_MONEY]:
+        TicketEvent.objects.create(
+            ticket=ticket,
+            event='Megj',
+            remark=u'Beszedés {}'.format(data[Fields.COLLECTABLE_MONEY]),
+            created_by=request.user,
+        )
+
     if Fields.DEVICES in data:
         for device in data[Fields.DEVICES]:
             dev_type, _ = DeviceType.objects.get_or_create(
