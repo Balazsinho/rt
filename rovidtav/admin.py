@@ -4,7 +4,11 @@ import os
 
 from django import forms
 from django.contrib import admin
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
 from django.shortcuts import redirect
+from django import template
+
 # from django.contrib.admin.models import LogEntry
 from django_object_actions import DjangoObjectActions
 
@@ -70,6 +74,12 @@ class AttachmentAdmin(admin.ModelAdmin):
         return redirect('/admin/rovidtav/ticket/{}/change'
                         ''.format(obj.ticket.pk))
 
+    def get_model_perms(self, request):
+        """
+        Return empty perms dict thus hiding the model from admin index.
+        """
+        return {}
+
 
 class AttachmentInline(ReadOnlyInline):
 
@@ -124,14 +134,18 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     list_display = ('client_name', 'client_mt_id', 'ext_id',
                     'city_name', 'address',
-                    'ticket_type', 'created_at_fmt', 'owner', 'status')
+                    'ticket_type_short', 'created_at_fmt', 'owner', 'status')
     change_actions = ('new_comment', 'new_attachment')
-    readonly_fields = ('created_by', )
+    readonly_fields = ('created_by', 'created_at')
     exclude = ('additional',)
     search_fields = ('client__name', 'client__mt_id',
                      'ext_id', 'ticket_type__name', )
 
     inlines = [TicketEventInline, AttachmentInline]
+
+    def ticket_type_short(self, obj):
+        ttype = unicode(obj.ticket_type)
+        return ttype[:25] + u'...' if len(ttype) > 25 else ttype
 
     def client_name(self, obj):
         return obj.client.name
@@ -157,13 +171,13 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
         return redirect('/admin/rovidtav/ticketevent/add/?event=Megj'
                         '&ticket={}'.format(obj.pk))
 
-    new_comment.label = u'Új megjegyzés'
+    new_comment.label = u'+ Megjegyzés'
 
     def new_attachment(self, request, obj):
         return redirect('/admin/rovidtav/attachment/add/?'
                         '&ticket={}'.format(obj.pk))
 
-    new_attachment.label = u'Új csatolmány'
+    new_attachment.label = u'+ File'
 
 
 admin.site.register(Attachment, AttachmentAdmin)
