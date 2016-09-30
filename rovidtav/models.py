@@ -264,8 +264,8 @@ class Attachment(models.Model):
 
     class Meta:
         db_table = 'csatolmany'
-        verbose_name = u'Csatolmány'
-        verbose_name_plural = u'Csatolmányok'
+        verbose_name = u'File'
+        verbose_name_plural = u'Fileok'
 
     @property
     def data(self):
