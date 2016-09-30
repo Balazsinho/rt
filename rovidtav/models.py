@@ -242,6 +242,7 @@ class Attachment(models.Model):
         '.htm': 'text/html',
         '.html': 'text/html',
         '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
         '.png': 'image/png',
         '.pdf': 'application/pdf',
     }
