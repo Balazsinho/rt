@@ -87,6 +87,12 @@ class Device(models.Model):
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés',
                               null=True, blank=True)
+    client = models.ForeignKey(Client, db_column='ugyfel',
+                               null=True, blank=True,
+                               verbose_name=u'Ügyfél')
+    owner = models.ForeignKey(User, related_name='eszkoz_tulajdonos',
+                              null=True, blank=True,
+                              verbose_name=u'Tulajdonos')
 
     class Meta:
         db_table = 'eszkoz'
