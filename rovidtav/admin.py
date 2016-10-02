@@ -1,41 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 from django import forms
 from django.contrib import admin
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin
 from django.shortcuts import redirect
-from django import template
 
 # from django.contrib.admin.models import LogEntry
 from django_object_actions import DjangoObjectActions
 
+from .admin_helpers import (ModelAdminRedirect, ReadOnlyInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType)
-
-
-class ReadOnlyInline(admin.TabularInline):
-
-    extra = 0
-    can_delete = False
-    template = os.path.join('admin', 'readOnlyInline.html')
-
-    def get_readonly_fields(self, request, obj=None):
-        if obj:
-            result = list(set(
-                    [field.name for field in self.opts.local_fields] +
-                    [field.name for field in self.opts.local_many_to_many]
-                ))
-            result.remove('id')
-        else:
-            result = []
-
-        return result
-
-    def has_add_permission(self, request):
-        return False
+from django.forms.models import ModelForm
 
 
 class DeviceInLine(ReadOnlyInline):
@@ -48,10 +23,6 @@ class DeviceInLine(ReadOnlyInline):
 class AttachmentForm(forms.ModelForm):
 
     _data = forms.CharField(label=u'File', widget=forms.FileInput())
-    # name = forms.CharField(
-    #    label=u'Név',
-    #    required=False,
-    #    widget=forms.TextInput(attrs={'placeholder': u'Maradhat üres'}))
     name = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
@@ -66,18 +37,12 @@ class AttachmentForm(forms.ModelForm):
             return self.files['_data'].name
 
 
-class AttachmentAdmin(admin.ModelAdmin):
+class AttachmentAdmin(ModelAdminRedirect):
 
     form = AttachmentForm
 
-    def response_add(self, request, obj, post_url_continue=None):
-        return redirect('/admin/rovidtav/ticket/{}/change'
-                        ''.format(obj.ticket.pk))
-
     def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index.
-        """
+        # Hide from admin index
         return {}
 
 
@@ -86,7 +51,6 @@ class AttachmentInline(ReadOnlyInline):
     fields = ('name', 'file_link', 'created_by', 'created_at')
     ordering = ('-created_at',)
     model = Attachment
-    # show_change_link = True
 
     def file_link(self, obj):
         return (u'<a target="_blank" href="/api/v1/attachment/{}">'
@@ -114,18 +78,12 @@ class ClientAdmin(admin.ModelAdmin):
     created_at_fmt.short_description = u'Létrehozva'
 
 
-class TicketEventAdmin(admin.ModelAdmin):
+class TicketEventAdmin(ModelAdminRedirect):
 
     fields = ('remark', 'ticket', 'event')
 
-    def response_add(self, request, obj, post_url_continue=None):
-        return redirect('/admin/rovidtav/ticket/{}/change'
-                        ''.format(obj.ticket.pk))
-
     def get_model_perms(self, request):
-        """
-        Return empty perms dict thus hiding the model from admin index.
-        """
+        # Hide from admin index
         return {}
 
 
@@ -133,7 +91,20 @@ class TicketEventInline(ReadOnlyInline):
 
     model = TicketEvent
     fields = ('event', 'remark', 'created_by', 'created_at')
+
     ordering = ('-created_at',)
+
+
+class DeviceInline(ReadOnlyInline):
+
+    model = Device
+    fields = ('type_name', 'sn', 'remark')
+    ordering = ('-created_at',)
+
+    def type_name(self, obj):
+        return obj.type.name
+
+    type_name.short_description = u'Típus'
 
 
 class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
@@ -142,12 +113,23 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
                     'city_name', 'address',
                     'ticket_type_short', 'created_at_fmt', 'owner', 'status')
     change_actions = ('new_comment', 'new_attachment')
-    readonly_fields = ('created_by', 'created_at')
     exclude = ('additional',)
     search_fields = ('client__name', 'client__mt_id',
                      'ext_id', 'ticket_type__name', )
 
     inlines = [TicketEventInline, AttachmentInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ('created_by', 'created_at')
+        else:
+            return ('ext_id', 'client', 'ticket_type', 'city', 'address',
+                    'created_by', 'created_at')
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj:
+            return []
+        return super(TicketAdmin, self).get_inline_instances(request, obj=None)
 
     def ticket_type_short(self, obj):
         ttype = unicode(obj.ticket_type)
@@ -177,14 +159,16 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     created_at_fmt.short_description = u'Létrehozva'
 
     def new_comment(self, request, obj):
-        return redirect('/admin/rovidtav/ticketevent/add/?event=Megj'
-                        '&ticket={}'.format(obj.pk))
+        return redirect('/admin/rovidtav/ticketevent/add/?event=Megj&ticket={}'
+                        '&next=/admin/rovidtav/ticket/{}/change/#/tab/'
+                        'inline_0/'.format(obj.pk, obj.pk))
 
     new_comment.label = u'+ Megjegyzés'
 
     def new_attachment(self, request, obj):
-        return redirect('/admin/rovidtav/attachment/add/?'
-                        '&ticket={}'.format(obj.pk))
+        return redirect('/admin/rovidtav/attachment/add/?ticket={}&next='
+                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_1/'
+                        ''.format(obj.pk, obj.pk))
 
     new_attachment.label = u'+ File'
 
