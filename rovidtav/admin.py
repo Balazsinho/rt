@@ -158,14 +158,15 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     inlines = [TicketEventInline, AttachmentInline]
 
     def get_list_filter(self, request):
-        if request.user.is_superuser:
-            return ('owner', IsClosedFilter)  # ,'status')
-        else:
-            return (IsClosedFilter,)
+        if hasattr(request, 'user'):
+            if request.user.is_superuser:
+                return ('owner', IsClosedFilter)  # ,'status')
+            else:
+                return (IsClosedFilter,)
 
     def get_queryset(self, request):
         qs = super(TicketAdmin, self).get_queryset(request)
-        if request.user:
+        if hasattr(request, 'user'):
             if request.user.is_superuser:
                 return qs
             return qs.filter(owner=request.user)
