@@ -10,7 +10,6 @@ from django_object_actions import DjangoObjectActions
 from .admin_helpers import (ModelAdminRedirect, ReadOnlyInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType)
-from django.forms.models import ModelForm
 
 
 class DeviceInLine(ReadOnlyInline):
@@ -109,8 +108,9 @@ class DeviceInline(ReadOnlyInline):
 
 class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
-    list_display = ('client_name', 'client_mt_id', 'ext_id',
-                    'city_name', 'address',
+    list_per_page = 50
+    list_display = ('full_address',  # 'city_name', 'address',
+                    'client_name', 'client_mt_id',  # 'ext_id',
                     'ticket_type_short', 'created_at_fmt', 'owner', 'status')
     change_actions = ('new_comment', 'new_attachment')
     exclude = ('additional',)
@@ -136,6 +136,11 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
         return ttype[:25].strip() + u'...' if len(ttype) > 25 else ttype
 
     ticket_type_short.short_description = u'Jegy típus'
+
+    def full_address(self, obj):
+        return u'{} {}, {}'.format(obj.city.zip, obj.city.name, obj.address)
+
+    full_address.short_description = u'Cím'
 
     def client_name(self, obj):
         return obj.client.name
