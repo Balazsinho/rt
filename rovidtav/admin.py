@@ -157,13 +157,19 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     inlines = [TicketEventInline, AttachmentInline]
 
-    list_filter = ('owner', IsClosedFilter)  # ,'status')
+    def get_list_filter(self, request):
+        if request.user.is_superuser:
+            return ('owner', IsClosedFilter)  # ,'status')
+        else:
+            return (IsClosedFilter,)
 
     def get_queryset(self, request):
         qs = super(TicketAdmin, self).get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        return qs.filter(owner=request.user)
+        if request.user:
+            if request.user.is_superuser:
+                return qs
+            return qs.filter(owner=request.user)
+        return qs
 
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:
