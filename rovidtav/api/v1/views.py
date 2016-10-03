@@ -37,6 +37,12 @@ def create_ticket(request):
         missing_keys = list(set(req_keys) - set(data.keys()))
         return _error({'missing_keys': missing_keys})
 
+    try:
+        Ticket.objects.get(ext_id=data[Fields.TICKET_ID])
+        return _error('duplicate ticket: {}'.format(data[Fields.TICKET_ID]))
+    except Ticket.DoesNotExist:
+        pass
+
     city, _ = City.objects.get_or_create(
         name=data[Fields.CITY],
         zip=int(data[Fields.ZIP]),
