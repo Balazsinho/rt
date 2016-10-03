@@ -3,8 +3,8 @@
 from django import forms
 from django.contrib import admin
 from django.shortcuts import redirect
+from django.contrib.admin.filters import SimpleListFilter
 
-# from django.contrib.admin.models import LogEntry
 from django_object_actions import DjangoObjectActions
 
 from .admin_helpers import (ModelAdminRedirect, ReadOnlyInline)
@@ -88,6 +88,7 @@ class TicketEventAdmin(ModelAdminRedirect):
 
 class TicketEventInline(ReadOnlyInline):
 
+    # consider jet CompactInline
     model = TicketEvent
     fields = ('event', 'remark', 'created_by', 'created_at')
 
@@ -106,6 +107,43 @@ class DeviceInline(ReadOnlyInline):
     type_name.short_description = u'Típus'
 
 
+class IsClosedFilter(SimpleListFilter):
+    title = u'Státusz'
+
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        return (
+            (None, u''),
+            ('all', u'Mind'),
+            ('open', u'Nyitott'),
+            ('closed', u'Lezárt'),
+        )
+
+    def choices(self, cl):
+        for lookup, title in self.lookup_choices:
+            yield {
+                'selected': self.value() == lookup,
+                'query_string': cl.get_query_string({
+                    self.parameter_name: lookup,
+                }, []),
+                'display': title,
+            }
+
+    def queryset(self, request, queryset):
+        if self.value() is None:
+            self.used_parameters[self.parameter_name] = 'open'
+
+        if self.value() == 'open':
+            return queryset.filter(status__in=(u'Új', u'Kiadva',
+                                               u'Folyamatban'))
+        elif self.value() == 'closed':
+            return queryset.filter(status__in=(u'Lezárva',
+                                               u'Duplikált'))
+        elif self.value() == 'all':
+            return queryset
+
+
 class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     list_per_page = 50
@@ -118,6 +156,14 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
                      'ext_id', 'ticket_type__name', )
 
     inlines = [TicketEventInline, AttachmentInline]
+
+    list_filter = ('owner', IsClosedFilter)  # ,'status')
+
+    def get_queryset(self, request):
+        qs = super(TicketAdmin, self).get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(owner=request.user)
 
     def get_readonly_fields(self, request, obj=None):
         if request.user.is_superuser:
