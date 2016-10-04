@@ -148,7 +148,7 @@ class IsClosedFilter(SimpleListFilter):
 
 class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
-    #list_per_page = 50
+    list_per_page = 500
     list_display = ('full_address',  # 'city_name', 'address',
                     'client_name', 'client_mt_id',  # 'ext_id',
                     'ticket_type_short', 'created_at_fmt', 'owner', 'status')
