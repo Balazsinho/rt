@@ -157,6 +157,11 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     inlines = [TicketEventInline, AttachmentInline]
 
+    def get_actions(self, request):
+        actions = super(TicketAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if request.user.is_superuser:
@@ -177,7 +182,7 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
             return ('created_by', 'created_at')
         else:
             return ('ext_id', 'client', 'ticket_type', 'city', 'address',
-                    'created_by', 'created_at')
+                    'owner', 'created_by', 'created_at')
 
     def get_inline_instances(self, request, obj=None):
         if not obj:
