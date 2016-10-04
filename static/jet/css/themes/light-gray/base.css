@@ -4095,10 +4095,15 @@ table thead th .text a {
 td,
 th {
     padding: 8px;
-    padding: 0.57143rem;
+    padding: 0.27rem;
     font-size: 13px;
-    font-size: 0.92857rem
+    font-size: 0.82857rem;
+    border: 0.07143rem solid #CCC
 }
+tr:hover {
+	background-color: #EEE;
+}
+
 th {
     text-align: left
 }
@@ -4132,8 +4137,10 @@ tfoot td {
     border-top: 0.07143rem solid #eee
 }
 tbody tr {
-    border-bottom: 1px solid #f1f2f4;
-    border-bottom: 0.07143rem solid #f1f2f4
+    /* border-bottom: 1px solid #f1f2f4; 
+    border-bottom: 0.07143rem solid #f1f2f4 */
+    border-bottom: 1px solid #CCC; 
+    border-bottom: 0.07143rem solid #CCC
 }
 tbody tr:last-child {
     border-bottom: 0
@@ -7718,8 +7725,7 @@ html.no-touchevents .inline-navigation-item:hover,
 }
 .inline-group .tabular td.original {
     white-space: nowrap;
-    width: 1px;
-    width: 0.07143rem;
+    width: 0rem;
     padding-right: 0
 }
 .inline-group .tabular td.original.empty {

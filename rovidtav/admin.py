@@ -4,10 +4,12 @@ from django import forms
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.contrib.admin.filters import SimpleListFilter
-
 from django_object_actions import DjangoObjectActions
 
-from .admin_helpers import (ModelAdminRedirect, ReadOnlyInline)
+from daterange_filter.filter import DateRangeFilter
+
+from .admin_helpers import (ModelAdminRedirect, ReadOnlyInline,
+                            SpecialOrderingChangeList)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType)
 
@@ -146,16 +148,20 @@ class IsClosedFilter(SimpleListFilter):
 
 class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
-    list_per_page = 50
+    #list_per_page = 50
     list_display = ('full_address',  # 'city_name', 'address',
                     'client_name', 'client_mt_id',  # 'ext_id',
                     'ticket_type_short', 'created_at_fmt', 'owner', 'status')
     change_actions = ('new_comment', 'new_attachment')
     exclude = ('additional',)
-    search_fields = ('client__name', 'client__mt_id',
-                     'ext_id', 'ticket_type__name', )
+    search_fields = ('client__name', 'client__mt_id', 'city__name',
+                     'ext_id', 'ticket_type__name', 'address',)
 
-    inlines = [TicketEventInline, AttachmentInline]
+    inlines = (TicketEventInline, AttachmentInline)
+    #ordering = ('full_address',)
+
+    def get_changelist(self, request, **kwargs):
+        return SpecialOrderingChangeList
 
     def get_actions(self, request):
         actions = super(TicketAdmin, self).get_actions(request)
@@ -165,9 +171,10 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if request.user.is_superuser:
-                return ('owner', IsClosedFilter)  # ,'status')
+                return (('created_at', DateRangeFilter),
+                        'owner', IsClosedFilter,)
             else:
-                return (IsClosedFilter,)
+                return (IsClosedFilter)
 
     def get_queryset(self, request):
         qs = super(TicketAdmin, self).get_queryset(request)
@@ -199,6 +206,7 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
         return u'{} {}, {}'.format(obj.city.zip, obj.city.name, obj.address)
 
     full_address.short_description = u'Cím'
+    full_address.admin_order_field = ('city__name', 'address')
 
     def client_name(self, obj):
         return obj.client.name
@@ -217,9 +225,10 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     def created_at_fmt(self, obj):
         # return obj.created_at.strftime('%Y.%m.%d %H:%M')
-        return obj.created_at.strftime('%Y.%m.%d')
+        return obj.created_at.strftime('%Y.%m.%d %H:%M')
 
     created_at_fmt.short_description = u'Létrehozva'
+    created_at_fmt.admin_order_field = ('created_at')
 
     def new_comment(self, request, obj):
         return redirect('/admin/rovidtav/ticketevent/add/?event=Megj&ticket={}'

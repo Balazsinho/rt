@@ -281,7 +281,7 @@ class Attachment(models.Model):
     @property
     def content_type(self):
         _, ext = os.path.splitext(self.name)
-        return self.EXT_MAP.get(ext, 'text/html')
+        return self.EXT_MAP.get(ext.lower(), 'text/html')
 
     def __unicode__(self):
         return self.name
