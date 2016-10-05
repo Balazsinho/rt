@@ -4094,9 +4094,9 @@ table thead th .text a {
 }
 td,
 th {
-    padding: 3px;
-    padding: 0.2rem;
-    font-size: 11px;
+    padding: 8px;
+    padding: 0.27rem;
+    font-size: 13px;
     font-size: 0.82857rem;
     border: 0.07143rem solid #CCC
 }
@@ -6525,7 +6525,8 @@ fieldset.module {
     }
 }
 .object-tools {
-    display: none;
+    /* display: none; */
+	display: block;
     text-align: right;
     padding: 0;
     margin: 0 0 20px 0;
@@ -7142,7 +7143,7 @@ form .aligned table p {
 @media only screen and (max-width: 3001px) {
     .colMS .aligned .vLargeTextField,
     .colMS .aligned .vXMLLargeTextField {
-        width: 100%
+        width: 50%
     }
 }
 .colM .aligned .vLargeTextField,
@@ -7153,7 +7154,7 @@ form .aligned table p {
 @media only screen and (max-width: 3001px) {
     .colM .aligned .vLargeTextField,
     .colM .aligned .vXMLLargeTextField {
-        width: 100%
+        width: 50%
     }
 }
 .checkbox-row p.help {

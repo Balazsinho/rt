@@ -8,17 +8,12 @@ from django_object_actions import DjangoObjectActions
 
 from daterange_filter.filter import DateRangeFilter
 
-from .admin_helpers import (ModelAdminRedirect, ReadOnlyInline,
-                            SpecialOrderingChangeList)
+from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList)
+from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
+                            TicketInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType)
-
-
-class DeviceInLine(ReadOnlyInline):
-
-    ordering = ('-created_at',)
-    # fields = ('event', 'remark', 'created_by', 'created_at')
-    model = Device
+from rovidtav.models import Payoff
 
 
 class AttachmentForm(forms.ModelForm):
@@ -47,26 +42,22 @@ class AttachmentAdmin(ModelAdminRedirect):
         return {}
 
 
-class AttachmentInline(ReadOnlyInline):
+class PayoffAdmin(admin.ModelAdmin):
 
-    fields = ('name', 'file_link', 'created_by', 'created_at')
-    ordering = ('-created_at',)
-    model = Attachment
+    list_display = ('name', 'remark')
+    inlines = (TicketInline,)
 
-    def file_link(self, obj):
-        return (u'<a target="_blank" href="/api/v1/attachment/{}">'
-                u'Megnyitás</a>'.format(obj.pk))
 
-    file_link.allow_tags = True
+class CityAdmin(admin.ModelAdmin):
 
-    def get_readonly_fields(self, request, obj=None):
-        return super(AttachmentInline, self).get_readonly_fields(request, obj) + ['file_link']
+    list_display = ('name', 'zip', 'primer', 'onuk')
 
 
 class ClientAdmin(admin.ModelAdmin):
 
     readonly_fields = ('created_by', )
     list_display = ('name', 'mt_id', 'city_name', 'address', 'created_at_fmt')
+    inlines = (TicketInline,)
 
     def city_name(self, obj):
         return u'{} ({})'.format(obj.city.name, obj.city.zip)
@@ -86,27 +77,6 @@ class TicketEventAdmin(ModelAdminRedirect):
     def get_model_perms(self, request):
         # Hide from admin index
         return {}
-
-
-class TicketEventInline(ReadOnlyInline):
-
-    # consider jet CompactInline
-    model = TicketEvent
-    fields = ('event', 'remark', 'created_by', 'created_at')
-
-    ordering = ('-created_at',)
-
-
-class DeviceInline(ReadOnlyInline):
-
-    model = Device
-    fields = ('type_name', 'sn', 'remark')
-    ordering = ('-created_at',)
-
-    def type_name(self, obj):
-        return obj.type.name
-
-    type_name.short_description = u'Típus'
 
 
 class IsClosedFilter(SimpleListFilter):
@@ -149,25 +119,49 @@ class IsClosedFilter(SimpleListFilter):
 class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     list_per_page = 500
-    list_display = ('address', 'city_name',
-                    'client_name', 'client_mt_id',  # 'ext_id',
+    list_display = ('address', 'city_name', 'client_name', 'client_link',
                     'ticket_type_short', 'created_at_fmt', 'owner', 'status',
-                    'primer',)
-    change_actions = ('new_comment', 'new_attachment')
+                    'primer', 'payoff_link')
+    # TODO: check if this is useful
+    # list_editable = ('owner', )
     exclude = ('additional',)
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'ticket_type__name', 'address',)
 
     inlines = (TicketEventInline, AttachmentInline)
-    #ordering = ('full_address',)
+    ordering = ('created_at',)
 
     def get_changelist(self, request, **kwargs):
         return SpecialOrderingChangeList
+
+    def changelist_view(self, request, extra_context=None):
+        """
+        We need to remove the links to the client and the payoff if the user
+        is not an admin
+        """
+        response = super(TicketAdmin, self).changelist_view(request,
+                                                            extra_context)
+        if not request.user.is_superuser:
+            subst = {'payoff_link': 'payoff_name',
+                     'client_link': 'client_mt_id',
+                     }
+            columns = response.context_data['cl'].list_display
+            new_cols = [subst.get(c, c) for c in columns]
+            response.context_data['cl'].list_display = new_cols
+        return response
 
     def get_actions(self, request):
         actions = super(TicketAdmin, self).get_actions(request)
         del actions['delete_selected']
         return actions
+
+    def get_change_actions(self, request, object_id, form_url):
+        obj = Ticket.objects.get(pk=object_id)
+        if request.user.is_superuser or \
+                obj.status in (u'Kiadva', u'Folyamatban'):
+            return ('new_comment', 'new_attachment')
+        else:
+            return ('new_comment',)
 
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
@@ -175,12 +169,12 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
                 return (('created_at', DateRangeFilter),
                         'city__primer', 'owner', IsClosedFilter)
             else:
-                return (IsClosedFilter)
+                return (IsClosedFilter,)
 
     def lookup_allowed(self, key, value):
         if key in ('city__primer',):
             return True
-        return super(TicketAdmin, self).lookup_allowed(key)
+        return super(TicketAdmin, self).lookup_allowed(key, value)
 
     def get_queryset(self, request):
         qs = super(TicketAdmin, self).get_queryset(request)
@@ -194,13 +188,55 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
         if request.user.is_superuser:
             return ('created_by', 'created_at')
         else:
-            return ('ext_id', 'client', 'ticket_type', 'city', 'address',
-                    'owner', 'created_by', 'created_at')
+            fields = ('ext_id', 'client', 'ticket_type', 'city',
+                      'address', 'owner', 'created_by', 'created_at',
+                      'payoff')
+            if obj.status not in (u'Kiadva', u'Folyamatban'):
+                fields += ('status',)
+            return fields
 
     def get_inline_instances(self, request, obj=None):
         if not obj:
             return []
         return super(TicketAdmin, self).get_inline_instances(request, obj=None)
+
+    # =========================================================================
+    # FIELDS
+    # =========================================================================
+
+    def payoff_link(self, obj):
+        if obj.payoff:
+            return ('<a href="/admin/rovidtav/payoff/{}/change">{}</a>'
+                    ''.format(obj.payoff.pk, obj.payoff.name))
+        else:
+            return None
+
+    payoff_link.allow_tags = True
+    payoff_link.short_description = u'Elszámolás'
+
+    def payoff_name(self, obj):
+        if obj.payoff:
+            return obj.payoff.name
+        else:
+            return None
+
+    payoff_name.short_description = u'Elszámolás'
+
+    def client_link(self, obj):
+        return ('<a href="/admin/rovidtav/client/{}/change">{}</a>'
+                ''.format(obj.client.pk, obj.client.mt_id))
+    client_link.allow_tags = True
+    client_link.short_description = u'Ügyfél'
+
+    def client_mt_id(self, obj):
+        return obj.client.mt_id
+
+    client_mt_id.short_description = u'MT ID'
+
+    def client_name(self, obj):
+        return obj.client.name
+
+    client_name.short_description = u'Ügyfél neve'
 
     def ticket_type_short(self, obj):
         ttype = unicode(obj.ticket_type)
@@ -213,16 +249,6 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     primer.short_description = u'Primer'
     primer.admin_order_field = 'city__primer'
-
-    def client_name(self, obj):
-        return obj.client.name
-
-    client_name.short_description = u'Ügyfél neve'
-
-    def client_mt_id(self, obj):
-        return obj.client.mt_id
-
-    client_mt_id.short_description = u'MT ID'
 
     def city_name(self, obj):
         return u'{} {}'.format(obj.city.zip, obj.city.name)
@@ -253,7 +279,8 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
 
 admin.site.register(Attachment, AttachmentAdmin)
-admin.site.register(City)
+admin.site.register(City, CityAdmin)
+admin.site.register(Payoff, PayoffAdmin)
 admin.site.register(Client, ClientAdmin)
 admin.site.register(Device)
 admin.site.register(DeviceType)

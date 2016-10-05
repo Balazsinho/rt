@@ -8,23 +8,30 @@ from django.contrib.admin.views.main import ChangeList, ORDER_VAR
 
 
 class SpecialOrderingChangeList(ChangeList):
+    
+    """ This is the class that will be overriden in order to
+    change the way the admin_order_fields are read """
 
-    """ This is the class that will be overriden in order to change the way the admin_order_fields are read """
     def get_ordering(self, request, queryset):
-        """ This is the function that will be overriden so the admin_order_fields can be used as lists of fields instead of just one field """
+        """ This is the function that will be overriden so the
+        admin_order_fields can be used as lists of fields
+        instead of just one field """
         params = self.params
-        ordering = list(self.model_admin.get_ordering(request) or self._get_default_ordering())
+        ordering = list(self.model_admin.get_ordering(request) or
+                        self._get_default_ordering())
         if ORDER_VAR in params:
             ordering = []
             order_params = params[ORDER_VAR].split('.')
             for p in order_params:
                 try:
-                    none, pfx, idx = p.rpartition('-')
+                    _, pfx, idx = p.rpartition('-')
                     field_name = self.list_display[int(idx)]
                     order_field = self.get_ordering_field(field_name)
                     if not order_field:
                         continue
-                    # Here's where all the magic is done: the new method can accept either a list of strings (fields) or a simple string (a single field)
+                    # Here's where all the magic is done: the new method can
+                    # accept either a list of strings (fields) or a simple
+                    # string (a single field)
                     if type(order_field) in (list, tuple):
                         for field in order_field:
                             ordering.append(pfx + field)

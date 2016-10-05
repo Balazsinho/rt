@@ -103,6 +103,23 @@ class Device(models.Model):
         return self.sn
 
 
+class Payoff(models.Model):
+
+    name = models.CharField(db_column='nev', max_length=70,
+                            verbose_name=u'Név')
+    remark = models.TextField(db_column='megjegyzes',
+                              null=True, blank=True,
+                              verbose_name=u'Megjegyzés')
+
+    class Meta:
+        db_table = 'elszamolas'
+        verbose_name = u'Elszámolás'
+        verbose_name_plural = u'Elszámolások'
+
+    def __unicode__(self):
+        return unicode(self.name)
+
+
 class TicketType(models.Model):
 
     name = models.CharField(db_column='nev', max_length=70,
@@ -131,6 +148,9 @@ class Ticket(models.Model):
                              verbose_name=u'Település')
     address = models.CharField(db_column='cim', max_length=120,
                                verbose_name=u'Cím')
+    payoff = models.ForeignKey(Payoff, db_column='elszamolas',
+                               null=True, blank=True,
+                               verbose_name=u'Elszámolás')
 
     owner = models.ForeignKey(User, related_name='tulajdonos',
                               null=True, blank=True,
