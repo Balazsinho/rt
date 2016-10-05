@@ -151,7 +151,8 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     list_per_page = 500
     list_display = ('full_address',  # 'city_name', 'address',
                     'client_name', 'client_mt_id',  # 'ext_id',
-                    'ticket_type_short', 'created_at_fmt', 'owner', 'status')
+                    'ticket_type_short', 'created_at_fmt', 'owner', 'status',
+                    'primer',)
     change_actions = ('new_comment', 'new_attachment')
     exclude = ('additional',)
     search_fields = ('client__name', 'client__mt_id', 'city__name',
@@ -172,7 +173,7 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
         if hasattr(request, 'user'):
             if request.user.is_superuser:
                 return (('created_at', DateRangeFilter),
-                        'owner', IsClosedFilter,)
+                        'city__primer', 'owner', IsClosedFilter)
             else:
                 return (IsClosedFilter)
 
@@ -207,6 +208,12 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     full_address.short_description = u'Cím'
     full_address.admin_order_field = ('city__name', 'address')
+
+    def primer(self, obj):
+        return obj.city.primer
+
+    primer.short_description = u'Primer'
+    primer.admin_order_field = ('city__primer')
 
     def client_name(self, obj):
         return obj.client.name
