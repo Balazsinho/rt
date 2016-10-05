@@ -149,7 +149,7 @@ class IsClosedFilter(SimpleListFilter):
 class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     list_per_page = 500
-    list_display = ('full_address',  # 'city_name', 'address',
+    list_display = ('address', 'city_name',
                     'client_name', 'client_mt_id',  # 'ext_id',
                     'ticket_type_short', 'created_at_fmt', 'owner', 'status',
                     'primer',)
@@ -208,17 +208,11 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     ticket_type_short.short_description = u'Jegy típus'
 
-    def full_address(self, obj):
-        return u'{} {}, {}'.format(obj.city.zip, obj.city.name, obj.address)
-
-    full_address.short_description = u'Cím'
-    full_address.admin_order_field = ('city__name', 'address')
-
     def primer(self, obj):
         return obj.city.primer
 
     primer.short_description = u'Primer'
-    primer.admin_order_field = ('city__primer')
+    primer.admin_order_field = 'city__primer'
 
     def client_name(self, obj):
         return obj.client.name
@@ -231,9 +225,10 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     client_mt_id.short_description = u'MT ID'
 
     def city_name(self, obj):
-        return u'{} ({})'.format(obj.city.name, obj.city.zip)
+        return u'{} {}'.format(obj.city.zip, obj.city.name)
 
     city_name.short_description = u'Település'
+    city_name.admin_order_field = 'city__name'
 
     def created_at_fmt(self, obj):
         # return obj.created_at.strftime('%Y.%m.%d %H:%M')
