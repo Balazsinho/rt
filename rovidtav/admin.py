@@ -177,6 +177,11 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
             else:
                 return (IsClosedFilter)
 
+    def lookup_allowed(self, key, value):
+        if key in ('city__primer',):
+            return True
+        return super(TicketAdmin, self).lookup_allowed(key)
+
     def get_queryset(self, request):
         qs = super(TicketAdmin, self).get_queryset(request)
         if hasattr(request, 'user'):
