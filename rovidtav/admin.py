@@ -156,7 +156,7 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     change_actions = ('new_comment', 'new_attachment')
     exclude = ('additional',)
     search_fields = ('client__name', 'client__mt_id', 'city__name',
-                     'ext_id', 'ticket_type__name', 'address',)
+                     'city__zip', 'ext_id', 'ticket_type__name', 'address',)
 
     inlines = (TicketEventInline, AttachmentInline)
     #ordering = ('full_address',)
@@ -237,7 +237,7 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     def created_at_fmt(self, obj):
         # return obj.created_at.strftime('%Y.%m.%d %H:%M')
-        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return obj.created_at.strftime('%Y.%m.%d')
 
     created_at_fmt.short_description = u'Létrehozva'
     created_at_fmt.admin_order_field = ('created_at')
