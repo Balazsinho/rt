@@ -5,10 +5,33 @@ import os
 from django.contrib import admin
 from django.http.response import HttpResponseRedirect
 from django.contrib.admin.views.main import ChangeList, ORDER_VAR
+from django_object_actions.utils import DjangoObjectActions
+
+
+class CustomDjangoObjectActions(DjangoObjectActions):
+
+    """
+    Addressing the problem that the css class of an action is referenced as
+    "class" in the original version, which renders this attribute unusable
+    if you want to use it with the classic
+    function.attribute notation in the admin class
+    """
+
+    def _get_button_attrs(self, tool):
+        default_attrs = {
+            'class': self._get_attr(tool, 'css_class'),
+            'title': self._get_attr(tool, 'short_description'),
+        }
+        # TODO: fix custom attrs
+        custom_attrs = {}
+        return default_attrs, custom_attrs
+
+    def _get_attr(self, tool, attr, default=''):
+        return getattr(tool, attr) if hasattr(tool, attr) else default
 
 
 class SpecialOrderingChangeList(ChangeList):
-    
+
     """ This is the class that will be overriden in order to
     change the way the admin_order_fields are read """
 

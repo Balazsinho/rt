@@ -4,11 +4,11 @@ from django import forms
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.contrib.admin.filters import SimpleListFilter
-from django_object_actions import DjangoObjectActions
 
 from daterange_filter.filter import DateRangeFilter
 
-from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList)
+from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
+                            CustomDjangoObjectActions)
 from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
                             TicketInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
@@ -116,7 +116,11 @@ class IsClosedFilter(SimpleListFilter):
             return queryset
 
 
-class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
+class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
+
+    # =========================================================================
+    # PARAMETERS
+    # =========================================================================
 
     list_per_page = 500
     list_display = ('address', 'city_name', 'client_name', 'client_link',
@@ -128,8 +132,13 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'ticket_type__name', 'address',)
 
+    change_actions = ('new_comment', 'new_attachment')
     inlines = (TicketEventInline, AttachmentInline)
     ordering = ('created_at',)
+
+    # =========================================================================
+    # METHOD OVERRIDES
+    # =========================================================================
 
     def get_changelist(self, request, **kwargs):
         return SpecialOrderingChangeList
@@ -268,14 +277,16 @@ class TicketAdmin(DjangoObjectActions, admin.ModelAdmin):
                         '&next=/admin/rovidtav/ticket/{}/change/#/tab/'
                         'inline_0/'.format(obj.pk, obj.pk))
 
-    new_comment.label = u'+ Megjegyzés'
+    new_comment.label = u'Megjegyzés'
+    new_comment.css_class = 'addlink'
 
     def new_attachment(self, request, obj):
         return redirect('/admin/rovidtav/attachment/add/?ticket={}&next='
                         '/admin/rovidtav/ticket/{}/change/#/tab/inline_1/'
                         ''.format(obj.pk, obj.pk))
 
-    new_attachment.label = u'+ File'
+    new_attachment.label = u'File'
+    new_attachment.css_class = 'addlink'
 
 
 admin.site.register(Attachment, AttachmentAdmin)

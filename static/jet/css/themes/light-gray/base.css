@@ -379,7 +379,7 @@ html {
 body {
     height: 100%;
     background: #f8fafc;
-    color: #8B9AA7;
+    color: #333;
     font-family: Arial, sans-serif;
     -webkit-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
@@ -862,7 +862,7 @@ body.non-scrollable {
     }
 }
 .ui-widget-content {
-    color: #8B9AA7;
+    color: #333;
     border-color: #f1f2f4
 }
 .ui-widget.ui-widget-content,
@@ -878,11 +878,11 @@ body.non-scrollable {
 .ui-widget-header {
     border: 0;
     background: #E3ECF2;
-    color: #8B9AA7;
+    color: #333;
     font-weight: bold
 }
 .ui-widget-header a {
-    color: #8B9AA7
+    color: #333
 }
 .ui-state-default,
 .ui-widget-content .ui-state-default,
@@ -891,13 +891,13 @@ body.non-scrollable {
     border: 0.07143rem solid #EDEDED;
     background: #fff;
     font-weight: bold;
-    color: #8B9AA7;
+    color: #333;
     border-radius: 3px;
     border-radius: 0.21429rem
 }
 .ui-widget-header .ui-state-default {
     background: none;
-    color: #8B9AA7;
+    color: #333;
     border: 0
 }
 .ui-state-hover,
@@ -974,12 +974,12 @@ body.non-scrollable {
     content: ""
 }
 .ui-widget-overlay {
-    background: #000;
+    background: #333;
     opacity: 0.5;
     filter: Alpha(Opacity=50)
 }
 .ui-tooltip {
-    background: #000 !important;
+    background: #333 !important;
     color: #fff;
     border: 0;
     box-shadow: none !important;
@@ -2184,7 +2184,7 @@ body.non-scrollable {
 }
 .select2-container--jet .select2-selection--multiple .select2-selection__choice {
     background-color: #E3ECF2;
-    color: #7f8fa4;
+    color: #333;
     font-size: 13px;
     font-size: 0.92857rem;
     border-radius: 4px;
@@ -2201,7 +2201,7 @@ body.non-scrollable {
     list-style-type: none
 }
 .select2-container--jet .select2-selection--multiple .select2-selection__choice__remove {
-    color: #7f8fa4;
+    color: #333;
     cursor: pointer;
     display: inline-block;
     font-weight: bold;
@@ -2247,7 +2247,7 @@ body.non-scrollable {
     }
 }
 .select2-container--jet .select2-selection .select2-selection__rendered {
-    color: #8B9AA7;
+    color: #333;
     line-height: 32px;
     line-height: 2.28571rem;
     font-size: 13px;
@@ -2257,7 +2257,7 @@ body.non-scrollable {
     color: #999
 }
 .select2-container--jet .select2-buttons {
-    background-color: #E3ECF2;
+    background-color: #333;
     text-align: center;
     padding: 6px;
     padding: 0.42857rem
@@ -2265,7 +2265,7 @@ body.non-scrollable {
 .select2-container--jet .select2-buttons-button,
 .select2-container--jet .select2-buttons-button:visited,
 .select2-container--jet .select2-buttons-button:hover {
-    color: #7f8fa4;
+    color: #333;
     margin-left: 10px;
     margin-left: 0.71429rem
 }
@@ -2302,7 +2302,7 @@ body.non-scrollable {
     outline: 0;
     border: 0;
     background-color: #fff;
-    color: #8B9AA7;
+    color: #333;
     height: 32px;
     height: 2.28571rem;
     -webkit-appearance: textfield;
@@ -2312,7 +2312,7 @@ body.non-scrollable {
     background: transparent;
     border: none;
     outline: 0;
-    color: #8B9AA7;
+    color: #333;
     -webkit-appearance: textfield;
     box-shadow: none
 }
@@ -2733,13 +2733,13 @@ a,
 a:visited,
 a:hover,
 a:focus {
-    color: #79A7D8;
+    color: #003a99;
     font-weight: normal;
     text-decoration: none
 }
 a:hover,
 a:focus {
-    color: #1cacfc
+    color: #333
 }
 a img {
     border: none
@@ -3514,7 +3514,7 @@ select,
     box-sizing: border-box;
     margin: 0;
     background-color: #fff;
-    color: #8B9AA7;
+    color: #333;
     border: 1px solid #EDEDED;
     border: 0.07143rem solid #EDEDED;
     padding: 0 12px;
@@ -3533,7 +3533,7 @@ input[type="number"]::-webkit-input-placeholder,
 textarea::-webkit-input-placeholder,
 select::-webkit-input-placeholder,
 .vTextField::-webkit-input-placeholder {
-    color: #999
+    color: #333
 }
 input[type="text"]::-moz-placeholder,
 input[type="email"]::-moz-placeholder,
@@ -3543,7 +3543,7 @@ input[type="number"]::-moz-placeholder,
 textarea::-moz-placeholder,
 select::-moz-placeholder,
 .vTextField::-moz-placeholder {
-    color: #999
+    color: #333
 }
 input[type="text"]:-ms-input-placeholder,
 input[type="email"]:-ms-input-placeholder,
@@ -3553,7 +3553,7 @@ input[type="number"]:-ms-input-placeholder,
 textarea:-ms-input-placeholder,
 select:-ms-input-placeholder,
 .vTextField:-ms-input-placeholder {
-    color: #999
+    color: #333
 }
 input[type="text"]::placeholder,
 input[type="email"]::placeholder,
@@ -3563,7 +3563,7 @@ input[type="number"]::placeholder,
 textarea::placeholder,
 select::placeholder,
 .vTextField::placeholder {
-    color: #999
+    color: #333
 }
 @media only screen and (max-width: 3001px) {
     fieldset.module input[type="text"],
@@ -3618,7 +3618,7 @@ textarea {
     font-size: 0.85714rem;
     text-align: center;
     background-color: #E3ECF2;
-    color: #7f8fa4;
+    color: #333;
     padding: 0 10px;
     padding: 0 0.71429rem;
     display: inline-block;
@@ -3666,7 +3666,7 @@ input[type=checkbox]+label:before {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     display: inline-block;
-    color: #79A7D8;
+    color: #333;
     font-size: 12px;
     font-size: 0.85714rem;
     content: "";
@@ -3674,7 +3674,7 @@ input[type=checkbox]+label:before {
     letter-spacing: 0.35714rem
 }
 .action-checkbox-column input[type=checkbox]+label:before {
-    color: #8B9AA7
+    color: #333
 }
 input[type=checkbox]:checked+label:before {
     content: ""
@@ -4078,15 +4078,15 @@ table.helper thead th {
     border-radius: 0 !important
 }
 table thead th {
-    background: #E3ECF2;
-    color: #8B9AA7;
+    background: #eee;
+    color: #333;
     text-transform: uppercase;
     -webkit-transition: background-color .1s;
     transition: background-color .1s
 }
 table thead th a:link,
 table thead th a:visited {
-    color: #8B9AA7
+    color: #333
 }
 table thead th .text a {
     display: block;
@@ -4233,7 +4233,7 @@ table thead th.sorted .sortoptions a.descending:after {
 }
 table thead th.sorted .sortpriority {
     background: #fff;
-    color: #8B9AA7;
+    color: #333;
     padding: 1px 5px;
     padding: 0.07143rem 0.35714rem;
     margin-right: 2px;
@@ -6160,7 +6160,7 @@ fieldset.module {
 .module h2 a,
 .module caption a,
 .inline-group h2 a {
-    color: #8B9AA7;
+    color: #333;
     font-size: 11px;
     font-size: 0.78571rem;
     font-weight: bold
@@ -7471,7 +7471,7 @@ body.popup .submit-row {
     background: -webkit-linear-gradient(bottom, #fff 0%, #F8FAFC 100%);
     background: linear-gradient(to top, #fff 0%, #F8FAFC 100%);
     font-weight: bold;
-    color: #8B9AA7;
+    color: #333;
     padding: 20px 30px 0 30px;
     padding: 1.42857rem 2.14286rem 0 2.14286rem
 }
@@ -7489,7 +7489,7 @@ body.popup .submit-row {
 .inline-related h3 .inline_label {
     display: inline-block;
     background: #E3ECF2;
-    color: #8B9AA7;
+    color: #333;
     margin-right: 10px;
     margin-right: 0.71429rem;
     padding: 4px 8px;
@@ -7696,7 +7696,7 @@ html.no-touchevents .inline-navigation-item:hover,
 }
 .inline-navigation-item.selected {
     background: transparent;
-    color: #8B9AA7;
+    color: #333;
     font-weight: bold;
     cursor: default
 }
@@ -7716,13 +7716,13 @@ html.no-touchevents .inline-navigation-item:hover,
     background: -webkit-linear-gradient(bottom, #fff 0%, #F8FAFC 100%);
     background: linear-gradient(to top, #fff 0%, #F8FAFC 100%);
     font-weight: bold;
-    color: #8B9AA7
+    color: #333
 }
 .inline-group .tabular thead th a:link,
 .inline-group .tabular thead th a:visited,
 .inline-group .tabular thead td a:link,
 .inline-group .tabular thead td a:visited {
-    color: #8B9AA7
+    color: #333
 }
 .inline-group .tabular td.original {
     white-space: nowrap;
@@ -7944,7 +7944,7 @@ form .related-widget-wrapper ul {
     position: relative;
     top: 2px;
     top: 0.14286rem;
-    color: #c0c6cc;
+    color: #333;
     font-weight: bold;
     font-size: 11px;
     font-size: 0.78571rem;
@@ -7966,11 +7966,11 @@ form .related-widget-wrapper ul {
         border-radius: 0.35714rem;
         font-weight: normal;
         background: #E3ECF2;
-        color: #7f8fa4
+        color: #333
     }
 }
 .changeform-tabs-item a:hover {
-    color: #8B9AA7
+    color: #333
 }
 .changeform-tabs-item.errors a,
 .changeform-tabs-item.errors a:hover,
@@ -7988,7 +7988,7 @@ form .related-widget-wrapper ul {
 .changeform-tabs-item.selected a,
 .changeform-tabs-item.selected a:hover,
 .changeform-tabs-item.selected a:visited {
-    color: #8B9AA7;
+    color: #333;
     border-color: #1cacfc
 }
 @media only screen and (max-width: 3001px) {
@@ -10171,7 +10171,7 @@ html.touchevents .editing .sidebar-right-arrow {
     display: none;
     font-size: 96px;
     font-size: 6.85714rem;
-    color: #8B9AA7;
+    color: #333;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -10187,7 +10187,7 @@ html.touchevents .editing .sidebar-right-arrow {
 .related-popup-back:hover {
     display: none;
     background: #E3ECF2;
-    color: #8B9AA7;
+    color: #333;
     position: absolute;
     top: 20px;
     top: 1.42857rem;
@@ -10228,7 +10228,7 @@ html.touchevents .editing .sidebar-right-arrow {
 .related-popup-back:hover,
 .related-popup-back:focus {
     background: #f8fafc;
-    color: #8B9AA7
+    color: #333
 }
 @media only screen and (max-width: 3001px) {
     .related-popup-back:hover,
@@ -10906,10 +10906,10 @@ html.touchevents .dashboard-item-header-buttons {
 }
 .dashboard-item-content.contrast {
     background: #E3ECF2;
-    color: #8B9AA7
+    color: #333
 }
 .dashboard-item-content.contrast .loading-indicator {
-    color: #8B9AA7
+    color: #333
 }
 .dashboard-item-content ul:not(.inline) li {
     display: block;
@@ -10929,7 +10929,7 @@ html.touchevents .dashboard-item-header-buttons {
 .dashboard-item-content ul:not(.inline) li.contrast a,
 .dashboard-item-content ul:not(.inline) li.contrast a:visited,
 .dashboard-item-content ul:not(.inline) li.contrast a:hover {
-    color: #8B9AA7;
+    color: #333;
     text-decoration: none;
     text-transform: uppercase
 }
@@ -11016,7 +11016,7 @@ html.touchevents .dashboard-item-header-buttons {
     color: rgba(0, 0, 0, 0.1)
 }
 .dashboard-item-content canvas .chart-scaleFontColor {
-    color: #8B9AA7
+    color: #333
 }
 .dashboard-item-content table {
     width: 100%;
@@ -11972,7 +11972,7 @@ body.login #container {
 }
 body.login #header {
     background: #E3ECF2;
-    color: #8B9AA7;
+    color: #333;
     text-transform: uppercase;
     font-size: 11px;
     font-size: 0.78571rem;
