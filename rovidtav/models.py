@@ -122,7 +122,7 @@ class Payoff(models.Model):
 
 class TicketType(models.Model):
 
-    name = models.CharField(db_column='nev', max_length=70,
+    name = models.CharField(db_column='nev', max_length=250,
                             verbose_name=u'Név')
 
     class Meta:
@@ -257,6 +257,149 @@ class TicketEvent(models.Model):
         db_table = 'jegy_esemeny'
         verbose_name = u'Esemény'
         verbose_name_plural = u'Megjegyzések'
+
+    def __unicode__(self):
+        return self.event
+
+
+class WorkItem(models.Model):
+
+    name = models.CharField(db_column='nev', max_length=70,
+                            verbose_name=u'Név')
+    remark = models.TextField(db_column='megjegyzes',
+                              null=True, blank=True,
+                              verbose_name=u'Megjegyzés')
+    gross_price = models.IntegerField(db_column='brutto_ar')
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'munkatetel'
+        verbose_name = u'Munkatétel'
+        verbose_name_plural = u'Munkatételek'
+
+    def __unicode__(self):
+        return self.event
+
+
+class TicketWorkItem(models.Model):
+
+    ticket = models.ForeignKey(Ticket, db_column='jegy',
+                               verbose_name=u'Jegy')
+    work_item = models.ForeignKey(WorkItem, db_column='munka',
+                                  verbose_name=u'Munka')
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'munka_jegy'
+        verbose_name = u'Munka'
+        verbose_name_plural = u'Munkák'
+
+    def __unicode__(self):
+        return self.event
+
+
+class MaterialCategory(models.Model):
+
+    name = models.CharField(db_column='nev', max_length=70,
+                            verbose_name=u'Név')
+    remark = models.TextField(db_column='megjegyzes',
+                              null=True, blank=True,
+                              verbose_name=u'Megjegyzés')
+
+    class Meta:
+        db_table = 'anyag_kategoria'
+        verbose_name = u'Anyag Kategória'
+        verbose_name_plural = u'Anyag Kategóriák'
+
+    def __unicode__(self):
+        return self.event
+
+
+class Material(models.Model):
+
+    MIND = 0
+    REZ = 1
+    KOAX = 2
+    OPTIKA = 3
+
+    sn = models.CharField(db_column='cikkszam', max_length=40,
+                          verbose_name=u'Cikkszám')
+    name = models.CharField(db_column='nev', max_length=70,
+                            verbose_name=u'Név')
+    category = models.ForeignKey(MaterialCategory, db_column='kategoria',
+                                 verbose_name=u'Kategória')
+    price = models.IntegerField(db_column='iranyar', verbose_name=u'Irányár')
+    unit = models.CharField(
+        db_column='egyseg',
+        choices=(
+            ('db', u'db'),
+            ('m', u'm'),
+            ('km', u'km'),
+            ('klt', u'klt'),
+            ('csom', u'csom'),
+            ('kg', u'kg'),
+        ),
+        max_length=50,
+        verbose_name=u'Egység',
+    )
+    remark = models.TextField(db_column='megjegyzes',
+                              null=True, blank=True,
+                              verbose_name=u'Megjegyzés')
+    comes_from = models.CharField(
+        db_column='biztositja',
+        choices=(
+            ('BI', u'BI-től veszi'),
+            ('MT', u'MT Biztosítja'),
+            ('R', u'Váll. rezsi'),
+        ),
+        max_length=50,
+        verbose_name=u'Biztosítja',
+    )
+    applies_for = models.IntegerField(
+        db_column='anyag_tipus',
+        choices=(
+            (MIND, u'Mind'),
+            (REZ, u'Réz'),
+            (OPTIKA, u'Optika'),
+            (KOAX, u'Koax'),
+        ),
+        verbose_name=u'Anyag típus',
+    )
+
+    class Meta:
+        db_table = 'anyag'
+        verbose_name = u'Anyag'
+        verbose_name_plural = u'Anyagok'
+
+    def __unicode__(self):
+        return self.event
+
+
+class TicketMaterial(models.Model):
+
+    ticket = models.ForeignKey(Ticket, db_column='jegy',
+                               related_name='anyag_jegy',
+                               verbose_name=u'Jegy')
+    material = models.ForeignKey(Material, db_column='anyag',
+                                 verbose_name=u'Anyag')
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'anyag_jegy'
+        verbose_name = u'JegyAnyag'
+        verbose_name_plural = u'JegyAnyagok'
 
     def __unicode__(self):
         return self.event
