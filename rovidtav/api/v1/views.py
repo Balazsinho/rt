@@ -80,6 +80,7 @@ def create_ticket(request):
         city=city,
         address=addr,
         created_by=request.user,
+        created_at=data['mail_date'],
     )
 
     ticket.ticket_types.add(*ticket_types)
@@ -111,7 +112,7 @@ def create_ticket(request):
             if device.get(Fields.DEV_CARD_SN):
                 dev_type, _ = DeviceType.objects.get_or_create(
                     name='SMART CARD')
-                card = Device.objects.create(
+                Device.objects.create(
                     sn=device[Fields.DEV_CARD_SN],
                     type=dev_type,
                     connected_device=dev,
