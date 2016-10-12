@@ -108,6 +108,7 @@ def create_ticket(request):
             dev = Device.objects.create(
                 sn=device[Fields.DEV_SN],
                 type=dev_type,
+                client=client,
             )
             if device.get(Fields.DEV_CARD_SN):
                 dev_type, _ = DeviceType.objects.get_or_create(
