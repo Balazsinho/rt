@@ -247,12 +247,6 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
 
     client_name.short_description = u'Ügyfél neve'
 
-    def ticket_type_short(self, obj):
-        ttype = unicode(obj.ticket_type)
-        return ttype[:25].strip() + u'...' if len(ttype) > 25 else ttype
-
-    ticket_type_short.short_description = u'Jegy típus'
-
     def primer(self, obj):
         return obj.city.primer
 
@@ -273,7 +267,8 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     created_at_fmt.admin_order_field = ('created_at')
 
     def ticket_type(self, obj):
-        return ' / '.join([t.name for t in obj.ticket_types.all()])[:35]
+        types = ' / '.join([t.name for t in obj.ticket_types.all()])
+        return types[:25].strip() + u'...' if len(types) > 25 else types
 
     ticket_type.short_description = u'Tipus'
     # ticket_type.admin_order_field = ('created_at')
