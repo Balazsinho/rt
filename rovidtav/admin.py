@@ -10,7 +10,7 @@ from daterange_filter.filter import DateRangeFilter
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions)
 from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
-                            TicketInline)
+                            TicketInline, HistoryInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType)
 from rovidtav.models import Payoff
@@ -133,7 +133,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
                      'city__zip', 'ext_id', 'address',)
 
     change_actions = ('new_comment', 'new_attachment')
-    inlines = (TicketEventInline, AttachmentInline)
+    inlines = (TicketEventInline, AttachmentInline, HistoryInline)
     ordering = ('created_at',)
 
     # =========================================================================

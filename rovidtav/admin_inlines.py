@@ -54,12 +54,32 @@ class TicketInline(ReadOnlyInline):
         return f + ['ticket_link', 'created_at_fmt', 'ticket_type_short']
 
 
-class TicketEventInline(ReadOnlyInline):
+class HistoryInline(ReadOnlyInline):
 
     # consider jet CompactInline
+    verbose_name = u'Történet'
+    verbose_name_plural = u'Történet'
     model = TicketEvent
     fields = ('event', 'remark', 'created_by', 'created_at')
     ordering = ('-created_at',)
+
+    def get_queryset(self, request):
+        qs = super(HistoryInline, self).get_queryset(request)
+        return qs.exclude(event='Megj')
+
+
+class TicketEventInline(ReadOnlyInline):
+
+    # consider jet CompactInline
+    verbose_name = u'Megjegyzés'
+    verbose_name_plural = u'Megjegyzések'
+    model = TicketEvent
+    fields = ('event', 'remark', 'created_by', 'created_at')
+    ordering = ('-created_at',)
+
+    def get_queryset(self, request):
+        qs = super(TicketEventInline, self).get_queryset(request)
+        return qs.filter(event='Megj')
 
 
 class DeviceInline(ReadOnlyInline):

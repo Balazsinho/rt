@@ -184,7 +184,7 @@ class Ticket(models.Model):
         verbose_name_plural = u'Jegyek'
 
     def __unicode__(self):
-        ttype = unicode(self.ticket_type)
+        ttype = u' '.join(unicode(t) for t in self.ticket_types.all())
         ttype = ttype[:25] + u'...' if len(ttype) > 25 else ttype
         return unicode(u'{} - {}'.format(self.client, ttype))
 
