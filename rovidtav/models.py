@@ -60,7 +60,7 @@ class Client(models.Model):
 class DeviceType(models.Model):
 
     name = models.CharField(db_column='nev', max_length=50,
-                            verbose_name=u'Név')
+                            verbose_name=u'Típus')
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés')
 

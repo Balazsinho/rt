@@ -53,6 +53,26 @@ class CityAdmin(admin.ModelAdmin):
     list_display = ('name', 'zip', 'primer', 'onuk')
 
 
+class DeviceAdmin(admin.ModelAdmin):
+
+    list_display = ('sn', 'device_type', 'owner', 'client_link')
+    search_fields = ('client__name', 'client__mt_id', 'type__name',
+                     'sn')
+    list_filter = ('type__name', 'owner')
+
+    def device_type(self, obj):
+        return obj.type.name
+
+    device_type.short_description = u'Típus'
+
+    def client_link(self, obj):
+        if obj.client:
+            return ('<a href="/admin/rovidtav/client/{}/change">{}</a>'
+                    ''.format(obj.client.pk, obj.client.mt_id))
+    client_link.allow_tags = True
+    client_link.short_description = u'Ügyfél'
+
+
 class ClientAdmin(admin.ModelAdmin):
 
     readonly_fields = ('created_by', )
@@ -294,7 +314,7 @@ admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)
 admin.site.register(Client, ClientAdmin)
-admin.site.register(Device)
+admin.site.register(Device, DeviceAdmin)
 admin.site.register(DeviceType)
 admin.site.register(Ticket, TicketAdmin)
 admin.site.register(TicketEvent, TicketEventAdmin)
