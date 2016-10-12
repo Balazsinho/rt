@@ -64,16 +64,25 @@ def create_ticket(request):
             created_by=request.user,
         )
 
-    ticket_type, _ = TicketType.objects.get_or_create(
-        name=(data[Fields.TASK_TYPE]))
+    ticket_types = []
+    if data.get(Fields.TASK_TYPE_LIST):
+        for t in data[Fields.TASK_TYPE_LIST]:
+            ticket_type, _ = TicketType.objects.get_or_create(name=t)
+            ticket_types.append(ticket_type)
+    else:
+        ticket_type, _ = TicketType.objects.get_or_create(
+            name=data[Fields.TASK_TYPE])
+        ticket_types.append(ticket_type)
+
     ticket = Ticket.objects.create(
         ext_id=data[Fields.TICKET_ID],
         client=client,
-        ticket_type=ticket_type,
         city=city,
         address=addr,
         created_by=request.user,
     )
+
+    ticket.ticket_types.add(*ticket_types)
 
     if Fields.REMARKS in data and data[Fields.REMARKS]:
         TicketEvent.objects.create(

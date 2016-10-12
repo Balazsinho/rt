@@ -68,3 +68,4 @@ class Fields(object):
     ZIP = 'zip'
     STREET = 'street'
     HOUSE_NUM = 'house_num'
+    TASK_TYPE_LIST = 'task_type_list'

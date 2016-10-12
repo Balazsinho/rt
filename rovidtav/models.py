@@ -142,8 +142,8 @@ class Ticket(models.Model):
                               verbose_name=u'Jegy ID')
     client = models.ForeignKey(Client, db_column='ugyfel',
                                verbose_name=u'Ügyfél')
-    ticket_type = models.ForeignKey(TicketType, db_column='tipus',
-                                    verbose_name=u'Jegy típus')
+    ticket_types = models.ManyToManyField(TicketType, db_column='tipus',
+                                          verbose_name=u'Jegy típus')
     city = models.ForeignKey(City, db_column='telepules',
                              verbose_name=u'Település')
     address = models.CharField(db_column='cim', max_length=120,
@@ -174,8 +174,7 @@ class Ticket(models.Model):
     additional = models.TextField(null=True, blank=True,
                                   verbose_name=u'Egyéb')
 
-    created_at = models.DateTimeField(auto_now_add=True, editable=False,
-                                      verbose_name=u'Létrehozva')
+    created_at = models.DateTimeField(verbose_name=u'Létrehozva')
     created_by = models.ForeignKey(User, editable=False,
                                    verbose_name=u'Létrehozó')
 

@@ -124,13 +124,13 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
 
     list_per_page = 500
     list_display = ('address', 'city_name', 'client_name', 'client_link',
-                    'ticket_type_short', 'created_at_fmt', 'owner', 'status',
+                    'ticket_type', 'created_at_fmt', 'owner', 'status',
                     'primer', 'payoff_link')
     # TODO: check if this is useful
     # list_editable = ('owner', )
     exclude = ('additional',)
     search_fields = ('client__name', 'client__mt_id', 'city__name',
-                     'city__zip', 'ext_id', 'ticket_type__name', 'address',)
+                     'city__zip', 'ext_id', 'address',)
 
     change_actions = ('new_comment', 'new_attachment')
     inlines = (TicketEventInline, AttachmentInline)
@@ -271,6 +271,12 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
 
     created_at_fmt.short_description = u'Létrehozva'
     created_at_fmt.admin_order_field = ('created_at')
+
+    def ticket_type(self, obj):
+        return ' / '.join([t.name for t in obj.ticket_types.all()])[:35]
+
+    ticket_type.short_description = u'Tipus'
+    # ticket_type.admin_order_field = ('created_at')
 
     def new_comment(self, request, obj):
         return redirect('/admin/rovidtav/ticketevent/add/?event=Megj&ticket={}'
