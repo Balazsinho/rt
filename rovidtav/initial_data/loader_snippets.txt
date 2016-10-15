@@ -1,0 +1,45 @@
+#################
+# IMPORT CITIES #
+#################
+
+import codecs
+import json
+from rovidtav.models import City
+
+with codecs.open('cities.json') as f:
+	for rec in json.loads(f.read()):
+		City.objects.get_or_create(**rec)
+
+####################
+# IMPORT MATERIALS #
+####################
+
+import codecs
+import json
+from rovidtav.models import MaterialCategory
+from rovidtav.models import Material
+
+with codecs.open('rovidtav/initial_data/anyag.json') as f:
+    for rec in json.loads(f.read()):
+        cat, _ = MaterialCategory.objects.get_or_create(name=rec.pop('category'))
+        rec['category'] = cat
+        try:
+            material = Material.objects.get(sn=rec['sn'])
+            material.name = rec['name']
+            material.price = rec['price']
+            material.comes_from = rec['comes_from']
+            material.save()
+        except Material.DoesNotExist:
+            Material.objects.get_or_create(**rec)
+
+####################
+# IMPORT WORKITEMS #
+####################
+
+import codecs
+import json
+from rovidtav.models import WorkItem
+
+with codecs.open('rovidtav/initial_data/munka.json') as f:
+    for rec in json.loads(f.read()):
+        WorkItem.objects.get_or_create(**rec)

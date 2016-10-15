@@ -10,9 +10,11 @@ from daterange_filter.filter import DateRangeFilter
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions)
 from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
-                            TicketInline, HistoryInline)
+                            TicketInline, HistoryInline, MaterialInline,
+                            WorkItemInline,)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
-                     TicketEvent, TicketType)
+                     TicketEvent, TicketType, MaterialCategory, Material,
+                     TicketMaterial, WorkItem, TicketWorkItem)
 from rovidtav.models import Payoff
 
 
@@ -90,6 +92,21 @@ class ClientAdmin(admin.ModelAdmin):
     created_at_fmt.short_description = u'Létrehozva'
 
 
+class MaterialAdmin(admin.ModelAdmin):
+
+    list_display = ('sn', 'name', 'category', 'price', 'unit', 'comes_from')
+    search_fields = ('sn', 'name', 'category__name')
+    list_filter = ('category__name', )
+
+
+class TicketMaterialAdmin(ModelAdminRedirect):
+    pass
+
+
+class TicketWorkItemAdmin(ModelAdminRedirect):
+    pass
+
+
 class TicketEventAdmin(ModelAdminRedirect):
 
     fields = ('remark', 'ticket', 'event')
@@ -152,9 +169,12 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'address',)
 
-    change_actions = ('new_comment', 'new_attachment')
-    inlines = (TicketEventInline, AttachmentInline, HistoryInline)
+    change_actions = ('new_comment', 'new_attachment', 'new_material',
+                      'new_workitem')
+    inlines = (AttachmentInline, MaterialInline, WorkItemInline,
+               TicketEventInline, HistoryInline)
     ordering = ('created_at',)
+    readonly_fields = ('client_phone',)
 
     # =========================================================================
     # METHOD OVERRIDES
@@ -188,7 +208,8 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
         obj = Ticket.objects.get(pk=object_id)
         if request.user.is_superuser or \
                 obj.status in (u'Kiadva', u'Folyamatban'):
-            return ('new_comment', 'new_attachment')
+            return ('new_attachment', 'new_material', 'new_workitem',
+                    'new_comment',)
         else:
             return ('new_comment',)
 
@@ -214,15 +235,14 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
         return qs
 
     def get_readonly_fields(self, request, obj=None):
-        if request.user.is_superuser:
-            return ('created_by', 'created_at')
-        else:
-            fields = ('ext_id', 'client', 'ticket_type', 'city',
-                      'address', 'owner', 'created_by', 'created_at',
-                      'payoff')
+        fields = ('created_by', 'created_at')
+        fields += (self.readonly_fields or tuple())
+        if not request.user.is_superuser:
+            fields += ('ext_id', 'client', 'ticket_type', 'city',
+                       'address', 'owner', 'payoff')
             if obj.status not in (u'Kiadva', u'Folyamatban'):
                 fields += ('status',)
-            return fields
+        return fields
 
     def get_inline_instances(self, request, obj=None):
         if not obj:
@@ -267,6 +287,11 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
 
     client_name.short_description = u'Ügyfél neve'
 
+    def client_phone(self, obj):
+        return obj.client.phone
+
+    client_phone.short_description = u'Telefonszám'
+
     def primer(self, obj):
         return obj.city.primer
 
@@ -294,20 +319,40 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     # ticket_type.admin_order_field = ('created_at')
 
     def new_comment(self, request, obj):
+        returnto_tab = self.inlines.index(TicketEventInline)
         return redirect('/admin/rovidtav/ticketevent/add/?event=Megj&ticket={}'
                         '&next=/admin/rovidtav/ticket/{}/change/#/tab/'
-                        'inline_0/'.format(obj.pk, obj.pk))
+                        'inline_{}/'.format(obj.pk, obj.pk, returnto_tab))
 
     new_comment.label = u'Megjegyzés'
     new_comment.css_class = 'addlink'
 
     def new_attachment(self, request, obj):
+        returnto_tab = self.inlines.index(AttachmentInline)
         return redirect('/admin/rovidtav/attachment/add/?ticket={}&next='
-                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_1/'
-                        ''.format(obj.pk, obj.pk))
+                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
+                        ''.format(obj.pk, obj.pk, returnto_tab))
 
     new_attachment.label = u'File'
     new_attachment.css_class = 'addlink'
+
+    def new_material(self, request, obj):
+        returnto_tab = self.inlines.index(MaterialInline)
+        return redirect('/admin/rovidtav/ticketmaterial/add/?ticket={}&next='
+                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
+                        ''.format(obj.pk, obj.pk, returnto_tab))
+
+    new_material.label = u'Anyag'
+    new_material.css_class = 'addlink'
+
+    def new_workitem(self, request, obj):
+        returnto_tab = self.inlines.index(WorkItemInline)
+        return redirect('/admin/rovidtav/ticketworkitem/add/?ticket={}&next='
+                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
+                        ''.format(obj.pk, obj.pk, returnto_tab))
+
+    new_workitem.label = u'Munka'
+    new_workitem.css_class = 'addlink'
 
 
 admin.site.register(Attachment, AttachmentAdmin)
@@ -319,3 +364,8 @@ admin.site.register(DeviceType)
 admin.site.register(Ticket, TicketAdmin)
 admin.site.register(TicketEvent, TicketEventAdmin)
 admin.site.register(TicketType)
+admin.site.register(MaterialCategory)
+admin.site.register(Material, MaterialAdmin)
+admin.site.register(TicketMaterial, TicketMaterialAdmin)
+admin.site.register(WorkItem)
+admin.site.register(TicketWorkItem, TicketWorkItemAdmin)

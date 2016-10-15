@@ -1,8 +1,0 @@
-import codecs
-import json
-from rovidtav.models import City
-
-with codecs.open('cities.json') as f:
-	for rec in json.loads(f.read()):
-		City.objects.get_or_create(**rec)
-

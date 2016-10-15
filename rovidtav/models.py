@@ -261,54 +261,10 @@ class TicketEvent(models.Model):
         return self.event
 
 
-class WorkItem(models.Model):
-
-    name = models.CharField(db_column='nev', max_length=70,
-                            verbose_name=u'Név')
-    remark = models.TextField(db_column='megjegyzes',
-                              null=True, blank=True,
-                              verbose_name=u'Megjegyzés')
-    gross_price = models.IntegerField(db_column='brutto_ar')
-
-    created_at = models.DateTimeField(auto_now_add=True, editable=False,
-                                      verbose_name=u'Létrehozva')
-    created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létrehozó')
-
-    class Meta:
-        db_table = 'munkatetel'
-        verbose_name = u'Munkatétel'
-        verbose_name_plural = u'Munkatételek'
-
-    def __unicode__(self):
-        return self.event
-
-
-class TicketWorkItem(models.Model):
-
-    ticket = models.ForeignKey(Ticket, db_column='jegy',
-                               verbose_name=u'Jegy')
-    work_item = models.ForeignKey(WorkItem, db_column='munka',
-                                  verbose_name=u'Munka')
-
-    created_at = models.DateTimeField(auto_now_add=True, editable=False,
-                                      verbose_name=u'Létrehozva')
-    created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létrehozó')
-
-    class Meta:
-        db_table = 'munka_jegy'
-        verbose_name = u'Munka'
-        verbose_name_plural = u'Munkák'
-
-    def __unicode__(self):
-        return self.event
-
-
 class MaterialCategory(models.Model):
 
     name = models.CharField(db_column='nev', max_length=70,
-                            verbose_name=u'Név')
+                            verbose_name=u'Kategória név')
     remark = models.TextField(db_column='megjegyzes',
                               null=True, blank=True,
                               verbose_name=u'Megjegyzés')
@@ -319,7 +275,7 @@ class MaterialCategory(models.Model):
         verbose_name_plural = u'Anyag Kategóriák'
 
     def __unicode__(self):
-        return self.event
+        return self.name
 
 
 class Material(models.Model):
@@ -355,11 +311,12 @@ class Material(models.Model):
     comes_from = models.CharField(
         db_column='biztositja',
         choices=(
-            ('BI', u'BI-től veszi'),
+            # ('BI', u'BI-től veszi'),
             ('MT', u'MT Biztosítja'),
             ('R', u'Váll. rezsi'),
         ),
         max_length=50,
+        null=True, blank=True,
         verbose_name=u'Biztosítja',
     )
     applies_for = models.IntegerField(
@@ -370,6 +327,7 @@ class Material(models.Model):
             (OPTIKA, u'Optika'),
             (KOAX, u'Koax'),
         ),
+        null=True, blank=True,
         verbose_name=u'Anyag típus',
     )
 
@@ -379,7 +337,11 @@ class Material(models.Model):
         verbose_name_plural = u'Anyagok'
 
     def __unicode__(self):
-        return self.event
+        return self.name
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name', 'sn')
 
 
 class TicketMaterial(models.Model):
@@ -389,6 +351,9 @@ class TicketMaterial(models.Model):
                                verbose_name=u'Jegy')
     material = models.ForeignKey(Material, db_column='anyag',
                                  verbose_name=u'Anyag')
+    amount = models.FloatField(db_column='mennyiseg',
+                               verbose_name=u'Mennyiség',
+                               default=1)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=False,
                                       verbose_name=u'Létrehozva')
@@ -397,11 +362,63 @@ class TicketMaterial(models.Model):
 
     class Meta:
         db_table = 'anyag_jegy'
-        verbose_name = u'JegyAnyag'
-        verbose_name_plural = u'JegyAnyagok'
+        verbose_name = u'Jegy Anyag'
+        verbose_name_plural = u'Jegy Anyagok'
 
     def __unicode__(self):
-        return self.event
+        return u'{} - {}'.format(unicode(self.ticket),
+                                 unicode(self.material))
+
+
+class WorkItem(models.Model):
+
+    name = models.CharField(db_column='nev', max_length=300,
+                            verbose_name=u'Név')
+    art_number = models.CharField(db_column='tetelszam', max_length=40,
+                                  verbose_name=u'Tételszám')
+    remark = models.TextField(db_column='definicio',
+                              null=True, blank=True,
+                              verbose_name=u'Definíció')
+    art_price = models.IntegerField(db_column='tetel_ar',
+                                    verbose_name=u'Tétel ár')
+    bulk_price = models.IntegerField(db_column='csop_anyag_ar',
+                                     verbose_name=u'Csoportos anyag ár')
+    given_price = models.IntegerField(db_column='kiadott_ar',
+                                      verbose_name=u'Kiadott ár')
+
+    class Meta:
+        db_table = 'munka'
+        verbose_name = u'Munkatétel'
+        verbose_name_plural = u'Munkatételek'
+
+    def __unicode__(self):
+        return self.name
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name', 'art_number')
+
+
+class TicketWorkItem(models.Model):
+
+    ticket = models.ForeignKey(Ticket, db_column='jegy',
+                               verbose_name=u'Jegy')
+    work_item = models.ForeignKey(WorkItem, db_column='munka',
+                                  verbose_name=u'Munka')
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'munka_jegy'
+        verbose_name = u'Munka'
+        verbose_name_plural = u'Munkák'
+
+    def __unicode__(self):
+        return u'{} - {}'.format(unicode(self.ticket),
+                                 unicode(self.work_item))
 
 
 class Attachment(models.Model):

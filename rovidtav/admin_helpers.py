@@ -91,6 +91,12 @@ class ReadOnlyInline(admin.TabularInline):
         return False
 
 
+class ShowCalcFields(object):
+    def get_readonly_fields(self, request, obj=None):
+        fields = [f for f in dir(self) if f.startswith('f_')]
+        return super(ShowCalcFields, self).get_readonly_fields(request, obj) + fields
+
+
 class ModelAdminRedirect(admin.ModelAdmin):
 
     def response_add(self, request, obj):
