@@ -18,6 +18,11 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
 from rovidtav.models import Payoff
 
 
+# ============================================================================
+# FORMS
+# ============================================================================
+
+
 class AttachmentForm(forms.ModelForm):
 
     _data = forms.CharField(label=u'File', widget=forms.FileInput())
@@ -25,6 +30,9 @@ class AttachmentForm(forms.ModelForm):
 
     class Meta:
         fields = ('ticket', '_data', 'remark')
+        widgets = {
+          'ticket': forms.HiddenInput(),
+        }
 
     def clean__data(self):
         if '_data' in self.files:
@@ -33,6 +41,31 @@ class AttachmentForm(forms.ModelForm):
     def clean_name(self):
         if '_data' in self.files:
             return self.files['_data'].name
+
+
+class TicketMaterialForm(forms.ModelForm):
+
+    class Meta:
+        model = TicketMaterial
+        widgets = {
+          'ticket': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
+class TicketWorkItemForm(forms.ModelForm):
+
+    class Meta:
+        model = TicketWorkItem
+        widgets = {
+          'ticket': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
+# ============================================================================
+# MODELADMIN CLASSSES
+# ============================================================================
 
 
 class AttachmentAdmin(ModelAdminRedirect):
@@ -100,11 +133,21 @@ class MaterialAdmin(admin.ModelAdmin):
 
 
 class TicketMaterialAdmin(ModelAdminRedirect):
-    pass
+
+    form = TicketMaterialForm
+
+    def get_model_perms(self, request):
+        # Hide from admin index
+        return {}
 
 
 class TicketWorkItemAdmin(ModelAdminRedirect):
-    pass
+
+    form = TicketWorkItemForm
+
+    def get_model_perms(self, request):
+        # Hide from admin index
+        return {}
 
 
 class TicketEventAdmin(ModelAdminRedirect):
