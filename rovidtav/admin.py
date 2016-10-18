@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+
 from django import forms
 from django.contrib import admin
 from django.shortcuts import redirect
@@ -14,8 +16,9 @@ from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
                             WorkItemInline,)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType, MaterialCategory, Material,
-                     TicketMaterial, WorkItem, TicketWorkItem)
-from rovidtav.models import Payoff
+                     TicketMaterial, WorkItem, TicketWorkItem, Payoff)
+
+from django.forms.models import ModelChoiceField
 
 
 # ============================================================================
@@ -44,6 +47,19 @@ class AttachmentForm(forms.ModelForm):
 
 
 class TicketMaterialForm(forms.ModelForm):
+    material = ModelChoiceField(
+        Material.objects.all(),
+        widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
+        label='Anyag',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(TicketMaterialForm, self).__init__(*args, **kwargs)
+        ticket_id = kwargs.get('initial', {}).get('ticket')
+        if ticket_id:
+            ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
+            suggestions = Material.objects.filter(technology=ticket.technology())
+            self.fields['material'].queryset = suggestions
 
     class Meta:
         model = TicketMaterial
@@ -54,6 +70,14 @@ class TicketMaterialForm(forms.ModelForm):
 
 
 class TicketWorkItemForm(forms.ModelForm):
+    work_item = ModelChoiceField(
+        WorkItem.objects.all(),
+        widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
+        label='Munka',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(TicketWorkItemForm, self).__init__(*args, **kwargs)
 
     class Meta:
         model = TicketWorkItem
@@ -135,6 +159,7 @@ class MaterialAdmin(admin.ModelAdmin):
 class TicketMaterialAdmin(ModelAdminRedirect):
 
     form = TicketMaterialForm
+    change_form_template = os.path.join('rovidtav', 'select2_disabled.html')
 
     def get_model_perms(self, request):
         # Hide from admin index
@@ -144,6 +169,7 @@ class TicketMaterialAdmin(ModelAdminRedirect):
 class TicketWorkItemAdmin(ModelAdminRedirect):
 
     form = TicketWorkItemForm
+    change_form_template = os.path.join('rovidtav', 'select2_disabled.html')
 
     def get_model_perms(self, request):
         # Hide from admin index
