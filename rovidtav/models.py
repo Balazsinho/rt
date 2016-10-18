@@ -4,6 +4,7 @@ import os
 import re
 import base64
 
+from unidecode import unidecode
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -27,6 +28,10 @@ class City(models.Model):
 
     def __unicode__(self):
         return u'{} ({})'.format(self.name, self.zip)
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name', 'zip')
 
 
 class Client(models.Model):
@@ -56,6 +61,10 @@ class Client(models.Model):
     def __unicode__(self):
         return u'{} ({})'.format(self.name, self.mt_id)
 
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name', 'mt_id')
+
 
 class DeviceType(models.Model):
 
@@ -71,6 +80,10 @@ class DeviceType(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name',)
 
 
 class Device(models.Model):
@@ -102,6 +115,10 @@ class Device(models.Model):
     def __unicode__(self):
         return self.sn
 
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('sn',)
+
 
 class Payoff(models.Model):
 
@@ -119,6 +136,10 @@ class Payoff(models.Model):
     def __unicode__(self):
         return unicode(self.name)
 
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name',)
+
 
 class TicketType(models.Model):
 
@@ -132,6 +153,10 @@ class TicketType(models.Model):
 
     def __unicode__(self):
         return unicode(self.name)
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name',)
 
 
 class Ticket(models.Model):
@@ -151,7 +176,6 @@ class Ticket(models.Model):
     payoff = models.ForeignKey(Payoff, db_column='elszamolas',
                                null=True, blank=True,
                                verbose_name=u'Elszámolás')
-
     owner = models.ForeignKey(User, related_name='tulajdonos',
                               null=True, blank=True,
                               verbose_name=u'Tulajdonos')
@@ -170,7 +194,6 @@ class Ticket(models.Model):
         max_length=100,
         verbose_name=u'Státusz',
     )
-
     additional = models.TextField(null=True, blank=True,
                                   verbose_name=u'Egyéb')
 
@@ -182,6 +205,26 @@ class Ticket(models.Model):
         db_table = 'jegy'
         verbose_name = u'Jegy'
         verbose_name_plural = u'Jegyek'
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('ext_id', 'address')
+
+    def technology(self):
+        if not hasattr(self, '_technology'):
+            self._technology = Material.MIND
+            technology_map = {
+                'rez': Material.REZ,
+                'optika': Material.OPTIKA,
+                'koax': Material.KOAX,
+            }
+            tts = [tt.name for tt in self.ticket_types.all()]
+            full_type = unidecode(' '.join(tts)).lower()
+            for match, tech in technology_map.iteritems():
+                if match in full_type:
+                    self._technology = tech
+                    break
+        return self._technology
 
     def __unicode__(self):
         ttype = u' '.join(unicode(t) for t in self.ticket_types.all())
@@ -277,6 +320,10 @@ class MaterialCategory(models.Model):
     def __unicode__(self):
         return self.name
 
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name',)
+
 
 class Material(models.Model):
 
@@ -291,7 +338,10 @@ class Material(models.Model):
                             verbose_name=u'Név')
     category = models.ForeignKey(MaterialCategory, db_column='kategoria',
                                  verbose_name=u'Kategória')
-    price = models.IntegerField(db_column='iranyar', verbose_name=u'Irányár')
+    price = models.IntegerField(db_column='iranyar', verbose_name=u'Irányár',
+                                default=0)
+    fav = models.BooleanField(db_column='kedvenc', verbose_name=u'Kedvenc',
+                              default=False)
     unit = models.CharField(
         db_column='egyseg',
         choices=(
@@ -319,16 +369,16 @@ class Material(models.Model):
         null=True, blank=True,
         verbose_name=u'Biztosítja',
     )
-    applies_for = models.IntegerField(
-        db_column='anyag_tipus',
+    technology = models.IntegerField(
+        db_column='technologia',
         choices=(
             (MIND, u'Mind'),
             (REZ, u'Réz'),
             (OPTIKA, u'Optika'),
             (KOAX, u'Koax'),
         ),
-        null=True, blank=True,
-        verbose_name=u'Anyag típus',
+        default=0,
+        verbose_name=u'Technológia',
     )
 
     class Meta:
@@ -375,16 +425,16 @@ class WorkItem(models.Model):
     name = models.CharField(db_column='nev', max_length=300,
                             verbose_name=u'Név')
     art_number = models.CharField(db_column='tetelszam', max_length=40,
-                                  verbose_name=u'Tételszám')
+                                  verbose_name=u'Tételszám', default=0)
     remark = models.TextField(db_column='definicio',
                               null=True, blank=True,
                               verbose_name=u'Definíció')
     art_price = models.IntegerField(db_column='tetel_ar',
-                                    verbose_name=u'Tétel ár')
-    bulk_price = models.IntegerField(db_column='csop_anyag_ar',
+                                    verbose_name=u'Tétel ár', default=0)
+    bulk_price = models.IntegerField(db_column='csop_anyag_ar', default=0,
                                      verbose_name=u'Csoportos anyag ár')
     given_price = models.IntegerField(db_column='kiadott_ar',
-                                      verbose_name=u'Kiadott ár')
+                                      verbose_name=u'Kiadott ár', default=0)
 
     class Meta:
         db_table = 'munka'
@@ -452,6 +502,10 @@ class Attachment(models.Model):
         db_table = 'csatolmany'
         verbose_name = u'File'
         verbose_name_plural = u'Fileok'
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('name',)
 
     @property
     def data(self):
