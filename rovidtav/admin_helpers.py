@@ -123,4 +123,4 @@ class ModelAdminRedirect(admin.ModelAdmin):
 
 def is_site_admin(user):
     groups = [g.name for g in user.groups.all()]
-    return 'admin' in groups
+    return 'admin' in groups or user.is_superuser
