@@ -82,6 +82,7 @@ class DeviceType(models.Model):
     name = models.CharField(db_column='nev', max_length=50,
                             verbose_name=u'Típus')
     remark = models.TextField(db_column='megjegyzes',
+                              null=True, blank=True,
                               verbose_name=u'Megjegyzés')
     sn_pattern = models.CharField(db_column='vonalkod_minta', max_length=50,
                                   null=True, blank=True,
