@@ -159,7 +159,7 @@ class MaterialAdmin(admin.ModelAdmin):
 class TicketMaterialAdmin(ModelAdminRedirect):
 
     form = TicketMaterialForm
-    change_form_template = os.path.join('rovidtav', 'select2_disabled.html')
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
     def get_model_perms(self, request):
         # Hide from admin index
@@ -169,7 +169,7 @@ class TicketMaterialAdmin(ModelAdminRedirect):
 class TicketWorkItemAdmin(ModelAdminRedirect):
 
     form = TicketWorkItemForm
-    change_form_template = os.path.join('rovidtav', 'select2_disabled.html')
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
     def get_model_perms(self, request):
         # Hide from admin index
