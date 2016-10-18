@@ -115,3 +115,12 @@ class ModelAdminRedirect(admin.ModelAdmin):
         if "next" in request.GET:
             return HttpResponseRedirect(request.GET['next'])
         return None
+
+
+# ============================================================================
+# METHODS
+# ============================================================================
+
+def is_site_admin(user):
+    groups = [g.name for g in user.groups.all()]
+    return 'admin' in groups

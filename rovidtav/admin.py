@@ -10,13 +10,14 @@ from django.contrib.admin.filters import SimpleListFilter
 from daterange_filter.filter import DateRangeFilter
 
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
-                            CustomDjangoObjectActions)
+                            CustomDjangoObjectActions, is_site_admin)
 from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
                             TicketInline, HistoryInline, MaterialInline,
-                            WorkItemInline,)
+                            WorkItemInline, TicketDeviceInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType, MaterialCategory, Material,
-                     TicketMaterial, WorkItem, TicketWorkItem, Payoff)
+                     TicketMaterial, WorkItem, TicketWorkItem, Payoff,
+                     Engineer)
 
 from django.forms.models import ModelChoiceField
 
@@ -136,7 +137,7 @@ class ClientAdmin(admin.ModelAdmin):
 
     readonly_fields = ('created_by', )
     list_display = ('name', 'mt_id', 'city_name', 'address', 'created_at_fmt')
-    inlines = (TicketInline,)
+    inlines = (TicketInline, DeviceInline)
 
     def city_name(self, obj):
         return u'{} ({})'.format(obj.city.name, obj.city.zip)
@@ -243,11 +244,31 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     inlines = (AttachmentInline, MaterialInline, WorkItemInline,
                TicketEventInline, HistoryInline)
     ordering = ('created_at',)
-    readonly_fields = ('client_phone',)
+    fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
+              'client_phone', 'owner', 'status', 'created_at',
+              'payoff']
+    readonly_fields = ('client_phone', 'full_address')
+    exclude = ['additional', 'created_by']
 
     # =========================================================================
     # METHOD OVERRIDES
     # =========================================================================
+
+    def _hide_icons(self, form, fields, show_add=False, show_edit=False):
+        for field in fields:
+            form.base_fields[field].widget.can_add_related = show_add
+            form.base_fields[field].widget.can_change_related = show_edit
+
+    def get_form(self, request, obj=None, **kwargs):
+        if obj:
+            self.fields = [f for f in self.fields
+                           if f not in ('city', 'address')]
+            self.fields.insert(2, 'full_address')
+        form = super(TicketAdmin, self).get_form(request, obj, **kwargs)
+        if obj:
+            self._hide_icons(form, ('owner',))
+            self._hide_icons(form, ('payoff',), show_add=True)
+        return form
 
     def get_changelist(self, request, **kwargs):
         return SpecialOrderingChangeList
@@ -259,7 +280,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
         """
         response = super(TicketAdmin, self).changelist_view(request,
                                                             extra_context)
-        if not request.user.is_superuser:
+        if not is_site_admin(request.user):
             subst = {'payoff_link': 'payoff_name',
                      'client_link': 'client_mt_id',
                      }
@@ -275,7 +296,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
 
     def get_change_actions(self, request, object_id, form_url):
         obj = Ticket.objects.get(pk=object_id)
-        if request.user.is_superuser or \
+        if is_site_admin(request.user) or \
                 obj.status in (u'Kiadva', u'Folyamatban'):
             return ('new_attachment', 'new_material', 'new_workitem',
                     'new_comment',)
@@ -284,7 +305,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
 
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
-            if request.user.is_superuser:
+            if is_site_admin(request.user):
                 return (('created_at', DateRangeFilter),
                         'city__primer', 'owner', IsClosedFilter)
             else:
@@ -298,17 +319,17 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super(TicketAdmin, self).get_queryset(request)
         if hasattr(request, 'user'):
-            if request.user.is_superuser:
+            if is_site_admin(request.user):
                 return qs
             return qs.filter(owner=request.user)
         return qs
 
     def get_readonly_fields(self, request, obj=None):
-        fields = ('created_by', 'created_at')
+        fields = ('created_by', 'created_at', 'ext_id', 'client',
+                  'ticket_types',)
         fields += (self.readonly_fields or tuple())
-        if not request.user.is_superuser:
-            fields += ('ext_id', 'client', 'ticket_type', 'city',
-                       'address', 'owner', 'payoff')
+        if not is_site_admin(request.user):
+            fields += ('owner', 'payoff')
             if obj.status not in (u'Kiadva', u'Folyamatban'):
                 fields += ('status',)
         return fields
@@ -350,6 +371,12 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
         return obj.client.mt_id
 
     client_mt_id.short_description = u'MT ID'
+
+    def full_address(self, obj):
+        return u'{} {}, {}'.format(obj.city.zip, obj.city.name,
+                                   obj.address)
+
+    full_address.short_description = u'Cím'
 
     def client_name(self, obj):
         return obj.client.name
@@ -437,4 +464,5 @@ admin.site.register(MaterialCategory)
 admin.site.register(Material, MaterialAdmin)
 admin.site.register(TicketMaterial, TicketMaterialAdmin)
 admin.site.register(WorkItem)
+admin.site.register(Engineer)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)

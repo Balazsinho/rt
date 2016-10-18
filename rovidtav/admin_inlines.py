@@ -144,13 +144,24 @@ class TicketEventInline(ReadOnlyInline):
         return qs.filter(event='Megj')
 
 
-class DeviceInline(ReadOnlyInline):
+class DeviceInline(ShowCalcFields, ReadOnlyInline):
 
     model = Device
-    fields = ('type_name', 'sn', 'remark')
-    ordering = ('-created_at',)
+    fields = ('f_type_name', 'sn', 'remark')
 
-    def type_name(self, obj):
+    def f_type_name(self, obj):
         return obj.type.name
 
-    type_name.short_description = u'Típus'
+    f_type_name.short_description = u'Típus'
+
+
+class TicketDeviceInline(DeviceInline):
+
+    model = Device
+    fk_name = 'client__ticket'
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        """enable ordering drop-down alphabetically"""
+        #if db_field.name == 'car':
+        #    kwargs['queryset'] = Car.objects.order_by("name") 
+        return super(TicketDeviceInline, self).formfield_for_foreignkey(db_field, request, **kwargs)

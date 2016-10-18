@@ -9,6 +9,11 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class Engineer(User):
+    percent = models.IntegerField(db_column='szazalek',
+                                  verbose_name=u'Százelék')
+
+
 class City(models.Model):
 
     name = models.CharField(db_column='nev', max_length=60,
@@ -72,6 +77,9 @@ class DeviceType(models.Model):
                             verbose_name=u'Típus')
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés')
+    sn_pattern = models.CharField(db_column='vonalkod_minta', max_length=50,
+                                  null=True, blank=True,
+                                  verbose_name=u'Vonalkód minta')
 
     class Meta:
         db_table = 'eszkoz_tipus'
@@ -95,8 +103,6 @@ class Device(models.Model):
     connected_device = models.ForeignKey('Device', db_column='kapcs_eszkoz',
                                          verbose_name=u'Kapcsolódó eszköz',
                                          null=True, blank=True)
-    show = models.BooleanField(db_column='valid', default=True,
-                               verbose_name=u'Érvényes')
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés',
                               null=True, blank=True)
@@ -118,6 +124,22 @@ class Device(models.Model):
     @staticmethod
     def autocomplete_search_fields():
         return ('sn',)
+
+
+class DeviceEvent(models.Model):
+
+    device = models.ForeignKey(Device, db_column='jegy',
+                               verbose_name=u'Jegy')
+    remark = models.TextField(db_column='megjegyzes',
+                              verbose_name=u'Megjegyzés')
+
+    class Meta:
+        db_table = 'eszkoz_esemeny'
+        verbose_name = u'Eszköz esemény'
+        verbose_name_plural = u'Eszköz események'
+
+    def __unicode__(self):
+        return self.event
 
 
 class Payoff(models.Model):
@@ -209,6 +231,9 @@ class Ticket(models.Model):
     @staticmethod
     def autocomplete_search_fields():
         return ('ext_id', 'address')
+
+    def devices(self):
+        return Device.objects.get(client=self.client)
 
     def technology(self):
         if not hasattr(self, '_technology'):
