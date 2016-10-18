@@ -1372,7 +1372,7 @@ body.non-scrollable {
 }
 .select2-container--jet {
     min-width: 160px;
-    min-width: 11.42857rem
+    min-width: 21.42857rem
 }
 .select2-container--jet .hidden {
     display: none
@@ -6975,7 +6975,8 @@ body.change-list .object-tools li {
     vertical-align: 0
 }
 .form-row p {
-    padding-left: 0
+    padding-left: 0;
+    margin: 0;
 }
 @media only screen and (max-width: 480px) {
     .form-row .select2 {
