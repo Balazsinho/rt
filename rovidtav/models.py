@@ -9,9 +9,15 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
-class Engineer(User):
+class Applicant(User):
+
     percent = models.IntegerField(db_column='szazalek',
                                   verbose_name=u'Százelék')
+
+    class Meta:
+        db_table = 'alkalmazott'
+        verbose_name = u'Alkalmazott'
+        verbose_name_plural = u'Alkalmazottak'
 
 
 class City(models.Model):

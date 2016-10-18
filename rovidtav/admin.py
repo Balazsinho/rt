@@ -17,7 +17,7 @@ from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      TicketEvent, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
-                     Engineer)
+                     Applicant)
 
 from django.forms.models import ModelChoiceField
 
@@ -464,5 +464,5 @@ admin.site.register(MaterialCategory)
 admin.site.register(Material, MaterialAdmin)
 admin.site.register(TicketMaterial, TicketMaterialAdmin)
 admin.site.register(WorkItem)
-admin.site.register(Engineer)
+admin.site.register(Applicant)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)
