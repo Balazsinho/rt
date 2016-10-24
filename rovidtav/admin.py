@@ -198,7 +198,7 @@ class TicketWorkItemAdmin(ModelAdminRedirect):
     def get_form(self, request, obj=None, **kwargs):
         form = super(TicketWorkItemAdmin, self).get_form(request, obj,
                                                          **kwargs)
-        ticket = Ticket.objects.get(pk=request.GET['ticket'][0])
+        ticket = Ticket.objects.get(pk=request.GET['ticket'])
         tech = ticket.technology()
         form.base_fields['work_item'].queryset = \
             WorkItem.objects.filter(technology=tech)
