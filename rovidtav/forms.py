@@ -95,15 +95,15 @@ class DeviceForm(forms.ModelForm):
         owner = self.cleaned_data.get('owner', None)
         device = super(DeviceForm, self).save(commit=commit)
         if owner:
+            user_ct = ContentType.objects.get(app_label='auth', model='user')
             try:
                 dev_owner = DeviceOwner.objects.get(device=device)
-                ct = ContentType.objects.get(app_label='auth', model='user')
-                dev_owner.content_type = ct
+                dev_owner.content_type = user_ct
                 dev_owner.object_id = owner.pk
                 dev_owner.save()
             except DeviceOwner.DoesNotExist:
                 DeviceOwner.objects.create(
-                    device=device, content_type=owner.get_content_type_obj(),
+                    device=device, content_type=user_ct,
                     object_id=owner.pk)
         return device
 
