@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from django.forms.models import ModelChoiceField
+from django.contrib.auth.models import User
 from django import forms
 
 from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
-                     TicketWorkItem, Payoff, Device, Applicant, DeviceOwner)
+                     TicketWorkItem, Payoff, Device, DeviceOwner)
+
 
 
 class AttachmentForm(forms.ModelForm):
@@ -82,7 +84,7 @@ class NoteForm(forms.ModelForm):
 
 class DeviceForm(forms.ModelForm):
 
-    owner = ModelChoiceField(queryset=Applicant.objects.all(),
+    owner = ModelChoiceField(queryset=User.objects.all(),
                              label=u'Tulajdonos')
 
     class Meta:

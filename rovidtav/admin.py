@@ -17,7 +17,7 @@ from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
-                     Applicant, DeviceOwner)
+                     ApplicantAttributes, DeviceOwner)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
 from django.contrib.contenttypes.models import ContentType
@@ -62,10 +62,10 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
             dev_pks = [owner.device.pk for owner
                        in DeviceOwner.objects.exclude(content_type=client_ct)]
         else:
-            applicant_ct = ContentType.objects.get(
-                app_label='rovidtav', model='applicant').id
+            user_ct = ContentType.objects.get(
+                app_label='auth', model='user').id
             owned_devices = DeviceOwner.objects.filter(
-                content_type=applicant_ct, object_id=request.user.pk)
+                content_type=user_ct, object_id=request.user.pk)
             dev_pks = [o.device.pk for o in owned_devices]
         devices = Device.objects.filter(pk__in=dev_pks)
         form.base_fields['device'].queryset = devices
@@ -82,11 +82,12 @@ class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
     inlines = (NoteInline, HistoryInline)
     form = DeviceForm
 
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
     def get_form(self, request, obj=None, **kwargs):
+        self.form.initial={'owner': 3}
         form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
         self._hide_icons(form, ('type',))
-        if obj:
-            form.base_fields['owner'].initial = 7 #obj.owner.object_id
         return form
 
     # ========================================================================
@@ -247,8 +248,8 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
 
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device', 'new_workitem')
-    inlines = (AttachmentInline, MaterialInline, WorkItemInline,
-               NoteInline, TicketDeviceInline, HistoryInline)
+    inlines = (NoteInline, AttachmentInline, MaterialInline,
+               WorkItemInline, TicketDeviceInline, HistoryInline)
     ordering = ('created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
               'client_phone', 'owner', 'status', 'created_at',
@@ -267,7 +268,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
             if 'full_address' not in self.fields:
                 self.fields.insert(2, 'full_address')
         form = super(TicketAdmin, self).get_form(request, obj, **kwargs)
-        if obj:
+        if obj and is_site_admin(request.user):
             self._hide_icons(form, ('owner',))
             self._hide_icons(form, ('payoff',), show_add=True)
         return form
@@ -300,8 +301,9 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
         obj = Ticket.objects.get(pk=object_id)
         if is_site_admin(request.user) or \
                 obj.status in (u'Kiadva', u'Folyamatban'):
-            return ('new_attachment', 'new_material', 'new_workitem',
-                    'new_device', 'new_note',)
+            return ('new_note', 'new_attachment',
+                    'new_material', 'new_workitem',
+                    'new_device',)
         else:
             return ('new_note',)
 
@@ -421,33 +423,31 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
 
     def new_note(self, request, obj):
         return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
-                        '{}&next='.format(obj.get_content_type(),
-                                          obj.pk, obj.pk,
-                                          self._returnto(obj, NoteInline)))
+                        '{}&next={}'.format(obj.get_content_type(),
+                                            obj.pk,
+                                            self._returnto(obj, NoteInline)))
 
     new_note.label = u'Megjegyzés'
     new_note.css_class = 'addlink'
 
     def new_attachment(self, request, obj):
         return redirect('/admin/rovidtav/attachment/add/?ticket={}&next={}'
-                        ''.format(obj.pk, obj.pk,
+                        ''.format(obj.pk,
                                   self._returnto(obj, AttachmentInline)))
 
     new_attachment.label = u'File'
     new_attachment.css_class = 'addlink'
 
     def new_material(self, request, obj):
-        return redirect('/admin/rovidtav/ticketmaterial/add/?ticket={}&next='
-                        ''.format(obj.pk, obj.pk,
-                                  self._returnto(obj, MaterialInline)))
+        return redirect('/admin/rovidtav/ticketmaterial/add/?ticket={}&next={}'
+                        ''.format(obj.pk, self._returnto(obj, MaterialInline)))
 
     new_material.label = u'Anyag'
     new_material.css_class = 'addlink'
 
     def new_workitem(self, request, obj):
-        return redirect('/admin/rovidtav/ticketworkitem/add/?ticket={}&next='
-                        ''.format(obj.pk, obj.pk,
-                                  self._returnto(obj, WorkItemInline)))
+        return redirect('/admin/rovidtav/ticketworkitem/add/?ticket={}&next={}'
+                        ''.format(obj.pk, self._returnto(obj, WorkItemInline)))
 
     new_workitem.label = u'Munka'
     new_workitem.css_class = 'addlink'
@@ -478,7 +478,7 @@ admin.site.register(MaterialCategory)
 admin.site.register(Material, MaterialAdmin)
 admin.site.register(TicketMaterial, TicketMaterialAdmin)
 admin.site.register(WorkItem)
-admin.site.register(Applicant)
+admin.site.register(ApplicantAttributes)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)
 
 admin.site.register(Device, DeviceAdmin)

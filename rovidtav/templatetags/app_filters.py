@@ -3,7 +3,8 @@ from django.core.urlresolvers import reverse
 from django.forms import (ModelChoiceField, Select, ModelMultipleChoiceField,
                           SelectMultiple)
 from django.contrib.admin.widgets import RelatedFieldWidgetWrapper
-from jet.utils import get_model_instance_label
+from jet.utils import get_model_instance_label, get_app_list
+
 
 register = template.Library()
 
@@ -55,3 +56,34 @@ def jet_select2_lookups_balazs(field):
                 field.field.choices = choices
 
     return field
+
+
+@register.assignment_tag(takes_context=True)
+def jet_get_menu_stripped(context):
+
+    def get_native_model_url(model):
+        return model.get('admin_url', model.get('add_url'))
+
+    app_list = get_app_list(context)
+
+    current_found = False
+
+    all_aps = []
+    apps = []
+
+    for app in app_list:
+        if not current_found:
+            for model in app['models']:
+                if context['request'].path.startswith(get_native_model_url(model)):
+                    model['current'] = True
+                    current_found = True
+                    break
+
+            if not current_found and context['request'].path.startswith(app['app_url']):
+                app['current'] = True
+                current_found = True
+
+        apps.append(app)
+        all_aps.append(app)
+
+    return {'apps': apps, 'pinned_apps': [], 'all_apps': all_aps}

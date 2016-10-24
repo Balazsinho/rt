@@ -45,15 +45,19 @@ class BaseEntity(models.Model):
         return ContentType.objects.get_for_model(self).name
 
 
-class Applicant(User, BaseEntity):
+class ApplicantAttributes(BaseEntity):
 
+    user = models.OneToOneField(User)
     percent = models.IntegerField(db_column='szazalek',
                                   verbose_name=u'Százelék')
 
     class Meta:
-        db_table = 'alkalmazott'
-        verbose_name = u'Alkalmazott'
-        verbose_name_plural = u'Alkalmazottak'
+        db_table = 'alkalmazott_tul'
+        verbose_name = u'Alkalmazott tul.'
+        verbose_name_plural = u'Alkalmazott tul.'
+
+    def __unicode__(self):
+        return u'{}'.format(self.user)
 
 
 class City(BaseEntity):
@@ -370,7 +374,7 @@ class Ticket(BaseEntity):
         Creates the ticketevent object for a change
         """
         remark = u'{}: '.format(event) if event else u''
-        remark += u'{} -> {}'.format(old, new)
+        remark += u'{} >> {}'.format(old, new)
         Note.objects.create(content_object=self,
                             remark=remark, is_history=True)
 
