@@ -2,11 +2,11 @@
 
 from django.forms.models import ModelChoiceField
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
 from django import forms
 
 from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketWorkItem, Payoff, Device, DeviceOwner)
-
 
 
 class AttachmentForm(forms.ModelForm):
@@ -97,7 +97,8 @@ class DeviceForm(forms.ModelForm):
         if owner:
             try:
                 dev_owner = DeviceOwner.objects.get(device=device)
-                dev_owner.content_type = owner.get_content_type_obj()
+                ct = ContentType.objects.get(app_label='auth', model='user')
+                dev_owner.content_type = ct
                 dev_owner.object_id = owner.pk
                 dev_owner.save()
             except DeviceOwner.DoesNotExist:

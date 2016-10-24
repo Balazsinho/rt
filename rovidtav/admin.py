@@ -3,14 +3,11 @@
 import os
 
 from django.contrib import admin
-from django.shortcuts import redirect
-from django.contrib.admin.filters import SimpleListFilter
-from django.contrib.contenttypes.models import ContentType
-from django.views.decorators.cache import never_cache
-from django.contrib.auth import REDIRECT_FIELD_NAME
-from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.admin.sites import AdminSite
-from django.utils.translation import ugettext_lazy as _
+from django.contrib.admin.filters import SimpleListFilter
+from django.shortcuts import redirect
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import REDIRECT_FIELD_NAME
 
 from daterange_filter.filter import DateRangeFilter
 
@@ -96,8 +93,11 @@ class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
     def get_form(self, request, obj=None, **kwargs):
-        self.form.initial={'owner': 3}
         form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
+        if obj and not obj.owner.get_content_type_name() == u'Ügyfél':
+            form.base_fields['owner'].initial = obj.owner.object_id
+        else:
+            form.base_fields['owner'].initial = request.user.pk
         self._hide_icons(form, ('type',))
         return form
 
@@ -473,22 +473,24 @@ class CustomAdminSite(AdminSite):
         return super(CustomAdminSite, self).login(request, extra_context)
 
 
-#admin.site = CustomAdminSite()
+# admin.site = CustomAdminSite()
 
-admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)
 admin.site.register(Client, ClientAdmin)
-admin.site.register(Ticket, TicketAdmin)
-admin.site.register(Note, NoteAdmin)
 admin.site.register(TicketType)
-admin.site.register(MaterialCategory)
-admin.site.register(Material, MaterialAdmin)
-admin.site.register(TicketMaterial, TicketMaterialAdmin)
-admin.site.register(WorkItem)
+admin.site.register(Ticket, TicketAdmin)
 admin.site.register(ApplicantAttributes)
+admin.site.register(Note, NoteAdmin)
+admin.site.register(Attachment, AttachmentAdmin)
+
+admin.site.register(WorkItem)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)
 
 admin.site.register(Device, DeviceAdmin)
 admin.site.register(DeviceOwner, DeviceOwnerAdmin)
 admin.site.register(DeviceType)
+
+admin.site.register(Material, MaterialAdmin)
+admin.site.register(MaterialCategory)
+admin.site.register(TicketMaterial, TicketMaterialAdmin)
