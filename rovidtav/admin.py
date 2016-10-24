@@ -466,29 +466,14 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
 
 
 class CustomAdminSite(AdminSite):
-    @never_cache
+
     def login(self, request, extra_context=None):
-        """
-        Displays the login form for the given HttpRequest.
-        """
-        from django.contrib.auth.views import login
-        context = {
-            'title': _('Log in'),
-            'app_path': request.get_full_path(),
-            REDIRECT_FIELD_NAME: settings.ADMIN_LOGIN_REDIRECT_URL,
-        }
-        context.update(extra_context or {})
-
-        defaults = {
-            'extra_context': context,
-            'current_app': self.name,
-            'authentication_form': self.login_form or AdminAuthenticationForm,
-            'template_name': self.login_template or 'admin/login.html',
-        }
-        return login(request, **defaults)
+        extra_context = extra_context or {}
+        extra_context[REDIRECT_FIELD_NAME] = settings.ADMIN_LOGIN_REDIRECT_URL
+        return super(CustomAdminSite, self).login(request, extra_context)
 
 
-admin.site = CustomAdminSite()
+#admin.site = CustomAdminSite()
 
 admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(City, CityAdmin)
