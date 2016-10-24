@@ -8,6 +8,8 @@ from django.contrib.admin.filters import SimpleListFilter
 from django.shortcuts import redirect
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import User
 
 from daterange_filter.filter import DateRangeFilter
 
@@ -29,6 +31,9 @@ from rovidtav import settings
 # ============================================================================
 # MODELADMIN CLASSSES
 # ============================================================================
+
+class CustomUserAdmin(UserAdmin):
+    pass
 
 
 class AttachmentAdmin(ModelAdminRedirect):
@@ -107,9 +112,9 @@ class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
     device_type.short_description = u'Típus'
 
     def owner_link(self, obj):
-        if isinstance(obj.owner, Client):
+        if isinstance(obj.owner.owner, Client):
             return (u'<a href="/admin/rovidtav/client/{}/change">{}</a>'
-                    u''.format(obj.owner.pk, unicode(obj.owner)))
+                    u''.format(obj.owner.owner.pk, unicode(obj.owner)))
         else:
             return obj.owner
 
@@ -369,6 +374,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
     def client_link(self, obj):
         return ('<a href="/admin/rovidtav/client/{}/change">{}</a>'
                 ''.format(obj.client.pk, obj.client.mt_id))
+
     client_link.allow_tags = True
     client_link.short_description = u'Ügyfél'
 
@@ -473,7 +479,10 @@ class CustomAdminSite(AdminSite):
         return super(CustomAdminSite, self).login(request, extra_context)
 
 
-# admin.site = CustomAdminSite()
+admin.site = CustomAdminSite()
+
+
+admin.site.register(User, UserAdmin)
 
 admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)
