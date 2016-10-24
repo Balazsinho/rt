@@ -30,6 +30,16 @@ class Const(object):
         '.pdf': 'application/pdf',
     }
 
+    @staticmethod
+    def get_tech_choices():
+        return (
+            (Const.MIND, u'Mind'),
+            (Const.REZ, u'Réz'),
+            (Const.OPTIKA, u'Optika'),
+            (Const.KOAX, u'Koax'),
+            (Const.SAT, u'SAT'),
+        )
+
 
 class BaseEntity(models.Model):
     class Meta:
@@ -126,14 +136,8 @@ class DeviceType(BaseEntity):
                                   verbose_name=u'Vonalkód minta')
     technology = models.IntegerField(
         db_column='technologia',
-        choices=(
-            (Const.MIND, u'Mind'),
-            (Const.REZ, u'Réz'),
-            (Const.OPTIKA, u'Optika'),
-            (Const.KOAX, u'Koax'),
-            (Const.SAT, u'SAT'),
-        ),
-        default=0,
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
         verbose_name=u'Technológia',
     )
 
@@ -333,9 +337,12 @@ class Ticket(BaseEntity):
         return self._technology
 
     def __unicode__(self):
+        return unicode(u'{} - {}'.format(self.client,
+                                         self.ticket_type_short()))
+
+    def ticket_type_short(self):
         ttype = u' '.join(t.name for t in self.ticket_types.all())
-        ttype = ttype[:25] + u'...' if len(ttype) > 25 else ttype
-        return unicode(u'{} - {}'.format(self.client, ttype))
+        return ttype[:25] + u'...' if len(ttype) > 25 else ttype
 
     def save(self, *args, **kwargs):
         if self.pk:
@@ -465,14 +472,8 @@ class Material(BaseEntity):
     )
     technology = models.IntegerField(
         db_column='technologia',
-        choices=(
-            (Const.MIND, u'Mind'),
-            (Const.REZ, u'Réz'),
-            (Const.OPTIKA, u'Optika'),
-            (Const.KOAX, u'Koax'),
-            (Const.SAT, u'SAT'),
-        ),
-        default=0,
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
         verbose_name=u'Technológia',
     )
 
@@ -530,6 +531,12 @@ class WorkItem(BaseEntity):
                                      verbose_name=u'Csoportos anyag ár')
     given_price = models.IntegerField(db_column='kiadott_ar',
                                       verbose_name=u'Kiadott ár', default=0)
+    technology = models.IntegerField(
+        db_column='technologia',
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
+        verbose_name=u'Technológia',
+    )
 
     class Meta:
         db_table = 'munka'

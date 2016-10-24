@@ -10,6 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from django.contrib.auth.models import Group
 
 from daterange_filter.filter import DateRangeFilter
 
@@ -32,6 +33,7 @@ from rovidtav import settings
 # MODELADMIN CLASSSES
 # ============================================================================
 
+
 class CustomUserAdmin(UserAdmin):
     pass
 
@@ -49,6 +51,11 @@ class PayoffAdmin(admin.ModelAdmin):
 
     list_display = ('name', )
     inlines = (NoteInline, TicketInline)
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj:
+            return []
+        return super(PayoffAdmin, self).get_inline_instances(request, obj=None)
 
 
 class CityAdmin(admin.ModelAdmin):
@@ -187,6 +194,15 @@ class TicketWorkItemAdmin(ModelAdminRedirect):
 
     form = TicketWorkItemForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(TicketWorkItemAdmin, self).get_form(request, obj,
+                                                         **kwargs)
+        ticket = Ticket.objects.get(pk=request.GET['ticket'][0])
+        tech = ticket.technology()
+        form.base_fields['work_item'].queryset = \
+            WorkItem.objects.filter(technology=tech)
+        return form
 
     def get_model_perms(self, request):
         # Hide from admin index
@@ -488,7 +504,8 @@ class CustomAdminSite(AdminSite):
 admin.site = CustomAdminSite()
 
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User, CustomUserAdmin)
+admin.site.register(Group)
 
 admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)

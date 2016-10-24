@@ -93,7 +93,7 @@ class DeviceForm(forms.ModelForm):
 
     def save(self, commit=True):
         owner = self.cleaned_data.get('owner', None)
-        device = super(DeviceForm, self).save(commit=commit)
+        device = super(DeviceForm, self).save(commit=True)
         if owner:
             user_ct = ContentType.objects.get(app_label='auth', model='user')
             try:
@@ -106,6 +106,9 @@ class DeviceForm(forms.ModelForm):
                     device=device, content_type=user_ct,
                     object_id=owner.pk)
         return device
+
+    def save_m2m(self, commit=True):
+        pass
 
 
 class DeviceOwnerForm(forms.ModelForm):

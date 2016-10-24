@@ -115,13 +115,13 @@ class TicketInline(ShowCalcFields, ReadOnlyInline):
     """
 
     model = Ticket
-    fields = ('f_ticket_type_short', 'address', 'f_ticket_link', 'owner',
-              'status', 'f_created_at_fmt')
+    fields = ('f_ticket_link', 'address', 'owner', 'status',
+              'f_created_at_fmt')
     ordering = ('-created_at',)
 
     def f_ticket_link(self, obj):
-        return ('<a href="/admin/rovidtav/ticket/{}/change">{}</a>'
-                ''.format(obj.pk, obj.ext_id))
+        return (u'<a href="/admin/rovidtav/ticket/{}/change">{}</a>'
+                u''.format(obj.pk, unicode(obj)))
 
     f_ticket_link.allow_tags = True
     f_ticket_link.short_description = u'Jegy'
@@ -130,12 +130,6 @@ class TicketInline(ShowCalcFields, ReadOnlyInline):
         return obj.created_at.strftime('%Y.%m.%d')
 
     f_created_at_fmt.short_description = u'Létrehozva'
-
-    def f_ticket_type_short(self, obj):
-        ttype = unicode(obj.ticket_type)
-        return ttype[:35].strip() + u'...' if len(ttype) > 25 else ttype
-
-    f_ticket_type_short.short_description = u'Jegy típus'
 
 
 class HistoryInline(GenericReadOnlyInline):
