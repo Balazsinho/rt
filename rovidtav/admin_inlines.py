@@ -1,8 +1,29 @@
 # -*- coding: utf-8 -*-
 
-from rovidtav.admin_helpers import ReadOnlyInline, ShowCalcFields
-from rovidtav.models import (Attachment, Ticket, TicketEvent, Device,
-                             TicketMaterial, TicketWorkItem)
+from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
+
+from rovidtav.admin_helpers import (ReadOnlyInline, ShowCalcFields,
+                                    GenericReadOnlyInline)
+from rovidtav.models import (Attachment, Ticket, Note, Device,
+                             TicketMaterial, TicketWorkItem, DeviceOwner)
+
+
+class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
+    """
+    A formset for generic inline objects to a parent with indirect
+    relation.
+    """
+
+    def __init__(self, data=None, files=None, instance=None, save_as_new=None,
+                 prefix=None, queryset=None, **kwargs):
+        if instance and hasattr(instance, self.through_field):
+            instance = getattr(instance, self.through_field)
+        super(IndirectGenericInlineFormSet, self).__init__(
+            data, files, instance, save_as_new, prefix, queryset, **kwargs)
+
+
+class TicketDeviceFormset(IndirectGenericInlineFormSet):
+    through_field = 'client'
 
 
 class AttachmentInline(ShowCalcFields, ReadOnlyInline):
@@ -16,6 +37,7 @@ class AttachmentInline(ShowCalcFields, ReadOnlyInline):
                 u'Megnyitás</a>'.format(obj.pk))
 
     f_file_link.allow_tags = True
+    f_file_link.short_description = u'Link'
 
 
 class MaterialInline(ShowCalcFields, ReadOnlyInline):
@@ -116,52 +138,64 @@ class TicketInline(ShowCalcFields, ReadOnlyInline):
     f_ticket_type_short.short_description = u'Jegy típus'
 
 
-class HistoryInline(ReadOnlyInline):
+class HistoryInline(GenericReadOnlyInline):
 
     # consider jet CompactInline
     verbose_name = u'Történet'
     verbose_name_plural = u'Történet'
-    model = TicketEvent
-    fields = ('event', 'remark', 'created_by', 'created_at')
+    model = Note
+    fields = ('remark', 'created_by', 'created_at')
     ordering = ('-created_at',)
 
     def get_queryset(self, request):
         qs = super(HistoryInline, self).get_queryset(request)
-        return qs.exclude(event='Megj')
+        return qs.filter(is_history=True)
 
 
-class TicketEventInline(ReadOnlyInline):
+class NoteInline(GenericReadOnlyInline):
 
     # consider jet CompactInline
     verbose_name = u'Megjegyzés'
     verbose_name_plural = u'Megjegyzések'
-    model = TicketEvent
-    fields = ('event', 'remark', 'created_by', 'created_at')
+    model = Note
+    fields = ('remark', 'created_by', 'created_at')
     ordering = ('-created_at',)
 
     def get_queryset(self, request):
-        qs = super(TicketEventInline, self).get_queryset(request)
-        return qs.filter(event='Megj')
+        qs = super(NoteInline, self).get_queryset(request)
+        return qs.filter(is_history=False)
 
 
-class DeviceInline(ShowCalcFields, ReadOnlyInline):
+class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
 
-    model = Device
-    fields = ('f_type_name', 'sn', 'remark')
+    model = DeviceOwner
+    fields = ('f_type_name', 'f_sn')
 
     def f_type_name(self, obj):
-        return obj.type.name
+        return obj.device.type.name
 
     f_type_name.short_description = u'Típus'
 
+    def f_sn(self, obj):
+        return obj.device.sn
 
-class TicketDeviceInline(DeviceInline):
+    f_type_name.short_description = u'Vonalkód'
 
-    model = Device
-    fk_name = 'client__ticket'
 
-    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
-        """enable ordering drop-down alphabetically"""
-        #if db_field.name == 'car':
-        #    kwargs['queryset'] = Car.objects.order_by("name") 
-        return super(TicketDeviceInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
+class TicketDeviceInline(ShowCalcFields, GenericReadOnlyInline):
+
+    verbose_name = u'Eszköz'
+    verbose_name_plural = u'Eszközök'
+    model = DeviceOwner
+    formset = TicketDeviceFormset
+    fields = ('f_type_name', 'f_sn')
+
+    def f_type_name(self, obj):
+        return obj.device.type.name
+
+    f_type_name.short_description = u'Típus'
+
+    def f_sn(self, obj):
+        return obj.device.sn
+
+    f_sn.short_description = u'Vonalkód'

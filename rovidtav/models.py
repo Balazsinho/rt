@@ -6,10 +6,46 @@ import base64
 
 from unidecode import unidecode
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 
-class Applicant(User):
+class Const(object):
+
+    NO_OWNER = u'Nincs'
+
+    MIND = 0
+    REZ = 1
+    KOAX = 2
+    OPTIKA = 3
+    SAT = 4
+
+    EXT_MAP = {
+        '.htm': 'text/html',
+        '.html': 'text/html',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.pdf': 'application/pdf',
+    }
+
+
+class BaseEntity(models.Model):
+    class Meta:
+        abstract = True
+
+    def get_content_type_obj(self):
+        return ContentType.objects.get_for_model(self)
+
+    def get_content_type(self):
+        return ContentType.objects.get_for_model(self).id
+
+    def get_content_type_name(self):
+        return ContentType.objects.get_for_model(self).name
+
+
+class Applicant(User, BaseEntity):
 
     percent = models.IntegerField(db_column='szazalek',
                                   verbose_name=u'Százelék')
@@ -20,7 +56,7 @@ class Applicant(User):
         verbose_name_plural = u'Alkalmazottak'
 
 
-class City(models.Model):
+class City(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=60,
                             verbose_name=u'Név')
@@ -45,7 +81,7 @@ class City(models.Model):
         return ('name', 'zip')
 
 
-class Client(models.Model):
+class Client(BaseEntity):
 
     mt_id = models.CharField(db_column='mt_id', max_length=20)
     name = models.CharField(db_column='nev', max_length=70,
@@ -77,16 +113,25 @@ class Client(models.Model):
         return ('name', 'mt_id')
 
 
-class DeviceType(models.Model):
+class DeviceType(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=50,
                             verbose_name=u'Típus')
-    remark = models.TextField(db_column='megjegyzes',
-                              null=True, blank=True,
-                              verbose_name=u'Megjegyzés')
     sn_pattern = models.CharField(db_column='vonalkod_minta', max_length=50,
                                   null=True, blank=True,
                                   verbose_name=u'Vonalkód minta')
+    technology = models.IntegerField(
+        db_column='technologia',
+        choices=(
+            (Const.MIND, u'Mind'),
+            (Const.REZ, u'Réz'),
+            (Const.OPTIKA, u'Optika'),
+            (Const.KOAX, u'Koax'),
+            (Const.SAT, u'SAT'),
+        ),
+        default=0,
+        verbose_name=u'Technológia',
+    )
 
     class Meta:
         db_table = 'eszkoz_tipus'
@@ -101,24 +146,15 @@ class DeviceType(models.Model):
         return ('name',)
 
 
-class Device(models.Model):
+class Device(BaseEntity):
 
-    sn = models.CharField(db_column='vonalkod', max_length=30,
+    sn = models.CharField(db_column='vonalkod', max_length=50,
                           verbose_name=u'Vonalkód')
     type = models.ForeignKey(DeviceType, db_column='tipus',
                              verbose_name=u'Típus')
-    connected_device = models.ForeignKey('Device', db_column='kapcs_eszkoz',
-                                         verbose_name=u'Kapcsolódó eszköz',
-                                         null=True, blank=True)
-    remark = models.TextField(db_column='megjegyzes',
-                              verbose_name=u'Megjegyzés',
-                              null=True, blank=True)
-    client = models.ForeignKey(Client, db_column='ugyfel',
-                               null=True, blank=True,
-                               verbose_name=u'Ügyfél')
-    owner = models.ForeignKey(User, related_name='eszkoz_tulajdonos',
-                              null=True, blank=True,
-                              verbose_name=u'Tulajdonos')
+    card_sn = models.CharField(db_column='kartya', max_length=50,
+                               verbose_name=u'Kártya',
+                               null=True, blank=True)
 
     class Meta:
         db_table = 'eszkoz'
@@ -126,36 +162,64 @@ class Device(models.Model):
         verbose_name_plural = u'Eszközök'
 
     def __unicode__(self):
-        return self.sn
+        return u'{} - {}'.format(self.sn, self.type)
 
     @staticmethod
     def autocomplete_search_fields():
         return ('sn',)
 
+    @property
+    def owner(self):
+        try:
+            return DeviceOwner.objects.get(device=self)
+        except DeviceOwner.DoesNotExist:
+            return None
 
-class DeviceEvent(models.Model):
 
-    device = models.ForeignKey(Device, db_column='jegy',
-                               verbose_name=u'Jegy')
-    remark = models.TextField(db_column='megjegyzes',
-                              verbose_name=u'Megjegyzés')
+class DeviceOwner(BaseEntity):
+
+    device = models.ForeignKey(Device, db_column='eszkoz',
+                               verbose_name=u'Eszköz')
+
+    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    owner = GenericForeignKey()
 
     class Meta:
-        db_table = 'eszkoz_esemeny'
-        verbose_name = u'Eszköz esemény'
-        verbose_name_plural = u'Eszköz események'
+        db_table = 'eszkoz_tulajdon'
+        verbose_name = u'Eszköz tulajdonos'
+        verbose_name_plural = u'Eszköz tulajdonosok'
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            prev = DeviceOwner.objects.get(pk=self.pk)
+            if self.owner != prev.owner:
+                prev_owner = Const.NO_OWNER if not prev.owner else \
+                    prev.name
+                owner = Const.NO_OWNER if not self.owner else \
+                    self.name
+                remark = u'Új tulajdonos: {} >> {}'.format(prev_owner, owner)
+                Note.objects.create(
+                    content_type=self.device.get_content_type_obj(),
+                    object_id=self.device.pk,
+                    remark=remark, is_history=True)
+
+        return super(DeviceOwner, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return self.event
+        return self.name
+
+    @property
+    def name(self):
+        if hasattr(self.owner, 'username'):
+            return self.owner.username
+        return unicode(self.owner)
 
 
-class Payoff(models.Model):
+class Payoff(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=70,
                             verbose_name=u'Név')
-    remark = models.TextField(db_column='megjegyzes',
-                              null=True, blank=True,
-                              verbose_name=u'Megjegyzés')
 
     class Meta:
         db_table = 'elszamolas'
@@ -170,10 +234,13 @@ class Payoff(models.Model):
         return ('name',)
 
 
-class TicketType(models.Model):
+class TicketType(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=250,
                             verbose_name=u'Név')
+    remark = models.TextField(db_column='megjegyzes',
+                              verbose_name=u'Megjegyzés',
+                              null=True, blank=True)
 
     class Meta:
         db_table = 'jegy_tipus'
@@ -188,9 +255,7 @@ class TicketType(models.Model):
         return ('name',)
 
 
-class Ticket(models.Model):
-
-    NO_OWNER = u'Nincs'
+class Ticket(BaseEntity):
 
     ext_id = models.CharField(db_column='kulso_id', max_length=20,
                               verbose_name=u'Jegy ID')
@@ -244,11 +309,16 @@ class Ticket(models.Model):
 
     def technology(self):
         if not hasattr(self, '_technology'):
-            self._technology = Material.MIND
+            self._technology = Const.MIND
             technology_map = {
-                'rez': Material.REZ,
-                'optika': Material.OPTIKA,
-                'koax': Material.KOAX,
+                'rez': Const.REZ,
+                'adsl': Const.REZ,
+                'mdf': Const.REZ,
+                'optika': Const.OPTIKA,
+                'gpon': Const.OPTIKA,
+                'koax': Const.KOAX,
+                'sat': Const.SAT,
+                'dvbs': Const.SAT,
             }
             tts = [tt.name for tt in self.ticket_types.all()]
             full_type = unidecode(' '.join(tts)).lower()
@@ -259,7 +329,7 @@ class Ticket(models.Model):
         return self._technology
 
     def __unicode__(self):
-        ttype = u' '.join(unicode(t) for t in self.ticket_types.all())
+        ttype = u' '.join(t.name for t in self.ticket_types.all())
         ttype = ttype[:25] + u'...' if len(ttype) > 25 else ttype
         return unicode(u'{} - {}'.format(self.client, ttype))
 
@@ -284,41 +354,34 @@ class Ticket(models.Model):
         """
         Does a status transition from old to new
         """
-        self._trans(old_status, new_status, 'StatValt')
+        self._trans(u'Státusz változás', old_status, new_status)
 
     def _owner_trans(self, prev_inst):
         """
         Creates the ticketevent for an owner change and returns the owners
         """
-        prev_owner = self.NO_OWNER if not prev_inst.owner else \
+        prev_owner = Const.NO_OWNER if not prev_inst.owner else \
             prev_inst.owner.username
-        owner = self.NO_OWNER if not self.owner else self.owner.username
-        self._trans(prev_owner, owner, 'TulValt')
+        owner = Const.NO_OWNER if not self.owner else self.owner.username
+        self._trans(u'Új tulajdonos', prev_owner, owner)
 
-    def _trans(self, old, new, event):
+    def _trans(self, event, old, new):
         """
         Creates the ticketevent object for a change
         """
-        remark = u'{} -> {}'.format(old, new)
-        TicketEvent.objects.create(ticket=self, event=event,
-                                   remark=remark)
+        remark = u'{}: '.format(event) if event else u''
+        remark += u'{} -> {}'.format(old, new)
+        Note.objects.create(content_object=self,
+                            remark=remark, is_history=True)
 
 
-class TicketEvent(models.Model):
+class Note(BaseEntity):
 
-    ticket = models.ForeignKey(Ticket, db_column='jegy',
-                               verbose_name=u'Jegy')
-    event = models.CharField(
-        db_column='esemeny',
-        choices=(
-            ('Megj', u'Megjegyzés'),
-            ('TulValt', u'Tulajdonos változtatás'),
-            ('StatValt', u'Státusz változtatás'),
-            ('Doku', u'Dokumentum feltöltés'),
-        ),
-        max_length=100,
-        verbose_name=u'Típus',
-    )
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+    # Tells if the instance has been auto generated or manually added
+    is_history = models.BooleanField(default=False)
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés')
 
@@ -328,15 +391,15 @@ class TicketEvent(models.Model):
                                    verbose_name=u'Létrehozó')
 
     class Meta:
-        db_table = 'jegy_esemeny'
-        verbose_name = u'Esemény'
+        db_table = 'megjegyzes'
+        verbose_name = u'Megjegyzés'
         verbose_name_plural = u'Megjegyzések'
 
     def __unicode__(self):
-        return self.event
+        return self.remark[:25]
 
 
-class MaterialCategory(models.Model):
+class MaterialCategory(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=70,
                             verbose_name=u'Kategória név')
@@ -357,12 +420,7 @@ class MaterialCategory(models.Model):
         return ('name',)
 
 
-class Material(models.Model):
-
-    MIND = 0
-    REZ = 1
-    KOAX = 2
-    OPTIKA = 3
+class Material(BaseEntity):
 
     sn = models.CharField(db_column='cikkszam', max_length=40,
                           verbose_name=u'Cikkszám')
@@ -404,10 +462,11 @@ class Material(models.Model):
     technology = models.IntegerField(
         db_column='technologia',
         choices=(
-            (MIND, u'Mind'),
-            (REZ, u'Réz'),
-            (OPTIKA, u'Optika'),
-            (KOAX, u'Koax'),
+            (Const.MIND, u'Mind'),
+            (Const.REZ, u'Réz'),
+            (Const.OPTIKA, u'Optika'),
+            (Const.KOAX, u'Koax'),
+            (Const.SAT, u'SAT'),
         ),
         default=0,
         verbose_name=u'Technológia',
@@ -426,7 +485,7 @@ class Material(models.Model):
         return ('name', 'sn')
 
 
-class TicketMaterial(models.Model):
+class TicketMaterial(BaseEntity):
 
     ticket = models.ForeignKey(Ticket, db_column='jegy',
                                related_name='anyag_jegy',
@@ -452,7 +511,7 @@ class TicketMaterial(models.Model):
                                  unicode(self.material))
 
 
-class WorkItem(models.Model):
+class WorkItem(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=300,
                             verbose_name=u'Név')
@@ -481,7 +540,7 @@ class WorkItem(models.Model):
         return ('name', 'art_number')
 
 
-class TicketWorkItem(models.Model):
+class TicketWorkItem(BaseEntity):
 
     ticket = models.ForeignKey(Ticket, db_column='jegy',
                                verbose_name=u'Jegy')
@@ -503,16 +562,7 @@ class TicketWorkItem(models.Model):
                                  unicode(self.work_item))
 
 
-class Attachment(models.Model):
-
-    EXT_MAP = {
-        '.htm': 'text/html',
-        '.html': 'text/html',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.pdf': 'application/pdf',
-    }
+class Attachment(BaseEntity):
 
     ticket = models.ForeignKey(Ticket, db_column='jegy',
                                verbose_name=u'Jegy')
@@ -546,7 +596,7 @@ class Attachment(models.Model):
     @property
     def content_type(self):
         _, ext = os.path.splitext(self.name)
-        return self.EXT_MAP.get(ext.lower(), 'text/html')
+        return Const.EXT_MAP.get(ext.lower(), 'text/html')
 
     def __unicode__(self):
         return self.name

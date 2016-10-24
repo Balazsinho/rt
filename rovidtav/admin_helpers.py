@@ -6,6 +6,7 @@ from django.contrib import admin
 from django.http.response import HttpResponseRedirect
 from django.contrib.admin.views.main import ChangeList, ORDER_VAR
 from django_object_actions.utils import DjangoObjectActions
+from django.contrib.contenttypes.admin import GenericTabularInline
 
 
 class CustomDjangoObjectActions(DjangoObjectActions):
@@ -91,10 +92,23 @@ class ReadOnlyInline(admin.TabularInline):
         return False
 
 
+class GenericReadOnlyInline(ReadOnlyInline, GenericTabularInline):
+    pass
+
+
 class ShowCalcFields(object):
+
     def get_readonly_fields(self, request, obj=None):
         fields = [f for f in dir(self) if f.startswith('f_')]
         return super(ShowCalcFields, self).get_readonly_fields(request, obj) + fields
+
+
+class HideIcons(object):
+
+    def _hide_icons(self, form, fields, show_add=False, show_edit=False):
+        for field in fields:
+            form.base_fields[field].widget.can_add_related = show_add
+            form.base_fields[field].widget.can_change_related = show_edit
 
 
 class ModelAdminRedirect(admin.ModelAdmin):

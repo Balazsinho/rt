@@ -13,7 +13,8 @@ from rest_framework.decorators import permission_classes
 
 from rovidtav.api.field_const import Fields
 from rovidtav.models import (Client, City, Ticket, TicketType,
-                             TicketEvent, DeviceType, Device, Attachment)
+                             Note, DeviceType, Device, Attachment,
+                             DeviceOwner)
 from django.http.response import HttpResponse
 
 
@@ -86,17 +87,19 @@ def create_ticket(request):
     ticket.ticket_types.add(*ticket_types)
 
     if Fields.REMARKS in data and data[Fields.REMARKS]:
-        TicketEvent.objects.create(
-            ticket=ticket,
+        Note.objects.create(
+            content_object=ticket,
             event='Megj',
+            is_history=False,
             remark=data[Fields.REMARKS],
             created_by=request.user,
         )
 
     if Fields.COLLECTABLE_MONEY in data and data[Fields.COLLECTABLE_MONEY]:
-        TicketEvent.objects.create(
-            ticket=ticket,
+        Note.objects.create(
+            content_object=ticket,
             event='Megj',
+            is_history=False,
             remark=u'Beszedés {}'.format(data[Fields.COLLECTABLE_MONEY]),
             created_by=request.user,
         )
@@ -108,16 +111,11 @@ def create_ticket(request):
             dev = Device.objects.create(
                 sn=device[Fields.DEV_SN],
                 type=dev_type,
-                client=client,
+                card_sn=device.get(Fields.DEV_CARD_SN),
             )
-            if device.get(Fields.DEV_CARD_SN):
-                dev_type, _ = DeviceType.objects.get_or_create(
-                    name='SMART CARD')
-                Device.objects.create(
-                    sn=device[Fields.DEV_CARD_SN],
-                    type=dev_type,
-                    connected_device=dev,
-                )
+            DeviceOwner.objects.create(device=dev,
+                                       content_type=client.get_content_type(),
+                                       object_id=client.pk)
 
     if 'html' in data:
         Attachment.objects.create(

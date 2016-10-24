@@ -2,7 +2,6 @@
 
 import os
 
-from django import forms
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.contrib.admin.filters import SimpleListFilter
@@ -10,83 +9,18 @@ from django.contrib.admin.filters import SimpleListFilter
 from daterange_filter.filter import DateRangeFilter
 
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
-                            CustomDjangoObjectActions, is_site_admin)
-from .admin_inlines import (AttachmentInline, DeviceInline, TicketEventInline,
+                            CustomDjangoObjectActions, HideIcons,
+                            is_site_admin)
+from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
-                     TicketEvent, TicketType, MaterialCategory, Material,
+                     Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
-                     Applicant)
-
-from django.forms.models import ModelChoiceField
-
-
-# ============================================================================
-# FORMS
-# ============================================================================
-
-
-class AttachmentForm(forms.ModelForm):
-
-    _data = forms.CharField(label=u'File', widget=forms.FileInput())
-    name = forms.CharField(widget=forms.HiddenInput(), required=False)
-
-    class Meta:
-        fields = ('ticket', '_data', 'remark')
-        widgets = {
-          'ticket': forms.HiddenInput(),
-        }
-
-    def clean__data(self):
-        if '_data' in self.files:
-            return self.files['_data'].read()
-
-    def clean_name(self):
-        if '_data' in self.files:
-            return self.files['_data'].name
-
-
-class TicketMaterialForm(forms.ModelForm):
-    material = ModelChoiceField(
-        Material.objects.all(),
-        widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
-        label='Anyag',
-    )
-
-    def __init__(self, *args, **kwargs):
-        super(TicketMaterialForm, self).__init__(*args, **kwargs)
-        ticket_id = kwargs.get('initial', {}).get('ticket')
-        if ticket_id:
-            ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
-            suggestions = Material.objects.filter(technology=ticket.technology())
-            self.fields['material'].queryset = suggestions
-
-    class Meta:
-        model = TicketMaterial
-        widgets = {
-          'ticket': forms.HiddenInput(),
-        }
-        fields = '__all__'
-
-
-class TicketWorkItemForm(forms.ModelForm):
-    work_item = ModelChoiceField(
-        WorkItem.objects.all(),
-        widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
-        label='Munka',
-    )
-
-    def __init__(self, *args, **kwargs):
-        super(TicketWorkItemForm, self).__init__(*args, **kwargs)
-
-    class Meta:
-        model = TicketWorkItem
-        widgets = {
-          'ticket': forms.HiddenInput(),
-        }
-        fields = '__all__'
-
+                     Applicant, DeviceOwner)
+from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
+                    TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
+from django.contrib.contenttypes.models import ContentType
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -104,8 +38,8 @@ class AttachmentAdmin(ModelAdminRedirect):
 
 class PayoffAdmin(admin.ModelAdmin):
 
-    list_display = ('name', 'remark')
-    inlines = (TicketInline,)
+    list_display = ('name', )
+    inlines = (NoteInline, TicketInline)
 
 
 class CityAdmin(admin.ModelAdmin):
@@ -113,24 +47,96 @@ class CityAdmin(admin.ModelAdmin):
     list_display = ('name', 'zip', 'primer', 'onuk')
 
 
-class DeviceAdmin(admin.ModelAdmin):
+class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
+                       HideIcons):
 
-    list_display = ('sn', 'device_type', 'owner', 'client_link')
-    search_fields = ('client__name', 'client__mt_id', 'type__name',
-                     'sn')
-    list_filter = ('type__name', 'owner')
+    form = DeviceOwnerForm
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(DeviceOwnerAdmin, self).get_form(request, obj, **kwargs)
+        self._hide_icons(form, ('device',))
+        if is_site_admin(request.user):
+            client_ct = ContentType.objects.get(
+                app_label='rovidtav', model='client').id
+            dev_pks = [owner.device.pk for owner
+                       in DeviceOwner.objects.exclude(content_type=client_ct)]
+        else:
+            applicant_ct = ContentType.objects.get(
+                app_label='rovidtav', model='applicant').id
+            owned_devices = DeviceOwner.objects.filter(
+                content_type=applicant_ct, object_id=request.user.pk)
+            dev_pks = [o.device.pk for o in owned_devices]
+        devices = Device.objects.filter(pk__in=dev_pks)
+        form.base_fields['device'].queryset = devices
+        return form
+
+
+class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
+                  HideIcons):
+
+    list_display = ('sn', 'device_type', 'owner_link')
+    search_fields = ('type__name', 'sn')
+    list_filter = ('type__name',)
+    change_actions = ('new_note',)
+    inlines = (NoteInline, HistoryInline)
+    form = DeviceForm
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
+        self._hide_icons(form, ('type',))
+        if obj:
+            form.base_fields['owner'].initial = 7 #obj.owner.object_id
+        return form
+
+    # ========================================================================
+    # def formfield_for_foreignkey(self, db_field, request, **kwargs):
+    #     if db_field.name == "city":
+    #         if request.user.is_superuser:
+    #             queryset = City.objects.all()
+    #         else:
+    #             queryset = City.objects.filter(userextra__user=request.user)
+    #         return ModelChoiceField(queryset, initial=request.user)
+    #     elif db_field.name == "added_by":
+    #         if request.user.is_superuser:
+    #             queryset = User.objects.all()
+    #         else:
+    #             queryset = User.objects.filter(id=request.user.id)
+    #         return ModelChoiceField(queryset, initial=request.user)
+    #     else:
+    #         return super(CityNewsAdmin, self).formfield_for_foreignkey(db_field, 
+    #                                                           request, **kwargs)
+    # ========================================================================
 
     def device_type(self, obj):
         return obj.type.name
 
     device_type.short_description = u'Típus'
 
-    def client_link(self, obj):
-        if obj.client:
-            return ('<a href="/admin/rovidtav/client/{}/change">{}</a>'
-                    ''.format(obj.client.pk, obj.client.mt_id))
-    client_link.allow_tags = True
-    client_link.short_description = u'Ügyfél'
+    def owner_link(self, obj):
+        if isinstance(obj.owner, Client):
+            return (u'<a href="/admin/rovidtav/client/{}/change">{}</a>'
+                    u''.format(obj.owner.pk, unicode(obj.owner)))
+        else:
+            return obj.owner
+
+    owner_link.allow_tags = True
+    owner_link.short_description = u'Tulajdonos'
+
+    def new_note(self, request, obj):
+        returnto_tab = self.inlines.index(NoteInline)
+        return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
+                        '{}&next=/admin/rovidtav/device/{}/change/#/tab/'
+                        'inline_{}/'.format(obj.get_content_type(),
+                                            obj.pk, obj.pk, returnto_tab))
+
+    new_note.label = u'Megjegyzés'
+    new_note.css_class = 'addlink'
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj:
+            return []
+        return super(DeviceAdmin, self).get_inline_instances(request, obj=None)
 
 
 class ClientAdmin(admin.ModelAdmin):
@@ -177,9 +183,9 @@ class TicketWorkItemAdmin(ModelAdminRedirect):
         return {}
 
 
-class TicketEventAdmin(ModelAdminRedirect):
+class NoteAdmin(ModelAdminRedirect):
 
-    fields = ('remark', 'ticket', 'event')
+    form = NoteForm
 
     def get_model_perms(self, request):
         # Hide from admin index
@@ -187,8 +193,8 @@ class TicketEventAdmin(ModelAdminRedirect):
 
 
 class IsClosedFilter(SimpleListFilter):
-    title = u'Státusz'
 
+    title = u'Státusz'
     parameter_name = 'status'
 
     def lookups(self, request, model_admin):
@@ -223,7 +229,7 @@ class IsClosedFilter(SimpleListFilter):
             return queryset
 
 
-class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
+class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
 
     # =========================================================================
     # PARAMETERS
@@ -239,10 +245,10 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'address',)
 
-    change_actions = ('new_comment', 'new_attachment', 'new_material',
-                      'new_workitem')
+    change_actions = ('new_note', 'new_attachment', 'new_material',
+                      'new_device', 'new_workitem')
     inlines = (AttachmentInline, MaterialInline, WorkItemInline,
-               TicketEventInline, HistoryInline)
+               NoteInline, TicketDeviceInline, HistoryInline)
     ordering = ('created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
               'client_phone', 'owner', 'status', 'created_at',
@@ -254,16 +260,12 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     # METHOD OVERRIDES
     # =========================================================================
 
-    def _hide_icons(self, form, fields, show_add=False, show_edit=False):
-        for field in fields:
-            form.base_fields[field].widget.can_add_related = show_add
-            form.base_fields[field].widget.can_change_related = show_edit
-
     def get_form(self, request, obj=None, **kwargs):
         if obj:
             self.fields = [f for f in self.fields
                            if f not in ('city', 'address')]
-            self.fields.insert(2, 'full_address')
+            if 'full_address' not in self.fields:
+                self.fields.insert(2, 'full_address')
         form = super(TicketAdmin, self).get_form(request, obj, **kwargs)
         if obj:
             self._hide_icons(form, ('owner',))
@@ -299,9 +301,9 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
         if is_site_admin(request.user) or \
                 obj.status in (u'Kiadva', u'Folyamatban'):
             return ('new_attachment', 'new_material', 'new_workitem',
-                    'new_comment',)
+                    'new_device', 'new_note',)
         else:
-            return ('new_comment',)
+            return ('new_note',)
 
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
@@ -325,8 +327,11 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
         return qs
 
     def get_readonly_fields(self, request, obj=None):
-        fields = ('created_by', 'created_at', 'ext_id', 'client',
-                  'ticket_types',)
+        if obj:
+            fields = ('created_by', 'created_at', 'ext_id', 'client',
+                      'ticket_types',)
+        else:
+            fields = ()
         fields += (self.readonly_fields or tuple())
         if not is_site_admin(request.user):
             fields += ('owner', 'payoff')
@@ -414,51 +419,60 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin):
     ticket_type.short_description = u'Tipus'
     # ticket_type.admin_order_field = ('created_at')
 
-    def new_comment(self, request, obj):
-        returnto_tab = self.inlines.index(TicketEventInline)
-        return redirect('/admin/rovidtav/ticketevent/add/?event=Megj&ticket={}'
-                        '&next=/admin/rovidtav/ticket/{}/change/#/tab/'
-                        'inline_{}/'.format(obj.pk, obj.pk, returnto_tab))
+    def new_note(self, request, obj):
+        return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
+                        '{}&next='.format(obj.get_content_type(),
+                                          obj.pk, obj.pk,
+                                          self._returnto(obj, NoteInline)))
 
-    new_comment.label = u'Megjegyzés'
-    new_comment.css_class = 'addlink'
+    new_note.label = u'Megjegyzés'
+    new_note.css_class = 'addlink'
 
     def new_attachment(self, request, obj):
-        returnto_tab = self.inlines.index(AttachmentInline)
-        return redirect('/admin/rovidtav/attachment/add/?ticket={}&next='
-                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
-                        ''.format(obj.pk, obj.pk, returnto_tab))
+        return redirect('/admin/rovidtav/attachment/add/?ticket={}&next={}'
+                        ''.format(obj.pk, obj.pk,
+                                  self._returnto(obj, AttachmentInline)))
 
     new_attachment.label = u'File'
     new_attachment.css_class = 'addlink'
 
     def new_material(self, request, obj):
-        returnto_tab = self.inlines.index(MaterialInline)
         return redirect('/admin/rovidtav/ticketmaterial/add/?ticket={}&next='
-                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
-                        ''.format(obj.pk, obj.pk, returnto_tab))
+                        ''.format(obj.pk, obj.pk,
+                                  self._returnto(obj, MaterialInline)))
 
     new_material.label = u'Anyag'
     new_material.css_class = 'addlink'
 
     def new_workitem(self, request, obj):
-        returnto_tab = self.inlines.index(WorkItemInline)
         return redirect('/admin/rovidtav/ticketworkitem/add/?ticket={}&next='
-                        '/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
-                        ''.format(obj.pk, obj.pk, returnto_tab))
+                        ''.format(obj.pk, obj.pk,
+                                  self._returnto(obj, WorkItemInline)))
 
     new_workitem.label = u'Munka'
     new_workitem.css_class = 'addlink'
+
+    def new_device(self, request, obj):
+        return redirect('/admin/rovidtav/deviceowner/add/?content_type={}'
+                        '&object_id={}&next={}'
+                        ''.format(obj.client.get_content_type(), obj.client.pk,
+                                  self._returnto(obj, TicketDeviceInline)))
+
+    new_device.label = u'Eszköz'
+    new_device.css_class = 'addlink'
+
+    def _returnto(self, obj, inline):
+        returnto_tab = self.inlines.index(inline)
+        return ('/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
+                ''.format(obj.pk, returnto_tab))
 
 
 admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)
 admin.site.register(Client, ClientAdmin)
-admin.site.register(Device, DeviceAdmin)
-admin.site.register(DeviceType)
 admin.site.register(Ticket, TicketAdmin)
-admin.site.register(TicketEvent, TicketEventAdmin)
+admin.site.register(Note, NoteAdmin)
 admin.site.register(TicketType)
 admin.site.register(MaterialCategory)
 admin.site.register(Material, MaterialAdmin)
@@ -466,3 +480,7 @@ admin.site.register(TicketMaterial, TicketMaterialAdmin)
 admin.site.register(WorkItem)
 admin.site.register(Applicant)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)
+
+admin.site.register(Device, DeviceAdmin)
+admin.site.register(DeviceOwner, DeviceOwnerAdmin)
+admin.site.register(DeviceType)
