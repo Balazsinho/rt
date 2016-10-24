@@ -5,6 +5,12 @@ import os
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.contrib.admin.filters import SimpleListFilter
+from django.contrib.contenttypes.models import ContentType
+from django.views.decorators.cache import never_cache
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.admin.forms import AdminAuthenticationForm
+from django.contrib.admin.sites import AdminSite
+from django.utils.translation import ugettext_lazy as _
 
 from daterange_filter.filter import DateRangeFilter
 
@@ -20,7 +26,8 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      ApplicantAttributes, DeviceOwner)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
-from django.contrib.contenttypes.models import ContentType
+
+from rovidtav import settings
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -71,6 +78,10 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
         form.base_fields['device'].queryset = devices
         return form
 
+    def get_model_perms(self, request):
+        # Hide from admin index
+        return {}
+
 
 class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
                   HideIcons):
@@ -89,25 +100,6 @@ class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
         form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
         self._hide_icons(form, ('type',))
         return form
-
-    # ========================================================================
-    # def formfield_for_foreignkey(self, db_field, request, **kwargs):
-    #     if db_field.name == "city":
-    #         if request.user.is_superuser:
-    #             queryset = City.objects.all()
-    #         else:
-    #             queryset = City.objects.filter(userextra__user=request.user)
-    #         return ModelChoiceField(queryset, initial=request.user)
-    #     elif db_field.name == "added_by":
-    #         if request.user.is_superuser:
-    #             queryset = User.objects.all()
-    #         else:
-    #             queryset = User.objects.filter(id=request.user.id)
-    #         return ModelChoiceField(queryset, initial=request.user)
-    #     else:
-    #         return super(CityNewsAdmin, self).formfield_for_foreignkey(db_field, 
-    #                                                           request, **kwargs)
-    # ========================================================================
 
     def device_type(self, obj):
         return obj.type.name
@@ -155,6 +147,12 @@ class ClientAdmin(admin.ModelAdmin):
         return obj.created_at.strftime('%Y.%m.%d %H:%M')
 
     created_at_fmt.short_description = u'Létrehozva'
+
+    def get_model_perms(self, request):
+        if not is_site_admin(request.user):
+            return {}
+        else:
+            return super(ClientAdmin, self).get_model_perms(request)
 
 
 class MaterialAdmin(admin.ModelAdmin):
@@ -466,6 +464,31 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
         return ('/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
                 ''.format(obj.pk, returnto_tab))
 
+
+class CustomAdminSite(AdminSite):
+    @never_cache
+    def login(self, request, extra_context=None):
+        """
+        Displays the login form for the given HttpRequest.
+        """
+        from django.contrib.auth.views import login
+        context = {
+            'title': _('Log in'),
+            'app_path': request.get_full_path(),
+            REDIRECT_FIELD_NAME: settings.ADMIN_LOGIN_REDIRECT_URL,
+        }
+        context.update(extra_context or {})
+
+        defaults = {
+            'extra_context': context,
+            'current_app': self.name,
+            'authentication_form': self.login_form or AdminAuthenticationForm,
+            'template_name': self.login_template or 'admin/login.html',
+        }
+        return login(request, **defaults)
+
+
+admin.site = CustomAdminSite()
 
 admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(City, CityAdmin)
