@@ -177,6 +177,12 @@ class TicketMaterialAdmin(ModelAdminRedirect):
         return {}
 
 
+class WorkItemAdmin(admin.ModelAdmin):
+
+    list_display = ('art_number', 'name', 'art_price', 'bulk_price',
+                    'given_price')
+
+
 class TicketWorkItemAdmin(ModelAdminRedirect):
 
     form = TicketWorkItemForm
@@ -493,7 +499,7 @@ admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
 
-admin.site.register(WorkItem)
+admin.site.register(WorkItem, WorkItemAdmin)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)
 
 admin.site.register(Device, DeviceAdmin)
