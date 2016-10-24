@@ -89,7 +89,6 @@ def create_ticket(request):
     if Fields.REMARKS in data and data[Fields.REMARKS]:
         Note.objects.create(
             content_object=ticket,
-            event='Megj',
             is_history=False,
             remark=data[Fields.REMARKS],
             created_by=request.user,
@@ -98,7 +97,6 @@ def create_ticket(request):
     if Fields.COLLECTABLE_MONEY in data and data[Fields.COLLECTABLE_MONEY]:
         Note.objects.create(
             content_object=ticket,
-            event='Megj',
             is_history=False,
             remark=u'Beszedés {}'.format(data[Fields.COLLECTABLE_MONEY]),
             created_by=request.user,
@@ -114,7 +112,7 @@ def create_ticket(request):
                 card_sn=device.get(Fields.DEV_CARD_SN),
             )
             DeviceOwner.objects.create(device=dev,
-                                       content_type=client.get_content_type(),
+                                       content_type=client.get_content_type_obj(),
                                        object_id=client.pk)
 
     if 'html' in data:
