@@ -106,14 +106,18 @@ def create_ticket(request):
         for device in data[Fields.DEVICES]:
             dev_type, _ = DeviceType.objects.get_or_create(
                 name=device[Fields.DEV_TYPE])
-            dev = Device.objects.create(
-                sn=device[Fields.DEV_SN],
-                type=dev_type,
-                card_sn=device.get(Fields.DEV_CARD_SN),
-            )
-            DeviceOwner.objects.create(device=dev,
-                                       content_type=client.get_content_type_obj(),
-                                       object_id=client.pk)
+            try:
+                dev = Device.objects.get(
+                    sn=device[Fields.DEV_SN])
+            except Device.DoesNotExist:
+                dev = Device.objects.create(
+                    sn=device[Fields.DEV_SN],
+                    type=dev_type,
+                    card_sn=device.get(Fields.DEV_CARD_SN),
+                )
+                DeviceOwner.objects.create(device=dev,
+                                           content_type=client.get_content_type_obj(),
+                                           object_id=client.pk)
 
     if 'html' in data:
         Attachment.objects.create(
