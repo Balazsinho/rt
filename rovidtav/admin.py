@@ -249,7 +249,8 @@ class IsClosedFilter(SimpleListFilter):
             return queryset.filter(status__in=(u'Új', u'Kiadva',
                                                u'Folyamatban'))
         elif self.value() == 'closed':
-            return queryset.filter(status__in=(u'Lezárva',
+            return queryset.filter(status__in=(u'Lezárva - Kész',
+                                               u'Lezárva - Eredménytelen',
                                                u'Duplikált'))
         elif self.value() == 'all':
             return queryset
