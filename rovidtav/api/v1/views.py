@@ -104,12 +104,12 @@ def create_ticket(request):
 
     if Fields.DEVICES in data:
         for device in data[Fields.DEVICES]:
-            dev_type, _ = DeviceType.objects.get_or_create(
-                name=device[Fields.DEV_TYPE])
             try:
                 dev = Device.objects.get(
                     sn=device[Fields.DEV_SN])
             except Device.DoesNotExist:
+                dev_type, _ = DeviceType.objects.get_or_create(
+                    name=device[Fields.DEV_TYPE])
                 dev = Device.objects.create(
                     sn=device[Fields.DEV_SN],
                     type=dev_type,
