@@ -128,6 +128,14 @@ def create_ticket(request):
             created_by=request.user,
         )
 
+    for att_name, att_content in data['attachments'].iteritems():
+        Attachment.objects.create(
+            ticket=ticket,
+            name=att_name,
+            _data=att_content,
+            created_by=request.user,
+        )
+
     return Response(json.dumps({'ticket_id': ticket.pk}))
 
 
