@@ -324,14 +324,9 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
         return actions
 
     def get_change_actions(self, request, object_id, form_url):
-        obj = Ticket.objects.get(pk=object_id)
-        if is_site_admin(request.user) or \
-                obj.status in (u'Kiadva', u'Folyamatban'):
-            return ('new_note', 'new_attachment',
-                    'new_material', 'new_workitem',
-                    'new_device',)
-        else:
-            return ('new_note',)
+        return ('new_note', 'new_attachment',
+                'new_material', 'new_workitem',
+                'new_device',)
 
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
