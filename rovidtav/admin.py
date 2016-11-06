@@ -276,7 +276,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
                       'new_device', 'new_workitem')
     inlines = (NoteInline, AttachmentInline, MaterialInline,
                WorkItemInline, TicketDeviceInline, HistoryInline)
-    ordering = ('created_at',)
+    ordering = ('-created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
               'client_phone', 'owner', 'status', 'created_at',
               'payoff']
