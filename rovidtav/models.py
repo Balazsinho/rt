@@ -616,8 +616,8 @@ class Attachment(BaseEntity):
 
     def save(self, *args, **kwargs):
         # Check if the data is already encoded b64
-        r = re.compile(r'(?:[A-Za-z0-9+/]{4}){2,}(?:[A-Za-z0-9+/]{2}'
-                       r'[AEIMQUYcgkosw048]=|[A-Za-z0-9+/][AQgw]==)')
+        r = re.compile(r'^(?:[A-Za-z0-9+/]{4})*'
+                       r'(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$')
         if not r.match(self._data):
             self._data = base64.b64encode(self._data)
 

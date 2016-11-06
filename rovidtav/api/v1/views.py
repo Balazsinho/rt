@@ -32,7 +32,7 @@ def create_ticket(request):
                 Fields.TICKET_ID)
 
     # data = json.loads(unicode(request.read(), 'latin-1').encode('utf-8'))
-    data = json.loads(unicode(request.read(), 'iso-8859-1'))
+    data = json.loads(request.read())
 
     if not all(key in data for key in req_keys):
         missing_keys = list(set(req_keys) - set(data.keys()))
@@ -123,7 +123,7 @@ def create_ticket(request):
         Attachment.objects.create(
             ticket=ticket,
             name='Hibajegy.html',
-            _data=data['html'].encode('iso-8859-1').replace('\\"', '"'),
+            _data=data['html'].encode('utf-8'),
             remark='A matávtól érkezett eredeti hibajegy',
             created_by=request.user,
         )
