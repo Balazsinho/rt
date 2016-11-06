@@ -118,6 +118,10 @@ def create_ticket(request):
                 DeviceOwner.objects.create(device=dev,
                                            content_type=client.get_content_type_obj(),
                                            object_id=client.pk)
+            except Device.MultipleObjectsReturned:
+                # Handle error, now just leave it, probably some old
+                # inconsistency
+                pass
 
     if 'html' in data:
         Attachment.objects.create(
