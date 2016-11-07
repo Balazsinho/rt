@@ -72,17 +72,10 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceOwnerAdmin, self).get_form(request, obj, **kwargs)
         self._hide_icons(form, ('device',))
-        if is_site_admin(request.user):
-            client_ct = ContentType.objects.get(
-                app_label='rovidtav', model='client').id
-            dev_pks = [owner.device.pk for owner
-                       in DeviceOwner.objects.exclude(content_type=client_ct)]
-        else:
-            user_ct = ContentType.objects.get(
-                app_label='auth', model='user').id
-            owned_devices = DeviceOwner.objects.filter(
-                content_type=user_ct, object_id=request.user.pk)
-            dev_pks = [o.device.pk for o in owned_devices]
+        client_ct = ContentType.objects.get(
+            app_label='rovidtav', model='client').id
+        dev_pks = [owner.device.pk for owner
+                   in DeviceOwner.objects.exclude(content_type=client_ct)]
         devices = Device.objects.filter(pk__in=dev_pks)
         form.base_fields['device'].queryset = devices
         return form
