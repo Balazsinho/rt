@@ -101,6 +101,7 @@ def create_ticket(request):
             remark=u'Beszedés {}'.format(data[Fields.COLLECTABLE_MONEY]),
             created_by=request.user,
         )
+        ticket[Ticket.Keys.COLLECTABLE_MONEY] = data[Fields.COLLECTABLE_MONEY]
 
     if Fields.DEVICES in data:
         for device in data[Fields.DEVICES]:

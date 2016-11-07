@@ -258,7 +258,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
     list_per_page = 500
     list_display = ('address', 'city_name', 'client_name', 'client_link',
                     'ticket_type', 'created_at_fmt', 'owner', 'status',
-                    'primer', 'payoff_link')
+                    'primer', 'collectable','payoff_link')
     # TODO: check if this is useful
     # list_editable = ('owner', )
     exclude = ('additional',)
@@ -363,6 +363,11 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
     # =========================================================================
     # FIELDS
     # =========================================================================
+
+    def collectable(self, obj):
+        return obj[Ticket.Keys.COLLECTABLE_MONEY]
+
+    collectable.short_description = u'Beszedés'
 
     def payoff_link(self, obj):
         if obj.payoff:

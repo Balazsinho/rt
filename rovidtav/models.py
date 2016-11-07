@@ -2,6 +2,7 @@
 
 import os
 import re
+import json
 import base64
 
 from unidecode import unidecode
@@ -309,6 +310,29 @@ class Ticket(BaseEntity):
         db_table = 'jegy'
         verbose_name = u'Jegy'
         verbose_name_plural = u'Jegyek'
+
+    class Keys:
+        """
+        The keys under which additional data can be stored without extending
+        the database
+        """
+        COLLECTABLE_MONEY = u'Beszedés'
+
+    def __getitem__(self, key):
+        """
+        Get arbitrary data item. Keys are stored in Keys class.
+        Does not throw KeyError, returns None instead
+        """
+        return json.loads(self.additional or '{}').get(key)
+
+    def __setitem__(self, key, value):
+        """
+        Set arbitrary data item. Keys are stored in Keys class
+        """
+        additional = json.loads(self.additional or '{}')
+        additional[key] = value
+        self.additional = json.dumps(additional)
+        self.save()
 
     @staticmethod
     def autocomplete_search_fields():
