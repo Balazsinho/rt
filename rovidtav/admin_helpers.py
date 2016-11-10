@@ -105,10 +105,15 @@ class ShowCalcFields(object):
 
 class HideIcons(object):
 
-    def _hide_icons(self, form, fields, show_add=False, show_edit=False):
+    hide_add = True
+    hide_edit = True
+
+    def _hide_icons(self, form, fields, **kwargs):
+        hide_add = kwargs.get('hide_add', self.hide_add)
+        hide_edit = kwargs.get('hide_edit', self.hide_edit)
         for field in fields:
-            form.base_fields[field].widget.can_add_related = show_add
-            form.base_fields[field].widget.can_change_related = show_edit
+            form.base_fields[field].widget.can_add_related = not hide_add
+            form.base_fields[field].widget.can_change_related = not hide_edit
 
 
 class ModelAdminRedirect(admin.ModelAdmin):

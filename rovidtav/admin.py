@@ -67,6 +67,7 @@ class CityAdmin(admin.ModelAdmin):
 class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
                        HideIcons):
 
+    hide_add = False
     form = DeviceOwnerForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 

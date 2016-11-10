@@ -31,6 +31,7 @@ class AttachmentForm(forms.ModelForm):
 
 
 class TicketMaterialForm(forms.ModelForm):
+
     material = ModelChoiceField(
         Material.objects.all(),
         widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
@@ -55,6 +56,7 @@ class TicketMaterialForm(forms.ModelForm):
 
 
 class TicketWorkItemForm(forms.ModelForm):
+
     work_item = ModelChoiceField(
         WorkItem.objects.all(),
         widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
@@ -140,3 +142,9 @@ class DeviceOwnerForm(forms.ModelForm):
         except DeviceOwner.DoesNotExist:
             pass
         return super(DeviceOwnerForm, self).save(commit=commit)
+
+
+class DeviceToCustomerForm(forms.Form):
+
+    owner = ModelChoiceField(queryset=User.objects.all(),
+                             label=u'Tulajdonos')
