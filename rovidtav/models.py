@@ -34,7 +34,6 @@ class Const(object):
     @staticmethod
     def get_tech_choices():
         return (
-            (None, u'---'),
             (Const.MIND, u'Mind'),
             (Const.REZ, u'Réz'),
             (Const.OPTIKA, u'Optika'),

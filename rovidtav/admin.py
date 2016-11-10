@@ -185,6 +185,12 @@ class WorkItemAdmin(admin.ModelAdmin):
                     'given_price', 'technology')
 
 
+class DeviceTypeAdmin(admin.ModelAdmin):
+
+    list_display = ('name', 'technology', 'sn_pattern')
+    ordering = ('name',)
+
+
 class TicketWorkItemAdmin(ModelAdminRedirect):
 
     form = TicketWorkItemForm
@@ -257,7 +263,6 @@ class TicketAdmin(CustomDjangoObjectActions,
                     'primer', 'collectable','payoff_link')
     # TODO: check if this is useful
     # list_editable = ('owner', )
-    exclude = ('additional',)
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'address',)
 
@@ -511,7 +516,7 @@ admin.site.register(TicketWorkItem, TicketWorkItemAdmin)
 
 admin.site.register(Device, DeviceAdmin)
 admin.site.register(DeviceOwner, DeviceOwnerAdmin)
-admin.site.register(DeviceType)
+admin.site.register(DeviceType, DeviceTypeAdmin)
 
 admin.site.register(Material, MaterialAdmin)
 admin.site.register(MaterialCategory)
