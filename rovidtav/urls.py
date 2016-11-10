@@ -15,12 +15,15 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from model_report import report
 
 import api.v1.urls
 
+report.autodiscover()
 
 urlpatterns = [
     url(r'^jet/', include('jet.urls', 'jet')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/v1/', include(api.v1.urls)),
+    url(r'^reports/', include('model_report.urls')),
 ]

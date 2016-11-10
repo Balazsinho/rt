@@ -509,7 +509,7 @@ class Material(BaseEntity):
         verbose_name_plural = u'Anyagok'
 
     def __unicode__(self):
-        return self.name
+        return self.sn + u' - ' + self.name
 
     @staticmethod
     def autocomplete_search_fields():
@@ -570,7 +570,7 @@ class WorkItem(BaseEntity):
         verbose_name_plural = u'Munkatételek'
 
     def __unicode__(self):
-        return self.name
+        return self.art_number + u' - ' + self.name
 
     @staticmethod
     def autocomplete_search_fields():
@@ -583,6 +583,9 @@ class TicketWorkItem(BaseEntity):
                                verbose_name=u'Jegy')
     work_item = models.ForeignKey(WorkItem, db_column='munka',
                                   verbose_name=u'Munka')
+    amount = models.FloatField(db_column='mennyiseg',
+                               verbose_name=u'Mennyiség',
+                               default=1)
 
     created_at = models.DateTimeField(auto_now_add=True, editable=False,
                                       verbose_name=u'Létrehozva')

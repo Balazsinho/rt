@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
+from inline_actions.admin import InlineActionsMixin
 
 from rovidtav.admin_helpers import (ReadOnlyInline, ShowCalcFields,
                                     GenericReadOnlyInline)
 from rovidtav.models import (Attachment, Ticket, Note, Device,
                              TicketMaterial, TicketWorkItem, DeviceOwner)
+from django.contrib.contenttypes.admin import GenericTabularInline
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -176,13 +178,22 @@ class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
     f_type_name.short_description = u'Vonalkód'
 
 
-class TicketDeviceInline(ShowCalcFields, GenericReadOnlyInline):
+class TicketDeviceInline(#InlineActionsMixin,
+                         ShowCalcFields,
+                         GenericReadOnlyInline):
 
     verbose_name = u'Eszköz'
     verbose_name_plural = u'Eszközök'
     model = DeviceOwner
     formset = TicketDeviceFormset
-    fields = ('f_type_name', 'f_sn')
+    fields = ['f_type_name', 'f_sn']
+    actions = ['remove_device']
+
+    def get_actions(self, request, obj=None):
+        actions = super(TicketDeviceInline, self).get_actions(request, obj)
+        if obj:
+            pass
+        return actions
 
     def f_type_name(self, obj):
         return obj.device.type.name
@@ -193,3 +204,8 @@ class TicketDeviceInline(ShowCalcFields, GenericReadOnlyInline):
         return obj.device.sn
 
     f_sn.short_description = u'Vonalkód'
+
+    def remove_device(self, request, obj, inline_obj):
+        pass
+
+    remove_device.short_description = u'Leszerel'

@@ -30,6 +30,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 ADMIN_LOGIN_REDIRECT_URL = '/admin/rovidtav/ticket/'
 
+from django.contrib.admin.views import main
+main.EMPTY_CHANGELIST_VALUE = '-'
+
 # =============================================================================
 # JET SETTINGS
 # =============================================================================
@@ -52,6 +55,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'rest_framework',
     'daterange_filter',
+    'model_report',
 )
 
 MIDDLEWARE_CLASSES = (

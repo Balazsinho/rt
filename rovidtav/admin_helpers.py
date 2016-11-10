@@ -100,7 +100,7 @@ class ShowCalcFields(object):
 
     def get_readonly_fields(self, request, obj=None):
         fields = [f for f in dir(self) if f.startswith('f_')]
-        return super(ShowCalcFields, self).get_readonly_fields(request, obj) + fields
+        return list(super(ShowCalcFields, self).get_readonly_fields(request, obj)) + fields
 
 
 class HideIcons(object):

@@ -3,10 +3,11 @@
 from django.forms.models import ModelChoiceField
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django import forms
 
 from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
-                     TicketWorkItem, Payoff, Device, DeviceOwner)
+                     TicketWorkItem, Payoff, Device, DeviceOwner, Const)
 
 
 class AttachmentForm(forms.ModelForm):
@@ -41,7 +42,8 @@ class TicketMaterialForm(forms.ModelForm):
         ticket_id = kwargs.get('initial', {}).get('ticket')
         if ticket_id:
             ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
-            suggestions = Material.objects.filter(technology=ticket.technology())
+            suggestions = Material.objects.filter(
+                Q(technology=ticket.technology()) | Q(technology=Const.MIND))
             self.fields['material'].queryset = suggestions
 
     class Meta:
@@ -58,6 +60,15 @@ class TicketWorkItemForm(forms.ModelForm):
         widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
         label='Munka',
     )
+
+    def __init__(self, *args, **kwargs):
+        super(TicketWorkItemForm, self).__init__(*args, **kwargs)
+        ticket_id = kwargs.get('initial', {}).get('ticket')
+        if ticket_id:
+            ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
+            suggestions = WorkItem.objects.filter(
+                Q(technology=ticket.technology()) | Q(technology=Const.MIND))
+            self.fields['work_item'].queryset = suggestions
 
     class Meta:
         model = TicketWorkItem

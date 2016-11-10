@@ -28,6 +28,7 @@ from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
 
 from rovidtav import settings
+from inline_actions.admin import InlineActionsModelAdminMixin
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -162,7 +163,8 @@ class ClientAdmin(admin.ModelAdmin):
 
 class MaterialAdmin(admin.ModelAdmin):
 
-    list_display = ('sn', 'name', 'category', 'price', 'unit', 'comes_from')
+    list_display = ('sn', 'name', 'category', 'price', 'unit', 'comes_from',
+                    'technology')
     search_fields = ('sn', 'name', 'category__name')
     list_filter = ('category__name', )
 
@@ -180,22 +182,13 @@ class TicketMaterialAdmin(ModelAdminRedirect):
 class WorkItemAdmin(admin.ModelAdmin):
 
     list_display = ('art_number', 'name', 'art_price', 'bulk_price',
-                    'given_price')
+                    'given_price', 'technology')
 
 
 class TicketWorkItemAdmin(ModelAdminRedirect):
 
     form = TicketWorkItemForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
-
-    def get_form(self, request, obj=None, **kwargs):
-        form = super(TicketWorkItemAdmin, self).get_form(request, obj,
-                                                         **kwargs)
-        ticket = Ticket.objects.get(pk=request.GET['ticket'])
-        tech = ticket.technology()
-        form.base_fields['work_item'].queryset = \
-            WorkItem.objects.filter(technology=tech)
-        return form
 
     def get_model_perms(self, request):
         # Hide from admin index
@@ -249,7 +242,10 @@ class IsClosedFilter(SimpleListFilter):
             return queryset
 
 
-class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
+class TicketAdmin(CustomDjangoObjectActions,
+                  InlineActionsModelAdminMixin,
+                  admin.ModelAdmin,
+                  HideIcons):
 
     # =========================================================================
     # PARAMETERS
@@ -356,7 +352,7 @@ class TicketAdmin(CustomDjangoObjectActions, admin.ModelAdmin, HideIcons):
         return fields
 
     def get_inline_instances(self, request, obj=None):
-        if not obj:
+        if not obj and not request.path.strip('/').endswith('change'):
             return []
         return super(TicketAdmin, self).get_inline_instances(request, obj=None)
 
