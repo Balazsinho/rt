@@ -30,14 +30,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 ADMIN_LOGIN_REDIRECT_URL = '/admin/rovidtav/ticket/'
 
-from django.contrib.admin.views import main
-main.EMPTY_CHANGELIST_VALUE = '-'
-
 # =============================================================================
 # JET SETTINGS
 # =============================================================================
 JET_SIDE_MENU_COMPACT = True
-JET_DEFAULT_THEME = 'light-gray'
+JET_DEFAULT_THEME = 'rovidtav'
 JET_CHANGE_FORM_SIBLING_LINKS = False
 
 # Application definition
