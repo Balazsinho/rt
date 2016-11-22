@@ -10,6 +10,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
+from datetime import datetime
 
 
 class Const(object):
@@ -21,6 +22,25 @@ class Const(object):
     KOAX = 2
     OPTIKA = 3
     SAT = 4
+
+    class TicketStatus:
+        NEW = u'Új'
+        ASSIGNED = u'Kiadva'
+        IN_PROGRESS = u'Folyamatban'
+        DONE_SUCC = u'Lezárva - Kész'
+        DONE_UNSUCC = u'Lezárva - Eredménytelen'
+        DUPLICATE = u'Duplikált'
+
+        @staticmethod
+        def choices():
+            return (
+                (Const.TicketStatus.NEW,) * 2,
+                (Const.TicketStatus.ASSIGNED,) * 2,
+                (Const.TicketStatus.IN_PROGRESS,) * 2,
+                (Const.TicketStatus.DONE_SUCC,) * 2,
+                (Const.TicketStatus.DONE_UNSUCC,) * 2,
+                (Const.TicketStatus.DUPLICATE,) * 2,
+            )
 
     EXT_MAP = {
         '.htm': 'text/html',
@@ -42,7 +62,33 @@ class Const(object):
         )
 
 
+class JsonExtended(models.Model):
+
+    class Meta:
+        abstract = True
+
+    additional = models.TextField(null=True, blank=True,
+                                  verbose_name=u'Egyéb')
+
+    def __getitem__(self, key):
+        """
+        Get arbitrary data item. Keys are stored in Keys class.
+        Does not throw KeyError, returns None instead
+        """
+        return json.loads(self.additional or '{}').get(key)
+
+    def __setitem__(self, key, value):
+        """
+        Set arbitrary data item. Keys are stored in Keys class
+        """
+        additional = json.loads(self.additional or '{}')
+        additional[key] = value
+        self.additional = json.dumps(additional)
+        self.save()
+
+
 class BaseEntity(models.Model):
+
     class Meta:
         abstract = True
 
@@ -157,6 +203,15 @@ class DeviceType(BaseEntity):
 
 class Device(BaseEntity):
 
+    """
+    Device statuses:
+    1. Owner is a mechanic, returned_at empty - The device is at the given
+       employee
+    2. Owner is a client - The device is installed at the client
+    3. Owner is a mechanic, returned_at NOT empty - The device has been taken
+       back from the client for whatever reason
+    """
+
     sn = models.CharField(db_column='vonalkod', max_length=50,
                           verbose_name=u'Vonalkód')
     type = models.ForeignKey(DeviceType, db_column='tipus',
@@ -164,6 +219,9 @@ class Device(BaseEntity):
     card_sn = models.CharField(db_column='kartya', max_length=50,
                                verbose_name=u'Kártya',
                                null=True, blank=True)
+    returned_at = models.DateTimeField(verbose_name=u'Visszavéve',
+                                       null=True, blank=True,
+                                       editable=False)
 
     class Meta:
         db_table = 'eszkoz'
@@ -264,7 +322,7 @@ class TicketType(BaseEntity):
         return ('name',)
 
 
-class Ticket(BaseEntity):
+class Ticket(JsonExtended):
 
     ext_id = models.CharField(db_column='kulso_id', max_length=20,
                               verbose_name=u'Jegy ID')
@@ -286,20 +344,14 @@ class Ticket(BaseEntity):
         db_column='statusz',
         null=False,
         blank=False,
-        default=u'Új',
-        choices=(
-            (u'Új', u'Új'),
-            (u'Kiadva', u'Kiadva'),
-            (u'Folyamatban', u'Folyamatban'),
-            (u'Lezárva - Kész', u'Lezárva - Kész'),
-            (u'Lezárva - Eredménytelen', u'Lezárva - Eredménytelen'),
-            (u'Duplikált', u'Duplikált'),
-        ),
+        default=Const.TicketStatus.NEW,
+        choices=Const.TicketStatus.choices(),
         max_length=100,
         verbose_name=u'Státusz',
     )
-    additional = models.TextField(null=True, blank=True,
-                                  verbose_name=u'Egyéb')
+    closed_at = models.DateTimeField(verbose_name=u'Lezárva',
+                                     null=True, blank=True,
+                                     editable=False)
 
     created_at = models.DateTimeField(verbose_name=u'Létrehozva')
     created_by = models.ForeignKey(User, editable=False,
@@ -316,22 +368,6 @@ class Ticket(BaseEntity):
         the database
         """
         COLLECTABLE_MONEY = u'Beszedés'
-
-    def __getitem__(self, key):
-        """
-        Get arbitrary data item. Keys are stored in Keys class.
-        Does not throw KeyError, returns None instead
-        """
-        return json.loads(self.additional or '{}').get(key)
-
-    def __setitem__(self, key, value):
-        """
-        Set arbitrary data item. Keys are stored in Keys class
-        """
-        additional = json.loads(self.additional or '{}')
-        additional[key] = value
-        self.additional = json.dumps(additional)
-        self.save()
 
     @staticmethod
     def autocomplete_search_fields():
@@ -375,14 +411,20 @@ class Ticket(BaseEntity):
             if self.owner != prev_inst.owner:
                 self._owner_trans(prev_inst)
 
-                if self.status == u'Új' and self.owner:
-                    self.status = u'Kiadva'
+                if self.status == Const.TicketStatus.NEW and self.owner:
+                    self.status = Const.TicketStatus.ASSIGNED
 
-                elif self.status != u'Új' and not self.owner:
-                    self.status = u'Új'
+                elif self.status != Const.TicketStatus.NEW and not self.owner:
+                    self.status = Const.TicketStatus.NEW
 
             if self.status != prev_inst.status:
                 self._status_trans(prev_inst.status, self.status)
+
+        if self.status in (Const.TicketStatus.DONE_SUCC,
+                           Const.TicketStatus.DONE_UNSUCC,
+                           Const.TicketStatus.DUPLICATE,) \
+                and not self.closed_at:
+            self.closed_at = datetime.now()
 
         super(Ticket, self).save(*args, **kwargs)
 

@@ -16,7 +16,7 @@ from daterange_filter.filter import DateRangeFilter
 
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
-                            is_site_admin)
+                            is_site_admin, DeviceOwnerListFilter)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline)
@@ -90,10 +90,12 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
 class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
                   HideIcons):
 
-    list_display = ('sn', 'device_type', 'owner_link')
+    list_display = ('sn', 'device_type', 'owner_link', 'returned_at')
     search_fields = ('type__name', 'sn')
-    list_filter = ('type__name',)
+    list_filter = ('type__name', DeviceOwnerListFilter)
     change_actions = ('new_note',)
+    readonly_fields = ('returned_at',)
+
     inlines = (NoteInline, HistoryInline)
     form = DeviceForm
 
@@ -261,7 +263,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     list_per_page = 500
     list_display = ('address', 'city_name', 'client_name', 'client_link',
                     'ticket_type', 'created_at_fmt', 'owner', 'status',
-                    'primer', 'collectable','payoff_link')
+                    'primer', 'collectable', 'payoff_link')
     # TODO: check if this is useful
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
@@ -269,6 +271,7 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device', 'new_workitem')
+    #changelist_actions = ('summary_list',)
     inlines = (NoteInline, AttachmentInline, MaterialInline,
                WorkItemInline, TicketDeviceInline, HistoryInline)
     ordering = ('-created_at',)
@@ -442,6 +445,16 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     ticket_type.short_description = u'Tipus'
     # ticket_type.admin_order_field = ('created_at')
+
+    # =========================================================================
+    # ACTIONS
+    # =========================================================================
+
+    def summary_list(self, request, obj):
+        return redirect('/reports/osszesito')
+
+    summary_list.label = u'Összesítő lista'
+    # summary_list.css_class = 'addlink'
 
     def new_note(self, request, obj):
         return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='

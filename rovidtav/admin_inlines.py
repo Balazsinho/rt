@@ -1,13 +1,28 @@
 # -*- coding: utf-8 -*-
 
+from datetime import datetime
+
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
+
 from inline_actions.admin import InlineActionsMixin
 
 from rovidtav.admin_helpers import (ReadOnlyInline, ShowCalcFields,
                                     GenericReadOnlyInline)
-from rovidtav.models import (Attachment, Ticket, Note, Device,
+from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner)
-from django.contrib.contenttypes.admin import GenericTabularInline
+
+
+class DeviceInlineActionsMixin(InlineActionsMixin):
+
+    def render_actions(self, obj=None):
+        actions = super(DeviceInlineActionsMixin, self).render_actions(obj)
+        actions = actions.replace(
+            '<input ', '<input onclick="return confirm(\'SN: {} - '
+                       'Leszerel?\')" '.format(obj.device.sn))
+        return actions
+
+    render_actions.short_description = u'Lehetőségek'
+    render_actions.allow_tags = True
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -178,7 +193,7 @@ class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
     f_type_name.short_description = u'Vonalkód'
 
 
-class TicketDeviceInline(#InlineActionsMixin,
+class TicketDeviceInline(DeviceInlineActionsMixin,
                          ShowCalcFields,
                          GenericReadOnlyInline):
 
@@ -205,7 +220,11 @@ class TicketDeviceInline(#InlineActionsMixin,
 
     f_sn.short_description = u'Vonalkód'
 
-    def remove_device(self, request, obj, inline_obj):
-        pass
+    def remove_device(self, request, ticket, dev_owner):
+        dev_owner.owner = request.user
+        dev_owner.device.returned_at = datetime.now()
+        dev_owner.device.save()
+        dev_owner.save()
 
     remove_device.short_description = u'Leszerel'
+    remove_device.onclick = u'return confirm("Biztosan leszereled?")'

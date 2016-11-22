@@ -106,19 +106,17 @@ def create_ticket(request):
     if Fields.DEVICES in data:
         for device in data[Fields.DEVICES]:
             try:
-                dev = Device.objects.get(
-                    sn=device[Fields.DEV_SN])
+                Device.objects.get(sn=device[Fields.DEV_SN])
             except Device.DoesNotExist:
                 dev_type, _ = DeviceType.objects.get_or_create(
                     name=device[Fields.DEV_TYPE])
-                dev = Device.objects.create(
+                Device.objects.create(
                     sn=device[Fields.DEV_SN],
                     type=dev_type,
                     card_sn=device.get(Fields.DEV_CARD_SN),
+                    content_type=client.get_content_type_obj(),
+                    object_id=client.pk,
                 )
-                DeviceOwner.objects.create(device=dev,
-                                           content_type=client.get_content_type_obj(),
-                                           object_id=client.pk)
             except Device.MultipleObjectsReturned:
                 # Handle error, now just leave it, probably some old
                 # inconsistency
