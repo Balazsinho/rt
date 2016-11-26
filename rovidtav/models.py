@@ -340,7 +340,10 @@ class Ticket(JsonExtended):
                                verbose_name=u'Elszámolás')
     owner = models.ForeignKey(User, related_name='tulajdonos',
                               null=True, blank=True,
-                              verbose_name=u'Tulajdonos')
+                              verbose_name=u'Szerelő')
+    remark = models.TextField(db_column='megjegyzes',
+                              null=True, blank=True,
+                              verbose_name=u'Megjegyzés')
     status = models.CharField(
         db_column='statusz',
         null=False,
@@ -402,6 +405,12 @@ class Ticket(JsonExtended):
     def __unicode__(self):
         return unicode(u'{} - {}'.format(self.client,
                                          self.ticket_type_short()))
+
+    def remark_short(self):
+        return self.remark[:15] + u'...' \
+            if self.remark and len(self.remark) > 15 else self.remark
+
+    remark_short.short_description = u'Megjegyzés'
 
     def ticket_type_short(self):
         ttype = u' '.join(t.name for t in self.ticket_types.all())

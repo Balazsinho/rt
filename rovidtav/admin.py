@@ -284,24 +284,25 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
 
     list_per_page = 500
-    list_display = ('address', 'city_name', 'client_name', 'client_link',
-                    'ticket_type', 'created_at_fmt', 'owner', 'status',
-                    'primer', 'collectable', 'has_images', 'payoff_link')
+    list_display = ('ext_id', 'address', 'city_name', 'client_name',
+                    'client_link', 'ticket_type', 'created_at_fmt',
+                    'closed_at_fmt', 'owner', 'status', 'primer',
+                    'has_images', 'payoff_link',)
     # TODO: check if this is useful
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
-                     'city__zip', 'ext_id', 'address',)
+                     'city__zip', 'ext_id', 'address', 'remark')
 
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device', 'new_workitem')
-    #changelist_actions = ('summary_list',)
+    # changelist_actions = ('summary_list',)
     inlines = (NoteInline, AttachmentInline, MaterialInline,
                WorkItemInline, TicketDeviceInline, HistoryInline)
     ordering = ('-created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
               'client_phone', 'owner', 'status', 'created_at',
-              'payoff']
-    readonly_fields = ('client_phone', 'full_address')
+              'remark', 'payoff', 'collectable']
+    readonly_fields = ('client_phone', 'full_address', 'collectable')
     exclude = ['additional', 'created_by']
 
     # =========================================================================
@@ -378,7 +379,7 @@ class TicketAdmin(CustomDjangoObjectActions,
             fields = ()
         fields += (self.readonly_fields or tuple())
         if not is_site_admin(request.user):
-            fields += ('owner', 'payoff')
+            fields += ('owner', 'payoff', 'remark')
             if obj.status not in (u'Kiadva', u'Folyamatban'):
                 fields += ('status',)
         return fields
@@ -437,6 +438,7 @@ class TicketAdmin(CustomDjangoObjectActions,
         return obj.client.name
 
     client_name.short_description = u'Ügyfél neve'
+    client_name.admin_order_field = 'client__name'
 
     def client_phone(self, obj):
         return obj.client.phone
@@ -450,7 +452,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     primer.admin_order_field = 'city__primer'
 
     def city_name(self, obj):
-        return u'{} {}'.format(obj.city.zip, obj.city.name)
+        return u'{} {}'.format(obj.city.name, obj.city.zip)
 
     city_name.short_description = u'Település'
     city_name.admin_order_field = 'city__name'
@@ -461,6 +463,13 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     created_at_fmt.short_description = u'Létrehozva'
     created_at_fmt.admin_order_field = ('created_at')
+
+    def closed_at_fmt(self, obj):
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return obj.closed_at.strftime('%Y.%m.%d') if obj.closed_at else None
+
+    closed_at_fmt.short_description = u'Lezárva'
+    closed_at_fmt.admin_order_field = ('closed_at')
 
     def ticket_type(self, obj):
         types = ' / '.join([t.name for t in obj.ticket_types.all()])
