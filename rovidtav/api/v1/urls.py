@@ -16,11 +16,12 @@ Including another URLconf
 from django.conf.urls import url
 
 from rovidtav.api.v1.views import (create_ticket, add_ticket_attachment,
-                                   download_attachment)
+                                   download_attachment, download_thumbnail)
 
 
 urlpatterns = [
     url(r'^ticket/create', create_ticket),
     url(r'^ticket/attachment', add_ticket_attachment),
     url(r'^attachment/(?P<attachment_id>\d+)$', download_attachment),
+    url(r'^thumbnail/(?P<attachment_id>\d+)$', download_thumbnail),
 ]

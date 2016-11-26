@@ -45,16 +45,21 @@ class TicketDeviceFormset(IndirectGenericInlineFormSet):
 
 class AttachmentInline(ShowCalcFields, ReadOnlyInline):
 
-    fields = ('name', 'f_file_link', 'created_by', 'created_at')
+    fields = ('name', 'f_thumbnail', 'created_by', 'created_at')
     ordering = ('-created_at',)
     model = Attachment
 
-    def f_file_link(self, obj):
+    def f_thumbnail(self, obj):
+        if obj.is_image():
+            clickable_txt = (u'<img src="/api/v1/thumbnail/{}" />'
+                             u''.format(obj.pk))
+        else:
+            clickable_txt = u'Megnyitás'
         return (u'<a target="_blank" href="/api/v1/attachment/{}">'
-                u'Megnyitás</a>'.format(obj.pk))
+                u'{}</a>'.format(obj.pk, clickable_txt))
 
-    f_file_link.allow_tags = True
-    f_file_link.short_description = u'Link'
+    f_thumbnail.allow_tags = True
+    f_thumbnail.short_description = u'Megnyitás'
 
 
 class MaterialInline(ShowCalcFields, ReadOnlyInline):

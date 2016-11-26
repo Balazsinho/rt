@@ -20,7 +20,7 @@ class SummaryList(CustomReportAdmin):
         'closed_at',
     ]
 
-    list_filter = ('city__primer', 'owner')
+    list_filter = ('city__primer', 'owner', 'closed_at')
     list_filter_classes = {
         'city__primer': ChoiceField,
     }
@@ -28,6 +28,7 @@ class SummaryList(CustomReportAdmin):
     type = 'report'
     override_field_labels = {
         'owner': u'Tulajdonos',
+        'closed_at': u'Lezárva',
     }
 
 

@@ -47,6 +47,11 @@ class AttachmentAdmin(ModelAdminRedirect):
         # Hide from admin index
         return {}
 
+    def save_model(self, request, obj, form, change):
+        super(AttachmentAdmin, self).save_model(request, obj, form, change)
+        if obj.is_image() and not obj.name.lower().startswith('imdb'):
+            obj.ticket['has_images'] = True
+
 
 class PayoffAdmin(admin.ModelAdmin):
 
@@ -263,7 +268,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     list_per_page = 500
     list_display = ('address', 'city_name', 'client_name', 'client_link',
                     'ticket_type', 'created_at_fmt', 'owner', 'status',
-                    'primer', 'collectable', 'payoff_link')
+                    'primer', 'collectable', 'has_images', 'payoff_link')
     # TODO: check if this is useful
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
@@ -271,7 +276,7 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device', 'new_workitem')
-    #changelist_actions = ('summary_list',)
+    changelist_actions = ('summary_list',)
     inlines = (NoteInline, AttachmentInline, MaterialInline,
                WorkItemInline, TicketDeviceInline, HistoryInline)
     ordering = ('-created_at',)
@@ -445,6 +450,11 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     ticket_type.short_description = u'Tipus'
     # ticket_type.admin_order_field = ('created_at')
+
+    def has_images(self, obj):
+        return u'✓' if obj['has_images'] else ''
+
+    has_images.short_description = u'Kép'
 
     # =========================================================================
     # ACTIONS

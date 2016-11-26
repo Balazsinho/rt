@@ -6,6 +6,7 @@ import json
 import base64
 
 from unidecode import unidecode
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
@@ -678,6 +679,9 @@ class Attachment(BaseEntity):
     def content_type(self):
         _, ext = os.path.splitext(self.name)
         return Const.EXT_MAP.get(ext.lower(), 'text/html')
+
+    def is_image(self):
+        return self.content_type.startswith('image')
 
     def __unicode__(self):
         return self.name

@@ -5,7 +5,7 @@
 {% block body_class %}report {{ report.slug }}{% endblock %}
 
 
-{% block head_extra %}
+{% block extrahead %}
     {{ block.super }}
     <link href="{{ STATIC_URL }}model_report/css/datepicker.css" type="text/css" media="screen" rel="stylesheet" />
     <script src="{{ STATIC_URL }}model_report/js/jquery-1.6.2.min.js" type="text/javascript"></script>
@@ -17,7 +17,7 @@
             var chart;
             var subtitle_text_mouse = '{% trans "Click and drag in the plot area to zoom in" %}';
             var subtitle_text_touch = '{% trans "Drag your finger over the plot to zoom in" %}';
-            $(document).ready(function() {
+            jQuery(document).ready(function() {
                 chart = new Highcharts.Chart({{ chart.options|safe }});
             });
         </script>
@@ -34,7 +34,7 @@
             i = parseInt(n = Math.abs(+n || 0).toFixed(c)) + "",
             j = (j = i.length) > 3 ? j % 3 : 0;
 
-        return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t)
+        return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "jQuery1" + t)
 
         + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
 
@@ -49,30 +49,30 @@
         var result = Math.round(val*Math.pow(10,dec))/Math.pow(10,dec);
         return result;
     }
-    $(document).ready(function() {
-        $('.vDatepicker').datepicker({
+    jQuery(document).ready(function() {
+        jQuery('.vDatepicker').datepicker({
             {% include "model_report/includes/datepicker_options.html" %}
         });
-        $('.form_filter fieldset .row:last-child').addClass('last');
-        $('#anchors').change(function () {
-            var anchor = $(this).val();
+        jQuery('.form_filter fieldset .row:last-child').addClass('last');
+        jQuery('#anchors').change(function () {
+            var anchor = jQuery(this).val();
             if(!anchor) { return; }
-            var anchor_offset = $("#"+anchor).offset();
+            var anchor_offset = jQuery("#"+anchor).offset();
             var anchor_top = anchor_offset.top;
-            $('html, body').animate({scrollTop:anchor_top}, 250);
+            jQuery('html, body').animate({scrollTop:anchor_top}, 250);
         });
-        $('.result-collapsable').click(function () {
-            if ($(this).hasClass('expanded')) {
-                $(this).removeClass('expanded');
-                $(this).addClass('colapsed');
-                $(this).text('+');
-                $('.object_list_data').find('.'+$(this).attr('row')).addClass('row-hidden');
+        jQuery('.result-collapsable').click(function () {
+            if (jQuery(this).hasClass('expanded')) {
+                jQuery(this).removeClass('expanded');
+                jQuery(this).addClass('colapsed');
+                jQuery(this).text('+');
+                jQuery('.object_list_data').find('.' + jQuery(this).attr('row')).addClass('row-hidden');
             }
             else {
-                $(this).addClass('expanded');
-                $(this).removeClass('colapsed');
-                $(this).text('-');
-                $('.object_list_data').find('.'+$(this).attr('row')).removeClass('row-hidden');
+                jQuery(this).addClass('expanded');
+                jQuery(this).removeClass('colapsed');
+                jQuery(this).text('-');
+                jQuery('.object_list_data').find('.' + jQuery(this).attr('row')).removeClass('row-hidden');
             }
         })
     });

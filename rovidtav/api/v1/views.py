@@ -2,6 +2,9 @@
 
 import json
 
+from PIL import Image
+import StringIO
+
 from rest_framework.authentication import (SessionAuthentication,
                                            BasicAuthentication)
 from rest_framework.permissions import IsAuthenticated
@@ -106,17 +109,19 @@ def create_ticket(request):
     if Fields.DEVICES in data:
         for device in data[Fields.DEVICES]:
             try:
-                Device.objects.get(sn=device[Fields.DEV_SN])
+                dev = Device.objects.get(
+                    sn=device[Fields.DEV_SN])
             except Device.DoesNotExist:
                 dev_type, _ = DeviceType.objects.get_or_create(
                     name=device[Fields.DEV_TYPE])
-                Device.objects.create(
+                dev = Device.objects.create(
                     sn=device[Fields.DEV_SN],
                     type=dev_type,
                     card_sn=device.get(Fields.DEV_CARD_SN),
-                    content_type=client.get_content_type_obj(),
-                    object_id=client.pk,
                 )
+                DeviceOwner.objects.create(device=dev,
+                                           content_type=client.get_content_type_obj(),
+                                           object_id=client.pk)
             except Device.MultipleObjectsReturned:
                 # Handle error, now just leave it, probably some old
                 # inconsistency
@@ -159,5 +164,34 @@ def download_attachment(request, attachment_id):
             att.data,
             content_type=att.content_type,
         )
+    except Attachment.DoesNotExist:
+        return Response(json.dumps({'error': 'File not found'}))
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_thumbnail(request, attachment_id):
+    try:
+        att = Attachment.objects.get(pk=attachment_id)
+
+        if att.is_image():
+            temp_buff = StringIO.StringIO()
+            temp_buff.write(att.data)
+            temp_buff.seek(0)
+
+            img = Image.open(temp_buff)
+            img.thumbnail((100, 100), Image.ANTIALIAS)
+            temp_buff = StringIO.StringIO()
+            temp_buff.name = att.name
+            img.save(temp_buff)
+            temp_buff.seek(0)
+
+            return HttpResponse(
+                temp_buff.read(),
+                content_type=att.content_type,
+            )
+        else:
+            return HttpResponse('')
     except Attachment.DoesNotExist:
         return Response(json.dumps({'error': 'File not found'}))
