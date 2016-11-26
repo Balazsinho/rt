@@ -369,6 +369,7 @@ class Ticket(JsonExtended):
         the database
         """
         COLLECTABLE_MONEY = u'Beszedés'
+        HAS_IMAGES = 'has_images'
 
     @staticmethod
     def autocomplete_search_fields():

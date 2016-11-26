@@ -2,6 +2,9 @@
 
 import os
 
+from PIL import Image
+import StringIO
+
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
 from django.contrib.admin.filters import SimpleListFilter
@@ -50,7 +53,22 @@ class AttachmentAdmin(ModelAdminRedirect):
     def save_model(self, request, obj, form, change):
         super(AttachmentAdmin, self).save_model(request, obj, form, change)
         if obj.is_image() and not obj.name.lower().startswith('imdb'):
-            obj.ticket['has_images'] = True
+            obj.ticket[Ticket.Keys.HAS_IMAGES] = True
+
+            temp_buff = StringIO.StringIO()
+            temp_buff.write(obj.data)
+            temp_buff.seek(0)
+
+            img = Image.open(temp_buff)
+            pixels = settings.IMAGE_DOWNSCALE_PX
+            img.thumbnail((pixels, pixels), Image.ANTIALIAS)
+            temp_buff = StringIO.StringIO()
+            temp_buff.name = obj.name
+            img.save(temp_buff)
+            temp_buff.seek(0)
+
+            obj._data = temp_buff.read()
+            obj.save()
 
 
 class PayoffAdmin(admin.ModelAdmin):
@@ -452,7 +470,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     # ticket_type.admin_order_field = ('created_at')
 
     def has_images(self, obj):
-        return u'✓' if obj['has_images'] else ''
+        return u'✓' if obj[Ticket.Keys.HAS_IMAGES] else ''
 
     has_images.short_description = u'Kép'
 
