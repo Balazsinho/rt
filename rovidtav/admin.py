@@ -394,7 +394,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
 
     def collectable(self, obj):
-        return obj[Ticket.Keys.COLLECTABLE_MONEY]
+        return obj[Ticket.Keys.COLLECTABLE_MONEY] or '-'
 
     collectable.short_description = u'Beszedés'
 
