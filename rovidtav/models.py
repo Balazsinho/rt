@@ -63,7 +63,22 @@ class Const(object):
         )
 
 
-class JsonExtended(models.Model):
+class BaseEntity(models.Model):
+
+    class Meta:
+        abstract = True
+
+    def get_content_type_obj(self):
+        return ContentType.objects.get_for_model(self)
+
+    def get_content_type(self):
+        return ContentType.objects.get_for_model(self).id
+
+    def get_content_type_name(self):
+        return ContentType.objects.get_for_model(self).name
+
+
+class JsonExtended(BaseEntity):
 
     class Meta:
         abstract = True
@@ -86,21 +101,6 @@ class JsonExtended(models.Model):
         additional[key] = value
         self.additional = json.dumps(additional)
         self.save()
-
-
-class BaseEntity(models.Model):
-
-    class Meta:
-        abstract = True
-
-    def get_content_type_obj(self):
-        return ContentType.objects.get_for_model(self)
-
-    def get_content_type(self):
-        return ContentType.objects.get_for_model(self).id
-
-    def get_content_type_name(self):
-        return ContentType.objects.get_for_model(self).name
 
 
 class ApplicantAttributes(BaseEntity):
