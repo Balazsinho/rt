@@ -181,7 +181,7 @@ def download_thumbnail(request, attachment_id):
             temp_buff.seek(0)
 
             img = Image.open(temp_buff)
-            img.thumbnail((100, 100), Image.ANTIALIAS)
+            img.thumbnail((150, 150), Image.ANTIALIAS)
             temp_buff = StringIO.StringIO()
             temp_buff.name = att.name
             img.save(temp_buff)
