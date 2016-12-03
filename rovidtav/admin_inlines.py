@@ -1,25 +1,26 @@
 # -*- coding: utf-8 -*-
-
+import os
+import copy
 from datetime import datetime
 
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
 
 from inline_actions.admin import InlineActionsMixin
 
-from rovidtav.admin_helpers import (ReadOnlyInline, ShowCalcFields,
-                                    GenericReadOnlyInline)
+from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
+                                    GenericReadOnlyInline, ReadOnlyStackedInline)
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner)
 
 
-class DeviceInlineActionsMixin(InlineActionsMixin):
+class CustomInlineActionsMixin(InlineActionsMixin):
+
+    def _pimp_actions(self, actions, obj):
+        return actions
 
     def render_actions(self, obj=None):
-        actions = super(DeviceInlineActionsMixin, self).render_actions(obj)
-        actions = actions.replace(
-            '<input ', '<input onclick="return confirm(\'SN: {} - '
-                       'Leszerel?\')" '.format(obj.device.sn))
-        return actions
+        actions = super(CustomInlineActionsMixin, self).render_actions(obj)
+        return self._pimp_actions(actions, obj)
 
     render_actions.short_description = u'Lehetőségek'
     render_actions.allow_tags = True
@@ -43,26 +44,51 @@ class TicketDeviceFormset(IndirectGenericInlineFormSet):
     through_field = 'client'
 
 
-class AttachmentInline(ShowCalcFields, ReadOnlyInline):
+class AttachmentInline(CustomInlineActionsMixin,
+                       ShowCalcFields,
+                       ReadOnlyStackedInline):
 
-    fields = ('name', 'f_thumbnail', 'created_by', 'created_at')
+    fields = ('f_thumbnail', 'f_created')
     ordering = ('-created_at',)
     model = Attachment
+    template = os.path.join('admin', 'edit_inline', 'attachment_stacked.html')
+    actions = ['remove_attachment']
+    extra = 0
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def _pimp_actions(self, actions, obj):
+        return actions.replace(
+            '<input ', u'<input onclick="return confirm(\'Név: {} - '
+                       u'Törlés?\')" '.format(obj.name))
+
+    def f_created(self, obj):
+        created_at = obj.created_at.strftime('%Y-%m-%d %H:%M')
+        return u'{} - {}'.format(obj.created_by, created_at)
 
     def f_thumbnail(self, obj):
         if obj.is_image():
             clickable_txt = (u'<img src="/api/v1/thumbnail/{}" />'
                              u''.format(obj.pk))
         else:
-            clickable_txt = u'Megnyitás'
+            clickable_txt = obj.name
         return (u'<a target="_blank" href="/api/v1/attachment/{}">'
                 u'{}</a>'.format(obj.pk, clickable_txt))
 
     f_thumbnail.allow_tags = True
     f_thumbnail.short_description = u'Megnyitás'
 
+    def remove_attachment(self, request, ticket, attachment):
+        attachment.delete()
 
-class MaterialInline(ShowCalcFields, ReadOnlyInline):
+    remove_attachment.short_description = u'T&ouml;rl&eacute;s'
+
+
+class MaterialInline(ShowCalcFields, ReadOnlyTabularInline):
 
     """
     Material inline for the ticket page
@@ -96,7 +122,7 @@ class MaterialInline(ShowCalcFields, ReadOnlyInline):
     f_material_comes_from.short_description = u'Biztosítja'
 
 
-class WorkItemInline(ShowCalcFields, ReadOnlyInline):
+class WorkItemInline(ShowCalcFields, ReadOnlyTabularInline):
 
     """
     Workitem inline for the ticket page
@@ -130,7 +156,7 @@ class WorkItemInline(ShowCalcFields, ReadOnlyInline):
     f_workitem_given_price.short_description = u'Szerződött tétel ár'
 
 
-class TicketInline(ShowCalcFields, ReadOnlyInline):
+class TicketInline(ShowCalcFields, ReadOnlyTabularInline):
 
     """
     Ticket inline for the client page
@@ -198,7 +224,7 @@ class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
     f_type_name.short_description = u'Vonalkód'
 
 
-class TicketDeviceInline(DeviceInlineActionsMixin,
+class TicketDeviceInline(CustomInlineActionsMixin,
                          ShowCalcFields,
                          GenericReadOnlyInline):
 
@@ -214,6 +240,11 @@ class TicketDeviceInline(DeviceInlineActionsMixin,
         if obj:
             pass
         return actions
+
+    def _pimp_actions(self, actions, obj):
+        return actions.replace(
+            '<input ', '<input onclick="return confirm(\'SN: {} - '
+                       'Leszerel?\')" '.format(obj.device.sn))
 
     def f_type_name(self, obj):
         return obj.device.type.name
@@ -232,4 +263,3 @@ class TicketDeviceInline(DeviceInlineActionsMixin,
         dev_owner.save()
 
     remove_device.short_description = u'Leszerel'
-    remove_device.onclick = u'return confirm("Biztosan leszereled?")'

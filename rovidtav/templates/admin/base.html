@@ -44,7 +44,7 @@
 
     {% if not is_popup %}
     <!-- Header -->
-    <div id="header">
+    <div id="header">    
         <div id="branding">{% block branding %}{% endblock %}</div>
         {% block usertools %}
         {% if user.is_active and user.is_staff or has_permission %}
@@ -133,6 +133,15 @@
                     <span class="sidebar-header-menu-icon icon-menu"></span>
                     <span class="sidebar-header-menu-icon icon-cross"></span>
                 </a>
+                {% if user.is_superuser %}
+	                <span class="sidebar-header-menu quicklink quicklink-title">Gyorslinkek >></span>
+		            <a href="/admin/rovidtav/ticket/" class="sidebar-header-menu quicklink">
+		                <span>Jegyek</span>
+		            </a>
+		            <a href="/reports/" class="sidebar-header-menu quicklink">
+		                <span>Riportok</span>
+		            </a>
+                {% endif %}
             </div>
         </div>
         <div class="sidebar sidebar-dependent">

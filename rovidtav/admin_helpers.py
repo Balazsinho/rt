@@ -10,6 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.admin import GenericTabularInline
 
 from django_object_actions.utils import DjangoObjectActions
+from jet.admin import CompactInline
 
 from rovidtav.models import DeviceOwner
 
@@ -111,11 +112,10 @@ class SpecialOrderingChangeList(ChangeList):
         return ordering
 
 
-class ReadOnlyInline(admin.TabularInline):
+class ReadOnlyInline(object):
 
     extra = 0
     can_delete = False
-    template = os.path.join('admin', 'readOnlyInline.html')
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
@@ -133,8 +133,20 @@ class ReadOnlyInline(admin.TabularInline):
         return False
 
 
-class GenericReadOnlyInline(ReadOnlyInline, GenericTabularInline):
+class ReadOnlyTabularInline(ReadOnlyInline, admin.TabularInline):
+    template = os.path.join('admin', 'readOnlyInline.html')
+
+
+class ReadOnlyCompactInline(ReadOnlyInline, CompactInline):
     pass
+
+
+class ReadOnlyStackedInline(ReadOnlyInline, admin.StackedInline):
+    pass
+
+
+class GenericReadOnlyInline(ReadOnlyInline, GenericTabularInline):
+    template = os.path.join('admin', 'readOnlyInline.html')
 
 
 class ShowCalcFields(object):
