@@ -295,7 +295,7 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device', 'new_workitem')
-    # changelist_actions = ('summary_list',)
+    changelist_actions = ('summary_list',)
     inlines = (NoteInline, AttachmentInline, MaterialInline,
                WorkItemInline, TicketDeviceInline, HistoryInline)
     ordering = ('-created_at',)

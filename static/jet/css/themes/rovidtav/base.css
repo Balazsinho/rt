@@ -3431,17 +3431,21 @@ input[type="button"]:hover,
     border: 0;
     border-radius: 4px;
     border-radius: 0.28571rem;
+    /*
     height: 32px;
     height: 2.28571rem;
     line-height: 32px;
     line-height: 2.28571rem;
+	*/
+    height: 2rem;
+    line-height: 2rem;
     outline: 0;
-    font-size: 12px;
-    font-size: 0.85714rem;
+    font-size: 11px;
+    font-size: 0.75714rem;
     font-weight: normal;
     text-align: center;
-    padding: 0 10px;
-    padding: 0 0.71429rem;
+    padding: 0 6px;
+    padding: 0 0.51429rem;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -6576,7 +6580,8 @@ body.change-list .object-tools {
     }
 }
 body.change-list .object-tools li {
-    display: list-item
+    /*display: list-item*/
+    display: inline-block
 }
 .object-tools a.addlink:before {
     font-family: 'jet-icons';

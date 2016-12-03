@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{% trans "Riport" %}: {{ report.get_title }}{% endblock %}
 {% block body_class %}report {{ report.slug }}{% endblock %}
@@ -7,12 +7,12 @@
 
 {% block extrahead %}
     {{ block.super }}
-    <link href="{{ STATIC_URL }}model_report/css/datepicker.css" type="text/css" media="screen" rel="stylesheet" />
-    <script src="{{ STATIC_URL }}model_report/js/jquery-1.6.2.min.js" type="text/javascript"></script>
-    <script src="{{ STATIC_URL }}model_report/js/jquery-ui-1.8.16.custom.min.js" type="text/javascript"></script>
+	<link href="{% static 'model_report/css/datepicker.css' %}">
+    <script src="{% static 'model_report/js/jquery-1.6.2.min.js' %}" type="text/javascript"></script>
+    <script src="{% static 'model_report/js/jquery-ui-1.8.16.custom.min.js' %}" type="text/javascript"></script>
 
     {% if chart %}
-        <script type="text/javascript" src="{{ STATIC_URL }}model_report/js/highcharts/js/highcharts.js"></script>
+        <script type="text/javascript" src="{% static 'model_report/js/highcharts/js/highcharts.js' %}"></script>
         <script type="text/javascript">
             var chart;
             var subtitle_text_mouse = '{% trans "Click and drag in the plot area to zoom in" %}';
