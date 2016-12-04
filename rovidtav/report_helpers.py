@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from xlwt import Workbook, easyxf
-
 from django import forms
 from django.db.models import Q
+from django.db.models.query import QuerySet
 from django.db.models.fields import DateTimeField, DateField
-from django.db.models.fields.related import ForeignObjectRel
-from django.http.response import HttpResponse
-from django.forms.fields import ChoiceField
 
 from model_report.widgets import RangeField
-from model_report.report import ReportAdmin, FitSheetWrapper
-from model_report.export_pdf import render_to_pdf
+from model_report.report import ReportAdmin
+
+
+class Label(object):
+
+    def __init__(self, label):
+        self.label = label
+
+    def __call__(self, _, field):
+        return self.label
 
 
 class FilterForm(forms.BaseForm):
@@ -62,27 +66,51 @@ class FilterForm(forms.BaseForm):
         return getattr(self, 'cleaned_data', {})
 
 
+class CustomQuerySet(QuerySet):
+
+    extra_col_map = {}
+    extra_cols = []
+
+    def values_list(self, *fields, **kwargs):
+        fields = list(fields)
+        fields.insert(0, 'pk')
+        fields = [f for f in fields if f not in [c[1] for c in self.extra_cols]]
+        clone = super(CustomQuerySet, self).values_list(*fields, **kwargs)
+        values_list = list(clone)
+        final_list = []
+        for row in values_list:
+            row = list(row)
+            pk = row.pop(0)
+            extra_values = self.extra_col_map.get(pk, {})
+            for col_idx, col in self.extra_cols:
+                val = extra_values.get(col)
+                row.insert(col_idx, val)
+            final_list.append(row)
+        return final_list
+
+    def _clone(self, **kwargs):
+        clone = super(CustomQuerySet, self)._clone(**kwargs)
+        clone.extra_col_map = self.extra_col_map
+        clone.extra_cols = self.extra_cols
+        return clone
+
+
 class CustomReportAdmin(ReportAdmin):
 
-    # Classes for the list filters if not using the original one
-    list_filter_classes = {}
+    extra_columns_first_col = 0
 
-    # To filter on attributes, not just fields
-    attr_filters = {}
+    def _calc_extra_from_qs(self, qs):
+        pass
 
-    def _choicefield(self, model_field_name, base_model):
-        choices = set([getattr(o, model_field_name)
-                       for o in base_model.objects.all()
-                       if getattr(o, model_field_name)])
-        choices = sorted([(c, c) for c in choices])
-        choices.insert(0, ('', '-------'))
-        return ChoiceField(choices, required=False)
-
-    def _datefield(self, model_field_name, base_model):
-        return DateField
-
-    def _is_relation(self, field):
-        return isinstance(field, ForeignObjectRel)
+    def _calculate_extra_columns(self, request, by_row):
+        context_request = request or self.request
+        filter_related_fields = {}
+        if self.parent_report and by_row:
+            for _, cfield, index in self.related_inline_filters:
+                filter_related_fields[cfield] = by_row[index].value
+        form_filter = self.get_form_filter(context_request)
+        qs = self.get_query_set(filter_related_fields or form_filter.get_filter_kwargs())
+        self._calc_extra_from_qs(qs)
 
     def get_form_filter(self, request):
         if not self.list_filter:
@@ -126,19 +154,22 @@ class CustomReportAdmin(ReportAdmin):
 
         return form
 
-    def _insert_extra_columns(self, column_names, qs):
-        pass
-
     def get_column_names(self, ignore_columns={}):
-        """
-        Return the list of columns
-        """
+        names = super(CustomReportAdmin, self).get_column_names(ignore_columns)
+        for extra_idx, extra_name in self.calculated_columns:
+            names.insert(extra_idx, extra_name)
+        return names
+
+    def get_query_field_names(self):
         values = []
-        for field, field_name in self.model_fields:
-            if field_name in ignore_columns:
-                continue
-            caption = self.override_field_labels.get(field_name, field.verbose_name)
-            values.append(caption)
+        for field in self.get_fields():
+            if 'self.' not in field:
+                values.append(field.split(".")[0])
+            else:
+                values.append(field)
+        if hasattr(self, 'calculated_columns'):
+            for col_idx, col in self.calculated_columns:
+                values.insert(col_idx, col)
         return values
 
     def get_query_set(self, filter_kwargs):
@@ -154,145 +185,14 @@ class CustomReportAdmin(ReportAdmin):
                 elif isinstance(q_value, list):
                     q_key = '%s__range' % q_key
                 qs = qs.filter(Q(**{q_key: q_value}))
+        self._calc_extra_from_qs(qs)
+        qs.__class__ = CustomQuerySet
+        qs.extra_col_map = self.extra_col_map
+        qs.extra_cols = self.calculated_columns
         query_set = qs.distinct()
         return query_set
 
     def get_render_context(self, request, extra_context={}, by_row=None):
-        context_request = request or self.request
-        related_fields = []
-        filter_related_fields = {}
-        if self.parent_report and by_row:
-            for mfield, cfield, index in self.related_inline_filters:
-                filter_related_fields[cfield] = by_row[index].value
-
-        try:
-            form_groupby = self.get_form_groupby(context_request)
-            form_filter = self.get_form_filter(context_request)
-            form_config = self.get_form_config(context_request)
-
-            qs = self.get_query_set(filter_related_fields or form_filter.get_filter_kwargs())
-
-            column_labels = self.get_column_names(qs, filter_related_fields)
-            report_rows = []
-            groupby_data = None
-            filter_kwargs = None
-            report_anchors = []
-            chart = None
-
-            context = {
-                'report': self,
-                'form_groupby': form_groupby,
-                'form_filter': form_filter,
-                'form_config': form_config if self.type == 'chart' else None,
-                'chart': chart,
-                'report_anchors': report_anchors,
-                'column_labels': column_labels,
-                'report_rows': report_rows,
-            }
-
-            if context_request.GET:
-                groupby_data = form_groupby.get_cleaned_data() if form_groupby else None
-                filter_kwargs = filter_related_fields or form_filter.get_filter_kwargs()
-                if groupby_data:
-                    self.__dict__.update(groupby_data)
-                else:
-                    self.__dict__['onlytotals'] = False
-                report_rows = self.get_rows(context_request, groupby_data, filter_kwargs, filter_related_fields)
-
-                for g, r in report_rows:
-                    report_anchors.append(g)
-
-                if len(report_anchors) <= 1:
-                    report_anchors = []
-
-                if self.type == 'chart' and groupby_data and groupby_data['groupby']:
-                    config = form_config.get_config_data()
-                    if config:
-                        chart = self.get_chart(config, report_rows)
-
-                if self.onlytotals:
-                    for g, rows in report_rows:
-                        for r in list(rows):
-                            if r.is_value():
-                                rows.remove(r)
-
-                if not context_request.GET.get('export', None) is None and not self.parent_report:
-                    if context_request.GET.get('export') == 'excel':
-                        book = Workbook(encoding='utf-8')
-                        sheet1 = FitSheetWrapper(book.add_sheet(self.get_title()[:20]))
-                        stylebold = easyxf('font: bold true; alignment:')
-                        stylevalue = easyxf('alignment: horizontal left, vertical top;')
-                        row_index = 0
-                        for index, x in enumerate(column_labels):
-                            sheet1.write(row_index, index, u'%s' % x, stylebold)
-                        row_index += 1
-
-                        for g, rows in report_rows:
-                            if g:
-                                sheet1.write(row_index, 0, u'%s' % x, stylebold)
-                                row_index += 1
-                            for row in list(rows):
-                                if row.is_value():
-                                    for index, x in enumerate(row):
-                                        if isinstance(x.value, (list, tuple)):
-                                            xvalue = ''.join(['%s\n' % v for v in x.value])
-                                        else:
-                                            xvalue = x.text()
-                                        sheet1.write(row_index, index, xvalue, stylevalue)
-                                    row_index += 1
-                                elif row.is_caption:
-                                    for index, x in enumerate(row):
-                                        if not isinstance(x, (unicode, str)):
-                                            sheet1.write(row_index, index, x.text(), stylebold)
-                                        else:
-                                            sheet1.write(row_index, index, x, stylebold)
-                                    row_index += 1
-                                elif row.is_total:
-                                    for index, x in enumerate(row):
-                                        sheet1.write(row_index, index, x.text(), stylebold)
-                                        sheet1.write(row_index + 1, index, ' ')
-                                    row_index += 2
-
-                        response = HttpResponse(content_type="application/ms-excel")
-                        response['Content-Disposition'] = 'attachment; filename=%s.xls' % self.slug
-                        book.save(response)
-                        return response
-                    if context_request.GET.get('export') == 'pdf':
-                        inlines = [ir(self, context_request) for ir in self.inlines]
-                        report_anchors = None
-                        setattr(self, 'is_export', True)
-                        context = {
-                            'report': self,
-                            'column_labels': column_labels,
-                            'report_rows': report_rows,
-                            'report_inlines': inlines,
-                        }
-                        context.update({'pagesize': 'legal landscape'})
-                        return render_to_pdf(self, 'model_report/export_pdf.html', context)
-
-            inlines = [ir(self, context_request) for ir in self.inlines]
-
-            is_inline = self.parent_report is None
-            render_report = not (len(report_rows) == 0 and is_inline)
-            context = {
-                'render_report': render_report,
-                'is_inline': is_inline,
-                'inline_column_span': 0 if is_inline else len(self.parent_report.get_column_names(qs)),
-                'report': self,
-                'form_groupby': form_groupby,
-                'form_filter': form_filter,
-                'form_config': form_config if self.type == 'chart' else None,
-                'chart': chart,
-                'report_anchors': report_anchors,
-                'column_labels': column_labels,
-                'report_rows': report_rows,
-                'report_inlines': inlines,
-            }
-
-            if extra_context:
-                context.update(extra_context)
-
-            context['request'] = request
-            return context
-        finally:
-            globals()['_cache_class'] = {}
+        self._calculate_extra_columns(request, by_row)
+        return super(CustomReportAdmin, self).get_render_context(
+            request, extra_context, by_row)

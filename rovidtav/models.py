@@ -632,6 +632,7 @@ class WorkItem(BaseEntity):
 class TicketWorkItem(BaseEntity):
 
     ticket = models.ForeignKey(Ticket, db_column='jegy',
+                               related_name='munka_jegy',
                                verbose_name=u'Jegy')
     work_item = models.ForeignKey(WorkItem, db_column='munka',
                                   verbose_name=u'Munka')
