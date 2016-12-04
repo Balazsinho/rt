@@ -11,6 +11,7 @@ from django.contrib.contenttypes.admin import GenericTabularInline
 
 from django_object_actions.utils import DjangoObjectActions
 from jet.admin import CompactInline
+from inline_actions.admin import InlineActionsMixin
 
 from rovidtav.models import DeviceOwner
 
@@ -152,8 +153,32 @@ class GenericReadOnlyInline(ReadOnlyInline, GenericTabularInline):
 class ShowCalcFields(object):
 
     def get_readonly_fields(self, request, obj=None):
-        fields = [f for f in dir(self) if f.startswith('f_')]
-        return list(super(ShowCalcFields, self).get_readonly_fields(request, obj)) + fields
+        calc_fields = [f for f in dir(self) if f.startswith('f_')]
+        orig = super(ShowCalcFields, self).get_readonly_fields(request, obj)
+        return list(orig) + calc_fields
+
+
+class CustomInlineActionsMixin(InlineActionsMixin):
+
+    def _pimp_actions(self, actions, obj):
+        return actions
+
+    def render_actions(self, obj=None):
+        actions = super(CustomInlineActionsMixin, self).render_actions(obj)
+        return self._pimp_actions(actions, obj)
+
+    render_actions.short_description = u'Lehetőségek'
+    render_actions.allow_tags = True
+
+
+class RemoveInlineAction(CustomInlineActionsMixin):
+
+    actions = ['remove']
+
+    def remove(self, request, ticket, obj):
+        obj.delete()
+
+    remove.short_description = u'T&ouml;rl&eacute;s'
 
 
 class HideIcons(object):

@@ -5,25 +5,12 @@ from datetime import datetime
 
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
 
-from inline_actions.admin import InlineActionsMixin
-
 from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
-                                    GenericReadOnlyInline, ReadOnlyStackedInline)
+                                    GenericReadOnlyInline, RemoveInlineAction,
+                                    ReadOnlyStackedInline,
+                                    CustomInlineActionsMixin,)
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner)
-
-
-class CustomInlineActionsMixin(InlineActionsMixin):
-
-    def _pimp_actions(self, actions, obj):
-        return actions
-
-    def render_actions(self, obj=None):
-        actions = super(CustomInlineActionsMixin, self).render_actions(obj)
-        return self._pimp_actions(actions, obj)
-
-    render_actions.short_description = u'Lehetőségek'
-    render_actions.allow_tags = True
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -44,7 +31,7 @@ class TicketDeviceFormset(IndirectGenericInlineFormSet):
     through_field = 'client'
 
 
-class AttachmentInline(CustomInlineActionsMixin,
+class AttachmentInline(RemoveInlineAction,
                        ShowCalcFields,
                        ReadOnlyStackedInline):
 
@@ -52,7 +39,6 @@ class AttachmentInline(CustomInlineActionsMixin,
     ordering = ('-created_at',)
     model = Attachment
     template = os.path.join('admin', 'edit_inline', 'attachment_stacked.html')
-    actions = ['remove_attachment']
     extra = 0
 
     def has_add_permission(self, request):
@@ -82,13 +68,10 @@ class AttachmentInline(CustomInlineActionsMixin,
     f_thumbnail.allow_tags = True
     f_thumbnail.short_description = u'Megnyitás'
 
-    def remove_attachment(self, request, ticket, attachment):
-        attachment.delete()
 
-    remove_attachment.short_description = u'T&ouml;rl&eacute;s'
-
-
-class MaterialInline(ShowCalcFields, ReadOnlyTabularInline):
+class MaterialInline(RemoveInlineAction,
+                     ShowCalcFields,
+                     ReadOnlyTabularInline):
 
     """
     Material inline for the ticket page
@@ -122,7 +105,8 @@ class MaterialInline(ShowCalcFields, ReadOnlyTabularInline):
     f_material_comes_from.short_description = u'Biztosítja'
 
 
-class WorkItemInline(ShowCalcFields, ReadOnlyTabularInline):
+class WorkItemInline(RemoveInlineAction,
+                     ShowCalcFields, ReadOnlyTabularInline):
 
     """
     Workitem inline for the ticket page
@@ -224,7 +208,7 @@ class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
     f_type_name.short_description = u'Vonalkód'
 
 
-class TicketDeviceInline(CustomInlineActionsMixin,
+class TicketDeviceInline(RemoveInlineAction,
                          ShowCalcFields,
                          GenericReadOnlyInline):
 
@@ -233,18 +217,19 @@ class TicketDeviceInline(CustomInlineActionsMixin,
     model = DeviceOwner
     formset = TicketDeviceFormset
     fields = ['f_type_name', 'f_sn']
-    actions = ['remove_device']
-
-    def get_actions(self, request, obj=None):
-        actions = super(TicketDeviceInline, self).get_actions(request, obj)
-        if obj:
-            pass
-        return actions
 
     def _pimp_actions(self, actions, obj):
         return actions.replace(
             '<input ', '<input onclick="return confirm(\'SN: {} - '
                        'Leszerel?\')" '.format(obj.device.sn))
+
+    def remove(self, request, ticket, dev_owner):
+        dev_owner.owner = request.user
+        dev_owner.device.returned_at = datetime.now()
+        dev_owner.device.save()
+        dev_owner.save()
+
+    remove.short_description = u'Leszerel'
 
     def f_type_name(self, obj):
         return obj.device.type.name
@@ -255,11 +240,3 @@ class TicketDeviceInline(CustomInlineActionsMixin,
         return obj.device.sn
 
     f_sn.short_description = u'Vonalkód'
-
-    def remove_device(self, request, ticket, dev_owner):
-        dev_owner.owner = request.user
-        dev_owner.device.returned_at = datetime.now()
-        dev_owner.device.save()
-        dev_owner.save()
-
-    remove_device.short_description = u'Leszerel'
