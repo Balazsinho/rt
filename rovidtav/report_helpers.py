@@ -8,6 +8,8 @@ from django.db.models.fields import DateTimeField, DateField
 from model_report.widgets import RangeField
 from model_report.report import ReportAdmin
 
+from rovidtav.admin_helpers import is_site_admin
+
 
 class Label(object):
 
@@ -98,11 +100,15 @@ class CustomQuerySet(QuerySet):
 class CustomReportAdmin(ReportAdmin):
 
     extra_columns_first_col = 0
+    # This one is set only if the logged in user is not an admin
+    data_owner = None
+    data_owner_field = 'owner'
 
     def _calc_extra_from_qs(self, qs):
         pass
 
     def _calculate_extra_columns(self, request, by_row):
+        self._check_admin_user(request)
         context_request = request or self.request
         filter_related_fields = {}
         if self.parent_report and by_row:
@@ -113,6 +119,7 @@ class CustomReportAdmin(ReportAdmin):
         self._calc_extra_from_qs(qs)
 
     def get_form_filter(self, request):
+        self._check_admin_user(request)
         if not self.list_filter:
             form_fields = {
                 '__all__': forms.BooleanField(label='',
@@ -177,6 +184,8 @@ class CustomReportAdmin(ReportAdmin):
         Return the the queryset
         """
         qs = self.model.objects.all()
+        if self.data_owner:
+            filter_kwargs[self.data_owner_field] = self.data_owner.pk
         for q_key, q_value in filter_kwargs.items():
             if q_value:
                 if hasattr(q_value, 'values_list'):
@@ -192,7 +201,12 @@ class CustomReportAdmin(ReportAdmin):
         query_set = qs.distinct()
         return query_set
 
+    def _check_admin_user(self, request):
+        if not self.data_owner and not is_site_admin(request.user):
+            self.data_owner = request.user
+
     def get_render_context(self, request, extra_context={}, by_row=None):
+        self._check_admin_user(request)
         self._calculate_extra_columns(request, by_row)
         return super(CustomReportAdmin, self).get_render_context(
             request, extra_context, by_row)

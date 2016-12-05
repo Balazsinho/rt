@@ -26,7 +26,7 @@ class SummaryList(CustomReportAdmin):
         'closed_at',
     ]
 
-    list_filter = ('city__primer', 'owner', 'closed_at')
+    list_filter = ['city__primer', 'owner', 'closed_at']
     list_filter_classes = {
         'city__primer': ChoiceField,
     }
@@ -40,6 +40,12 @@ class SummaryList(CustomReportAdmin):
         'closed_at': to_date,
     }
     extra_columns_first_col = 4
+
+    def get_form_filter(self, request):
+        self._check_admin_user(request)
+        if self.data_owner:
+            self.list_filter = [f for f in self.list_filter if f not in ('owner',)]
+        return CustomReportAdmin.get_form_filter(self, request)
 
     def _calc_extra_from_qs(self, qs):
         if not hasattr(self, 'calculated_columns'):
