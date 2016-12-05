@@ -288,6 +288,9 @@ class Payoff(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=70,
                             verbose_name=u'Név')
+    remark = models.TextField(db_column='megjegyzes',
+                              verbose_name=u'Megjegyzés',
+                              null=True, blank=True)
 
     class Meta:
         db_table = 'elszamolas'

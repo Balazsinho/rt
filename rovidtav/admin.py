@@ -73,8 +73,8 @@ class AttachmentAdmin(ModelAdminRedirect):
 
 class PayoffAdmin(admin.ModelAdmin):
 
-    list_display = ('name', )
-    inlines = (NoteInline, TicketInline)
+    list_display = ('name', 'remark')
+    inlines = (TicketInline)
 
     def get_inline_instances(self, request, obj=None):
         if not obj:
