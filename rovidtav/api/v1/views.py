@@ -14,6 +14,7 @@ from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes
 from rest_framework.decorators import permission_classes
 
+from rovidtav.settings import IMAGE_THUMB_PX
 from rovidtav.api.field_const import Fields
 from rovidtav.models import (Client, City, Ticket, TicketType,
                              Note, DeviceType, Device, Attachment,
@@ -181,7 +182,7 @@ def download_thumbnail(request, attachment_id):
             temp_buff.seek(0)
 
             img = Image.open(temp_buff)
-            img.thumbnail((150, 150), Image.ANTIALIAS)
+            img.thumbnail((IMAGE_THUMB_PX, IMAGE_THUMB_PX), Image.ANTIALIAS)
             temp_buff = StringIO.StringIO()
             temp_buff.name = att.name
             img.save(temp_buff)

@@ -31,6 +31,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 ADMIN_LOGIN_REDIRECT_URL = '/admin/rovidtav/ticket/'
 
 IMAGE_DOWNSCALE_PX = 1600
+IMAGE_THUMB_PX = 180
 
 # =============================================================================
 # JET SETTINGS

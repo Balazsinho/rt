@@ -61,10 +61,12 @@ class AttachmentInline(RemoveInlineAction,
         if obj.is_image():
             clickable_txt = (u'<img src="/api/v1/thumbnail/{}" />'
                              u''.format(obj.pk))
+            download = u' download="{}"'.format(obj.name)
         else:
             clickable_txt = obj.name
-        return (u'<a target="_blank" href="/api/v1/attachment/{}" download>'
-                u'{}</a>'.format(obj.pk, clickable_txt))
+            download = u''
+        return (u'<a target="_blank" href="/api/v1/attachment/{}"{}>'
+                u'{}</a>'.format(obj.pk, download, clickable_txt))
 
     f_thumbnail.allow_tags = True
     f_thumbnail.short_description = u'Megnyitás'
