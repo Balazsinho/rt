@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 import os
-import copy
+import re
 from datetime import datetime
 
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
+from django.shortcuts import redirect
 
 from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
                                     GenericReadOnlyInline, RemoveInlineAction,
-                                    ReadOnlyStackedInline,
-                                    CustomInlineActionsMixin,)
+                                    ReadOnlyStackedInline,)
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner)
+from django.http.response import HttpResponseRedirect
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -48,9 +49,9 @@ class AttachmentInline(RemoveInlineAction,
         return False
 
     def _pimp_actions(self, actions, obj):
-        return actions.replace(
-            '<input ', u'<input onclick="return confirm(\'Név: {} - '
-                       u'Törlés?\')" '.format(obj.name))
+        confirm_txt = (u'onclick="return confirm(\'Név: {} - '
+                       u'Törlés?\')"'.format(obj.name))
+        return self._add_action_attr(actions, '_action__remove__rovidtav__attachment', confirm_txt)
 
     def f_created(self, obj):
         created_at = obj.created_at.strftime('%Y-%m-%d %H:%M')
@@ -62,7 +63,7 @@ class AttachmentInline(RemoveInlineAction,
                              u''.format(obj.pk))
         else:
             clickable_txt = obj.name
-        return (u'<a target="_blank" href="/api/v1/attachment/{}">'
+        return (u'<a target="_blank" href="/api/v1/attachment/{}" download>'
                 u'{}</a>'.format(obj.pk, clickable_txt))
 
     f_thumbnail.allow_tags = True

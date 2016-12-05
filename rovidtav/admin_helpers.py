@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 
 from django.http.response import HttpResponseRedirect
 from django.contrib import admin
@@ -161,6 +162,15 @@ class ShowCalcFields(object):
 class CustomInlineActionsMixin(InlineActionsMixin):
 
     def _pimp_actions(self, actions, obj):
+        return actions
+
+    def _add_action_attr(self, actions, look_for, new_attr_str):
+        actions_list = re.findall('<input[^>]+>', actions, re.I)
+        for action in actions_list:
+            if look_for in action:
+                new_action = action.replace('<input ',
+                                            u'<input {} '.format(new_attr_str))
+                actions = actions.replace(action, new_action)
         return actions
 
     def render_actions(self, obj=None):
