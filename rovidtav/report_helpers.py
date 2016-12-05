@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+from collections import OrderedDict
 
 from django import forms
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.db.models.fields import DateTimeField, DateField
+from django.forms.fields import ChoiceField
 
 from model_report.widgets import RangeField
 from model_report.report import ReportAdmin
@@ -127,7 +129,7 @@ class CustomReportAdmin(ReportAdmin):
                                               initial='1')
             }
         else:
-            form_fields = {}
+            form_fields = OrderedDict()
             for field_name in self.list_filter:
                 model_names = field_name.split('__')
                 model_field_name = model_names.pop(-1)
@@ -147,9 +149,16 @@ class CustomReportAdmin(ReportAdmin):
                     field = model_field.formfield()
 
                 if field_name in self.list_filter_classes:
-                    self.list_filter_classes[field_name]
+                    field_cls = self.list_filter_classes[field_name]
+                    if field_cls == ChoiceField:
+                        all_choices = [getattr(inst, model_field_name) for inst in base_model.objects.all()]
+                        all_choices = filter(lambda x: x is not None, all_choices)
+                        choices = [(item, item) for item in sorted(list(set(all_choices)))]
+                        choices.insert(0, ('', '---------'))
+                        field = field_cls(choices)
 
-                field.label = self.override_field_labels.get(field_name) or model_field_name
+                override_field_name = self.override_field_labels.get(field_name)
+                field.label = override_field_name(None, None) if override_field_name else model_field.verbose_name
 
                 # Provide a hook for updating the queryset
                 if hasattr(field, 'queryset') and field_name in self.override_field_choices:

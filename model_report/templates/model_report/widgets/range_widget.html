@@ -1,25 +1,20 @@
 {% load i18n %}
 <div class="date_range">
-    <div class="row start">
-    {% with min as field %}
-        <label for="{{ field.widget.auto_id }}">{% trans "Start date" %}</label>
-        {{ field }}
+    {% with min as from_field %}
+        {{ from_field }}-tól
         <span class="info{% if field.errors %} error{% else %}{% endif %}">
-          {{ field.errors|join:" " }}</span>
-        <span class="help-text">{{ field.help_text|safe }}</span>
+          {{ from_field.errors|join:" " }}</span>
+        <span class="help-text">{{ from_field.help_text|safe }}</span>
     {% endwith %}
-    </div>
-    <div class="row end">
-    {% with max as field %}
-        <label for="{{ field.widget.auto_id }}">{% trans "End date" %}</label>
-        {{ field }}
+    {% with max as to_field %}
+        {{ to_field }}-ig
         <span class="info{% if field.errors %} error{% else %}{% endif %}">
-          {{ field.errors|join:" " }}</span>
-        <span class="help-text">{{ field.help_text|safe }}</span>
+          {{ to_field.errors|join:" " }}</span>
+        <span class="help-text">{{ to_field.help_text|safe }}</span>
     {% endwith %}
-    </div>
 </div>
 <style>
+
 form .row {
     /*float: left;*/
     clear: both;
@@ -28,6 +23,7 @@ form .row {
 .date_range {
     /*float: left;
     clear: right;*/
+    display: inline-block;
 }
 .date_range .row {
     margin: 20px;

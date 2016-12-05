@@ -1,6 +1,16 @@
+<style>
+.filterLabelContainer {
+	display: inline-block;
+	width: 100px;
+	text-align: right;
+}
+</style>
+
 {% for field in form %}
   <p class="row{% if field.field.required %} row-required{% endif %}{% if field.errors or form.non_field_errors %} row-errors{% endif %}">
-    <label for="{{ field.auto_id }}">{{ field.label }}</label>
+    <div class="filterLabelContainer">
+    	<label for="{{ field.auto_id }}">{{ field.label }}</label>
+    </div>
     {{ field }}
     <span class="info{% if field.errors %} error{% else %}{% endif %}">
       {{ field.errors|join:" " }}</span>

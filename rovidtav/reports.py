@@ -24,16 +24,20 @@ class SummaryList(CustomReportAdmin):
         'city__primer',
         'owner__username',
         'closed_at',
+        'payoff__name'
     ]
 
-    list_filter = ['city__primer', 'owner', 'closed_at']
+    list_filter = ['owner', 'payoff__name', 'city__primer', 'created_at', 'closed_at']
     list_filter_classes = {
         'city__primer': ChoiceField,
+        'payoff__name': ChoiceField,
     }
     list_order_by = ('ext_id',)
     type = 'report'
     override_field_labels = {
-        'owner__username': Label(u'Tulajdonos'),
+        'owner__username': Label(u'Szerelő'),
+        'payoff__name': Label(u'Elszámolás'),
+        'created_at': Label(u'Felvéve'),
         'closed_at': Label(u'Lezárva'),
     }
     override_field_formats = {
