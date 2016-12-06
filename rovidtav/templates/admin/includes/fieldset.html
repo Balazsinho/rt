@@ -18,7 +18,7 @@
                         {% if field.is_readonly %}
                             <p>{{ field.contents }}</p>
                         {% else %}
-                            {{ field.field|jet_select2_lookups_balazs }}
+                            {{ field.field }}
                         {% endif %}
                     {% endif %}
                     {% if field.field.help_text %}
