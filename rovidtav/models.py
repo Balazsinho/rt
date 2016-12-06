@@ -343,7 +343,8 @@ class Ticket(JsonExtended):
                                verbose_name=u'Elszámolás')
     owner = models.ForeignKey(User, related_name='tulajdonos',
                               null=True, blank=True,
-                              verbose_name=u'Szerelő')
+                              verbose_name=u'Szerelő',
+                              limit_choices_to={'groups__name': u'Szerelő'})
     remark = models.TextField(db_column='megjegyzes',
                               null=True, blank=True,
                               verbose_name=u'Megjegyzés')
