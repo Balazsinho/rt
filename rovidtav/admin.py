@@ -19,7 +19,8 @@ from daterange_filter.filter import DateRangeFilter
 
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
-                            is_site_admin, DeviceOwnerListFilter)
+                            is_site_admin, DeviceOwnerListFilter,
+                            get_technician_choices, get_technicians)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline)
@@ -236,6 +237,21 @@ class NoteAdmin(ModelAdminRedirect):
         return {}
 
 
+class OwnerFilter(SimpleListFilter):
+
+    title = u'Szerelő'
+    parameter_name = 'owner'
+
+    def lookups(self, request, model_admin):
+        return get_technician_choices()
+
+    def queryset(self, request, queryset):
+        if self.value() not in (None, 'all'):
+            return queryset.filter(owner=self.value())
+        else:
+            return queryset
+
+
 class IsClosedFilter(SimpleListFilter):
 
     title = u'Státusz'
@@ -317,8 +333,8 @@ class TicketAdmin(CustomDjangoObjectActions,
                 self.fields.insert(2, 'full_address')
         form = super(TicketAdmin, self).get_form(request, obj, **kwargs)
         if obj and is_site_admin(request.user):
-            self._hide_icons(form, ('owner',))
             self._hide_icons(form, ('payoff',), show_add=True)
+            self._hide_icons(form, ('owner',))
         return form
 
     def get_changelist(self, request, **kwargs):
@@ -354,7 +370,7 @@ class TicketAdmin(CustomDjangoObjectActions,
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return (('created_at', DateRangeFilter),
-                        'city__primer', 'owner', IsClosedFilter)
+                        'city__primer', OwnerFilter, IsClosedFilter)
             else:
                 return (IsClosedFilter,)
 

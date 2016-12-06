@@ -6,7 +6,7 @@ import re
 from django.http.response import HttpResponseRedirect
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList, ORDER_VAR
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.admin import GenericTabularInline
 
@@ -231,3 +231,13 @@ class ModelAdminRedirect(admin.ModelAdmin):
 def is_site_admin(user):
     groups = [g.name for g in user.groups.all()]
     return 'admin' in groups or user.is_superuser
+
+
+def get_technicians():
+    group = Group.objects.get(name=u'Szerelő')
+    return group.user_set.all()
+
+
+def get_technician_choices():
+    users = get_technicians()
+    return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
