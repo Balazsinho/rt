@@ -116,8 +116,7 @@ class WorkItemInline(RemoveInlineAction,
     """
 
     model = TicketWorkItem
-    fields = ('f_workitem_name', 'f_art_number', 'f_workitem_bulk_price',
-              'f_workitem_given_price',)
+    fields = ('f_workitem_name', 'f_art_number', 'f_workitem_art_price',)
     verbose_name = u'Munka'
     verbose_name_plural = u'Munkák'
     ordering = ('-created_at',)
@@ -131,6 +130,11 @@ class WorkItemInline(RemoveInlineAction,
         return obj.work_item.art_number
 
     f_art_number.short_description = u'Tételszám'
+
+    def f_workitem_art_price(self, obj):
+        return obj.work_item.art_price
+
+    f_workitem_art_price.short_description = u'Tétel ár'
 
     def f_workitem_bulk_price(self, obj):
         return obj.work_item.bulk_price
