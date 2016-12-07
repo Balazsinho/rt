@@ -59,7 +59,7 @@ class SummaryList(CustomReportAdmin):
                 tws = ticket.munka_jegy.all()
                 workitem_keys |= set([tw.work_item for tw in tws])
                 id_workitem_map[ticket.pk] = dict([(tw.work_item.art_number, tw.amount) for tw in tws])
-                price = sum([tw.work_item.given_price * tw.amount for tw in tws])
+                price = sum([tw.work_item.art_price * tw.amount for tw in tws])
                 if id_workitem_map[ticket.pk]:
                     id_workitem_map[ticket.pk][u'Ár összesen'] = price
 
