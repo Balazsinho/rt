@@ -146,7 +146,7 @@ class City(BaseEntity):
 class Client(BaseEntity):
 
     mt_id = models.CharField(db_column='mt_id', max_length=20)
-    name = models.CharField(db_column='nev', max_length=70,
+    name = models.CharField(db_column='nev', max_length=120,
                             verbose_name=u'Név')
     city = models.ForeignKey(City, db_column='telepules',
                              verbose_name=u'Település')
