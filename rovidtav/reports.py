@@ -32,7 +32,7 @@ class SummaryList(CustomReportAdmin):
         'city__primer': ChoiceField,
         'payoff__name': ChoiceField,
     }
-    list_order_by = ('ext_id',)
+    list_order_by = ('-created_at',)
     type = 'report'
     override_field_labels = {
         'owner__username': Label(u'Szerelő'),
@@ -63,7 +63,7 @@ class SummaryList(CustomReportAdmin):
                 if id_workitem_map[ticket.pk]:
                     id_workitem_map[ticket.pk][u'Ár összesen'] = price
 
-            workitem_keys = sorted(list(workitem_keys))
+            workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number)
             wo_offsets = list(enumerate(workitem_keys))
             self.calculated_columns = [(e[0]+self.extra_columns_first_col, e[1].art_number) for e in wo_offsets]
             self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
