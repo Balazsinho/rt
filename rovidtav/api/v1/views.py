@@ -114,7 +114,7 @@ def create_ticket(request):
                     sn=device[Fields.DEV_SN])
             except Device.DoesNotExist:
                 dev_type, _ = DeviceType.objects.get_or_create(
-                    name=device[Fields.DEV_TYPE])
+                    name=(device[Fields.DEV_TYPE] or '').strip())
                 dev = Device.objects.create(
                     sn=device[Fields.DEV_SN],
                     type=dev_type,
