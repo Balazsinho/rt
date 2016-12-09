@@ -119,7 +119,7 @@ class WorkItemInline(RemoveInlineAction,
     fields = ('f_workitem_name', 'f_art_number', 'f_workitem_art_price',)
     verbose_name = u'Munka'
     verbose_name_plural = u'Munkák'
-    ordering = ('-created_at',)
+    ordering = ('work_item__art_number',)
 
     def f_workitem_name(self, obj):
         return obj.work_item.name

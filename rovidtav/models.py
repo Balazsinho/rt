@@ -624,6 +624,7 @@ class WorkItem(BaseEntity):
         db_table = 'munka'
         verbose_name = u'Munkatétel'
         verbose_name_plural = u'Munkatételek'
+        ordering = ['art_number']
 
     def __unicode__(self):
         return self.art_number + u' - ' + self.name
