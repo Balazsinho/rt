@@ -98,11 +98,14 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceOwnerAdmin, self).get_form(request, obj, **kwargs)
         self._hide_icons(form, ('device',))
+        warehouse_group = Group.objects.get(name=u'Raktár')
+        warehouse_ids = [w.pk for w in warehouse_group.user_set.all()]
+        allowed_ids = warehouse_ids + [request.user.pk]
         client_ct = ContentType.objects.get(
             app_label='rovidtav', model='client').id
-        dev_pks = [owner.device.pk for owner
-                   in DeviceOwner.objects.exclude(content_type=client_ct)]
-        devices = Device.objects.filter(pk__in=dev_pks)
+        devices = Device.objects.exclude(dev_owner__content_type=client_ct)
+        devices = devices.filter(returned_at__isnull=True,
+                                 dev_owner__object_id__in=allowed_ids)
         form.base_fields['device'].queryset = devices
         return form
 
@@ -564,7 +567,6 @@ class CustomAdminSite(AdminSite):
 
 
 admin.site = CustomAdminSite()
-
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group)
