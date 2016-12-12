@@ -1,5 +1,5 @@
 .unread {
-	text-shadow: 0 0 3px #FF0000;
+	text-shadow: 0 0 3px;
 }
 .hidden {
     display: none
