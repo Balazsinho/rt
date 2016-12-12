@@ -43,3 +43,36 @@ from rovidtav.models import WorkItem
 with codecs.open('rovidtav/initial_data/munka.json') as f:
     for rec in json.loads(f.read()):
         WorkItem.objects.get_or_create(**rec)
+
+
+##################
+# IMPORT DEVICES #
+##################
+
+import codecs
+import json
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.models import ContentType
+from rovidtav.models import Device
+from rovidtav.models import DeviceType
+from rovidtav.models import DeviceOwner
+
+owner = User.objects.get(username='RaktarBP')
+ct = ContentType.objects.get_for_model(User)
+
+with codecs.open('rovidtav/initial_data/eszkozok.json') as f:
+    for rec in json.loads(f.read()):
+        try:
+            dev = Device.objects.get(
+                sn=rec['sn'])
+        except Device.DoesNotExist:
+            if 'card' not in rec['type'].lower():
+                dev_type, _ = DeviceType.objects.get_or_create(
+                    name=rec['type'].strip())
+                dev = Device.objects.create(
+                    sn=rec['sn'],
+                    type=dev_type,
+                )
+                DeviceOwner.objects.create(device=dev,
+                                           content_type=ct,
+                                           object_id=owner.pk)
