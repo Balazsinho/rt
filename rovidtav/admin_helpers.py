@@ -13,6 +13,7 @@ from django.contrib.contenttypes.admin import GenericTabularInline
 from django_object_actions.utils import DjangoObjectActions
 from jet.admin import CompactInline
 from inline_actions.admin import InlineActionsMixin
+from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner
 
@@ -241,3 +242,8 @@ def get_technicians():
 def get_technician_choices():
     users = get_technicians()
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
+
+
+def get_unread_messages_count(user):
+    return {'unread_messages':
+            len(Message.objects.filter(recipient=user, read_at__isnull=True))}

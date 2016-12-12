@@ -20,7 +20,8 @@ from daterange_filter.filter import DateRangeFilter
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
                             is_site_admin, DeviceOwnerListFilter,
-                            get_technician_choices, get_technicians)
+                            get_technician_choices, get_technicians,
+                            get_unread_messages_count)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline)
@@ -564,6 +565,11 @@ class CustomAdminSite(AdminSite):
         extra_context = extra_context or {}
         extra_context[REDIRECT_FIELD_NAME] = settings.ADMIN_LOGIN_REDIRECT_URL
         return super(CustomAdminSite, self).login(request, extra_context)
+
+    def each_context(self, request):
+        ctx = super(CustomAdminSite, self).each_context(request)
+        ctx.update(get_unread_messages_count(request.user))
+        return ctx
 
 
 admin.site = CustomAdminSite()
