@@ -247,7 +247,8 @@ class Device(BaseEntity):
 class DeviceOwner(BaseEntity):
 
     device = models.ForeignKey(Device, db_column='eszkoz',
-                               verbose_name=u'Eszköz')
+                               verbose_name=u'Eszköz',
+                               related_name='dev_owner')
 
     content_type = models.ForeignKey(ContentType, null=True, blank=True)
     object_id = models.PositiveIntegerField(null=True, blank=True)
