@@ -27,7 +27,11 @@
             <tr class="{{ row.get_css_class }} {% if row.is_value and not row.is_report_totals %}row-{{ gruper|default_if_none:_('Results')|slugify }}{% endif %}">
                 {% for value in row %}
                 <td valign="middle">
-                {{ value|safe }}
+	        	{% if id_url_map and forloop.first %}
+		            <a href="{{ id_url_map|get_item:row.0.value }}">{{ value|safe }}</a>
+                {% else %}
+	                {{ value|safe }}
+	            {% endif %}
                 </td>
                 {% endfor %}
             </tr>

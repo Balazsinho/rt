@@ -68,6 +68,13 @@ class SummaryList(CustomReportAdmin):
             self.calculated_columns = [(e[0]+self.extra_columns_first_col, e[1].art_number) for e in wo_offsets]
             self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
             self.extra_col_map = id_workitem_map
+            self.id_url_map = dict([(t.ext_id, '/admin/rovidtav/ticket/{}/change'.format(t.pk)) for t in qs])
+
+    def get_render_context(self, request, extra_context={}, by_row=None):
+        ctx = super(SummaryList, self).get_render_context(
+            request, extra_context, by_row)
+        ctx['id_url_map'] = self.id_url_map
+        return ctx
 
 
 reports.register('osszesito', SummaryList)

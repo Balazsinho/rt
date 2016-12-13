@@ -29,3 +29,8 @@ def model_report_render_inline(parser, token):
     except ValueError:
         raise template.TemplateSyntaxError("%r tag requires arguments" % token.contents.split()[0])
     return ModelReportInlineNode(inline, row)
+
+
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
