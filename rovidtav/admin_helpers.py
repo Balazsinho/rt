@@ -245,5 +245,8 @@ def get_technician_choices():
 
 
 def get_unread_messages_count(user):
-    return {'unread_messages':
-            len(Message.objects.filter(recipient=user, read_at__isnull=True))}
+    if user:
+        cnt = len(Message.objects.filter(recipient=user, read_at__isnull=True))
+    else:
+        cnt = 0
+    return {'unread_messages': cnt}
