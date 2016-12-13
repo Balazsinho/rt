@@ -1,6 +1,5 @@
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
-from django.template import RequestContext
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils.translation import ugettext as _
@@ -9,17 +8,17 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 
 from django_messages.models import Message
-from django_messages.forms import ComposeForm
+from django_messages.forms import ComposeForm, ComposeFormAllUsers
 from django_messages.utils import format_quote, get_user_model, get_username_field
 
-User = get_user_model()
+from rovidtav.admin_helpers import get_unread_messages_count
 
 if "notification" in settings.INSTALLED_APPS and getattr(settings, 'DJANGO_MESSAGES_NOTIFY', True):
     from notification import models as notification
 else:
     notification = None
 
-from rovidtav.admin_helpers import get_unread_messages_count
+User = get_user_model()
 
 
 @login_required
@@ -118,7 +117,7 @@ def reply(request, message_id, form_class=ComposeForm,
 
     if request.method == "POST":
         sender = request.user
-        form = form_class(request.POST, recipient_filter=recipient_filter)
+        form = ComposeFormAllUsers(request.POST, recipient_filter=recipient_filter)
         if form.is_valid():
             form.save(sender=request.user, parent_msg=parent)
             messages.info(request, _(u"Message successfully sent."))
@@ -130,7 +129,10 @@ def reply(request, message_id, form_class=ComposeForm,
             'body': quote_helper(parent.sender, parent.body),
             'subject': subject_template % {'subject': parent.subject},
             'recipient': [parent.sender.pk,]
-            })
+        })
+        if parent.sender.pk not in [f[0] for f in form.fields['recipient'].choices]:
+            form.fields['recipient'].choices = form.fields['recipient'].choices + [(parent.sender.pk, parent.sender.username)]
+
     ctx = {'form': form}
     ctx.update(get_unread_messages_count(request.user))
     return render(request, template_name, ctx)

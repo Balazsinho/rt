@@ -4,29 +4,27 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django_messages.models import Message
+
+from rovidtav.admin_helpers import get_technician_choices
 
 if "notification" in settings.INSTALLED_APPS and getattr(settings, 'DJANGO_MESSAGES_NOTIFY', True):
     from notification import models as notification
 else:
     notification = None
 
-from django_messages.models import Message
-from django_messages.fields import CommaSeparatedUserField
-
-from rovidtav.admin_helpers import get_technician_choices, get_technicians
 
 class ComposeForm(forms.Form):
     """
     A simple default form for private messages.
     """
-    # recipient = CommaSeparatedUserField(label=_(u"Recipient"))
     user_choices = [(u.pk, u.username) for u in User.objects.all()]
-    recipient = MultipleChoiceField(label=_(u"Recipient"),
-                                    # choices=get_technician_choices()
-                                    choices=user_choices)
+    recipient = MultipleChoiceField(
+        label=_(u"Recipient"), choices=get_technician_choices())
     subject = forms.CharField(label=_(u"Subject"), max_length=140)
-    body = forms.CharField(label=_(u"Body"),
-        widget=forms.Textarea(attrs={'rows': '12', 'cols':'55'}))
+    body = forms.CharField(
+        label=_(u"Body"),
+        widget=forms.Textarea(attrs={'rows': '12', 'cols': '55'}))
 
     def __init__(self, *args, **kwargs):
         recipient_filter = kwargs.pop('recipient_filter', None)
@@ -55,9 +53,23 @@ class ComposeForm(forms.Form):
             message_list.append(msg)
             if notification:
                 if parent_msg is not None:
-                    notification.send([sender], "messages_replied", {'message': msg,})
-                    notification.send([rec_user], "messages_reply_received", {'message': msg,})
+                    notification.send([sender],
+                                      "messages_replied",
+                                      {'message': msg})
+                    notification.send([rec_user],
+                                      "messages_reply_received",
+                                      {'message': msg})
                 else:
-                    notification.send([sender], "messages_sent", {'message': msg,})
-                    notification.send([rec_user], "messages_received", {'message': msg,})
+                    notification.send([sender],
+                                      "messages_sent",
+                                      {'message': msg})
+                    notification.send([rec_user],
+                                      "messages_received",
+                                      {'message': msg})
         return message_list
+
+
+class ComposeFormAllUsers(ComposeForm):
+    recipient = MultipleChoiceField(
+        label=_(u"Recipient"),
+        choices=[(u.pk, u.username) for u in User.objects.all()])
