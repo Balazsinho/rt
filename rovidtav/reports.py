@@ -19,6 +19,8 @@ class SummaryList(CustomReportAdmin):
     model = Ticket
     fields = [
         'ext_id',
+        'client__mt_id',
+        'client__name',
         'city__name',
         'address',
         'city__primer',
@@ -39,11 +41,12 @@ class SummaryList(CustomReportAdmin):
         'payoff__name': Label(u'Elszámolás'),
         'created_at': Label(u'Felvéve'),
         'closed_at': Label(u'Lezárva'),
+        'city__name': Label(u'Település'),
     }
     override_field_formats = {
         'closed_at': to_date,
     }
-    extra_columns_first_col = 4
+    extra_columns_first_col = 5
 
     def get_form_filter(self, request):
         self._check_admin_user(request)
