@@ -436,11 +436,10 @@ class Ticket(JsonExtended):
             if self.status != prev_inst.status:
                 self._status_trans(prev_inst.status, self.status)
 
-        if self.status in (Const.TicketStatus.DONE_SUCC,
-                           Const.TicketStatus.DONE_UNSUCC,
-                           Const.TicketStatus.DUPLICATE,) \
-                and not self.closed_at:
-            self.closed_at = datetime.now()
+                if self.status in (Const.TicketStatus.DONE_SUCC,
+                                   Const.TicketStatus.DONE_UNSUCC,
+                                   Const.TicketStatus.DUPLICATE,):
+                    self.closed_at = datetime.now()
 
         super(Ticket, self).save(*args, **kwargs)
 
