@@ -305,6 +305,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
     # PARAMETERS
     # =========================================================================
+    model = Ticket
+    add_form_template = os.path.join('rovidtav', 'select2.html')
 
     list_per_page = 500
     list_display = ('ext_id', 'address', 'city_name', 'client_name',
