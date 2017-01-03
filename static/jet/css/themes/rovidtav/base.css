@@ -3439,15 +3439,21 @@ input[type="button"]:hover,
     height: 2.28571rem;
     line-height: 32px;
     line-height: 2.28571rem;
-	*/
-    height: 2rem;
-    line-height: 2rem;
+    */
+    height: 1.9rem;
+    line-height: 1.9rem;
     outline: 0;
-    font-size: 11px;
-    font-size: 0.75714rem;
+    /*
+    font-size: 12px;
+    font-size: 0.85714rem;
+    */
+    font-size: 0.85714rem;
     font-weight: normal;
     text-align: center;
-    padding: 0 6px;
+    /*
+    padding: 0 10px;
+    padding: 0 0.71429rem;
+    */
     padding: 0 0.51429rem;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -6584,7 +6590,7 @@ body.change-list .object-tools {
 }
 body.change-list .object-tools li {
     /*display: list-item*/
-    display: inline-block
+	display: inline-block
 }
 .object-tools a.addlink:before {
     font-family: 'jet-icons';
@@ -7946,8 +7952,11 @@ form .related-widget-wrapper ul {
     display: inline-block;
     padding: 12px 4px;
     padding: 0.85714rem 0.28571rem;
+    /*
     margin: 0 8px 0 0;
     margin: 0 0.57143rem 0 0;
+    */
+    margin: 0 0.37143rem 0 0;
     border-bottom: 2px solid transparent;
     border-bottom: 0.14286rem solid transparent;
     position: relative;
@@ -7955,7 +7964,10 @@ form .related-widget-wrapper ul {
     top: 0.14286rem;
     color: #333;
     font-weight: bold;
+    /*
     font-size: 11px;
+    font-size: 0.78571rem;
+    */
     font-size: 0.78571rem;
     text-transform: uppercase;
     -webkit-transition: background-color .1s, color .1s, border-color .3s;
@@ -9282,8 +9294,10 @@ body.popup .changelist-footer.fixed {
     line-height: 3.14286rem;
     padding: 0 16px;
     padding: 0 1.14286rem;
+    /*
     border-right: 1px solid #2B333D;
     border-right: 0.07143rem solid #2B333D
+    */
 }
 .sidebar-header-menu-icon {
     font-size: 16px;

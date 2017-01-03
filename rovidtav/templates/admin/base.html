@@ -133,17 +133,17 @@
                     <span class="sidebar-header-menu-icon icon-menu"></span>
                     <span class="sidebar-header-menu-icon icon-cross"></span>
                 </a>
-                <span class="sidebar-header-menu quicklink quicklink-title">Gyorslinkek >></span>
                 {% if user.is_superuser %}
 		            <a href="/admin/rovidtav/ticket/" class="sidebar-header-menu quicklink">
-		                <span>Jegyek</span>
+		                <span style="font-size: 0.9em">Jegyek</span>
 		            </a>
 		            <a href="/reports/" class="sidebar-header-menu quicklink">
-		                <span>Riportok</span>
+		                <span style="font-size: 0.9em">Riportok</span>
 		            </a>
                 {% endif %}
 	            <a href="/messages/" class="sidebar-header-menu quicklink{% if unread_messages %} unread{% endif %}">
-	                <span>Üzenetek
+	                <span style="font-size: 1.3em">&#x2709;</span>
+                	<span style="font-size: 0.8em">
                 	{% if unread_messages %}
                 		({{unread_messages}})
                 	{% endif %}
