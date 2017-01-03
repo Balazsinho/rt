@@ -4,6 +4,8 @@ import os
 
 from PIL import Image
 import StringIO
+import zipfile
+import datetime
 
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
@@ -34,6 +36,7 @@ from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
 
 from rovidtav import settings
 from inline_actions.admin import InlineActionsModelAdminMixin
+from django.http.response import HttpResponse
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -55,7 +58,7 @@ class AttachmentAdmin(ModelAdminRedirect):
     def save_model(self, request, obj, form, change):
         super(AttachmentAdmin, self).save_model(request, obj, form, change)
         if obj.is_image() and not obj.name.lower().startswith('imdb'):
-            obj.ticket[Ticket.Keys.HAS_IMAGES] = True
+            obj.ticket.has_images = True
 
             temp_buff = StringIO.StringIO()
             temp_buff.write(obj.data)
@@ -307,12 +310,11 @@ class TicketAdmin(CustomDjangoObjectActions,
     list_display = ('ext_id', 'address', 'city_name', 'client_name',
                     'client_link', 'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status', 'primer',
-                    'has_images', 'payoff_link',)
+                    'has_images_nice', 'collectable', 'payoff_link',)
     # TODO: check if this is useful
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'address', 'remark')
-
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device', 'new_workitem')
     changelist_actions = ('summary_list',)
@@ -324,6 +326,7 @@ class TicketAdmin(CustomDjangoObjectActions,
               'remark', 'payoff', 'collectable']
     readonly_fields = ('client_phone', 'full_address', 'collectable')
     exclude = ['additional', 'created_by']
+    actions = ['download_action']
 
     # =========================================================================
     # METHOD OVERRIDES
@@ -365,16 +368,41 @@ class TicketAdmin(CustomDjangoObjectActions,
         del actions['delete_selected']
         return actions
 
+    def download_action(self, request, queryset):
+        temp = StringIO.StringIO()
+        with zipfile.ZipFile(temp, 'w') as archive:
+            for ticket in queryset:
+                attachments = []
+                for att in Attachment.objects.filter(ticket=ticket):
+                    if att.is_image() and not att.name.lower().startswith('imdb'):
+                        attachments.append(att)
+                for att in attachments:
+                    archive.writestr('{}/{}'.format(ticket.ext_id, att.name), att.data)
+
+        temp.seek(0)
+        response = HttpResponse(temp, content_type='application/force-download')
+        fname = datetime.datetime.now().strftime('jegyek_%y%m%d%H%M.zip')
+        response['Content-Disposition'] = 'attachment; filename="{}"'.format(fname)
+        return response
+
+    download_action.short_description = u'Letöltés ZIP-ben'
+
     def get_change_actions(self, request, object_id, form_url):
-        return ('new_note', 'new_attachment',
-                'new_material', 'new_workitem',
-                'new_device',)
+        obj = Ticket.objects.get(pk=object_id)
+        if is_site_admin(request.user) or \
+                obj.status in (u'Kiadva', u'Folyamatban'):
+            return ('new_note', 'new_attachment',
+                    'new_material', 'new_workitem',
+                    'new_device',)
+        else:
+            return ('new_note',)
 
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return (('created_at', DateRangeFilter),
-                        'city__primer', OwnerFilter, IsClosedFilter)
+                        'city__primer', OwnerFilter, IsClosedFilter,
+                        'has_images')
             else:
                 return (IsClosedFilter,)
 
@@ -498,10 +526,10 @@ class TicketAdmin(CustomDjangoObjectActions,
     ticket_type.short_description = u'Tipus'
     # ticket_type.admin_order_field = ('created_at')
 
-    def has_images(self, obj):
-        return u'✓' if obj[Ticket.Keys.HAS_IMAGES] else ''
+    def has_images_nice(self, obj):
+        return u'✓' if obj.has_images else ''
 
-    has_images.short_description = u'Kép'
+    has_images_nice.short_description = u'Kép'
 
     # =========================================================================
     # ACTIONS

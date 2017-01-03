@@ -358,6 +358,7 @@ class Ticket(JsonExtended):
         max_length=100,
         verbose_name=u'Státusz',
     )
+    has_images = models.BooleanField(default=False, verbose_name=u'Kép')
     closed_at = models.DateTimeField(verbose_name=u'Lezárva',
                                      null=True, blank=True,
                                      editable=False)
@@ -377,7 +378,6 @@ class Ticket(JsonExtended):
         the database
         """
         COLLECTABLE_MONEY = u'Beszedés'
-        HAS_IMAGES = 'has_images'
 
     @staticmethod
     def autocomplete_search_fields():
