@@ -37,6 +37,7 @@ from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
 from rovidtav import settings
 from inline_actions.admin import InlineActionsModelAdminMixin
 from django.http.response import HttpResponse
+from copy import copy
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -305,7 +306,6 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
     # PARAMETERS
     # =========================================================================
-    model = Ticket
     add_form_template = os.path.join('rovidtav', 'select2.html')
 
     list_per_page = 500
@@ -335,11 +335,6 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
 
     def get_form(self, request, obj=None, **kwargs):
-        if obj:
-            self.fields = [f for f in self.fields
-                           if f not in ('city', 'address')]
-            if 'full_address' not in self.fields:
-                self.fields.insert(2, 'full_address')
         form = super(TicketAdmin, self).get_form(request, obj, **kwargs)
         if obj and is_site_admin(request.user):
             self._hide_icons(form, ('payoff',), show_add=True)
@@ -424,7 +419,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_readonly_fields(self, request, obj=None):
         if obj:
             fields = ('created_by', 'created_at', 'ext_id', 'client',
-                      'ticket_types',)
+                      'ticket_types', 'city', 'address')
         else:
             fields = ()
         fields += (self.readonly_fields or tuple())
