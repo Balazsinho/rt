@@ -312,7 +312,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     list_display = ('ext_id', 'address', 'city_name', 'client_name',
                     'client_link', 'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status', 'primer',
-                    'has_images_nice', 'collectable', 'payoff_link',)
+                    'has_images_nice', 'collectable', 'remark',
+                    'payoff_link',)
     # TODO: check if this is useful
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
