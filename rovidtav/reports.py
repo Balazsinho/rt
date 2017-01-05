@@ -5,6 +5,7 @@ from model_report.report import reports
 
 from rovidtav.report_helpers import CustomReportAdmin, Label
 from rovidtav.models import Ticket
+from _collections import defaultdict
 
 
 def to_date(dt, instance=None):
@@ -57,20 +58,26 @@ class SummaryList(CustomReportAdmin):
     def _calc_extra_from_qs(self, qs):
         if not hasattr(self, 'calculated_columns'):
             workitem_keys = set()
-            id_workitem_map = {}
+            material_keys = set()
+            id_extra_map = defaultdict(dict)
             for ticket in qs:
                 tws = ticket.munka_jegy.all()
                 workitem_keys |= set([tw.work_item for tw in tws])
-                id_workitem_map[ticket.pk] = dict([(tw.work_item.art_number, tw.amount) for tw in tws])
+                id_extra_map[ticket.pk].update(dict([(tw.work_item.art_number, tw.amount) for tw in tws]))
                 price = sum([tw.work_item.art_price * tw.amount for tw in tws])
-                if id_workitem_map[ticket.pk]:
-                    id_workitem_map[ticket.pk][u'Ár összesen'] = price
+                if id_extra_map[ticket.pk]:
+                    id_extra_map[ticket.pk][u'Ár összesen'] = int(price)
+
+                tms = ticket.anyag_jegy.all()
+                material_keys |= set([tm.material for tm in tms])
+                id_extra_map[ticket.pk].update(dict([(tm.material.sn, tm.amount) for tm in tms]))
 
             workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number)
-            wo_offsets = list(enumerate(workitem_keys))
-            self.calculated_columns = [(e[0]+self.extra_columns_first_col, e[1].art_number) for e in wo_offsets]
+            material_keys = sorted(list(material_keys), key=lambda x: x.sn)
+            wo_offsets = list(enumerate(workitem_keys + material_keys))
+            self.calculated_columns = [(e[0]+self.extra_columns_first_col, e[1].art_number if hasattr(e[1], 'art_number') else e[1].sn) for e in wo_offsets]
             self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
-            self.extra_col_map = id_workitem_map
+            self.extra_col_map = id_extra_map
             self.id_url_map = dict([(t.ext_id, '/admin/rovidtav/ticket/{}/change'.format(t.pk)) for t in qs])
 
     def get_render_context(self, request, extra_context={}, by_row=None):
