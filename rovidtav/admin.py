@@ -30,7 +30,7 @@ from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
-                     ApplicantAttributes, DeviceOwner)
+                     ApplicantAttributes, DeviceOwner, Tag)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
 
@@ -91,6 +91,11 @@ class PayoffAdmin(admin.ModelAdmin):
 class CityAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'zip', 'primer', 'onuk')
+
+
+class TagAdmin(admin.ModelAdmin):
+
+    list_display = ('name', 'remark')
 
 
 class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
@@ -325,8 +330,8 @@ class TicketAdmin(CustomDjangoObjectActions,
                WorkItemInline, TicketDeviceInline, HistoryInline)
     ordering = ('-created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
-              'client_phone', 'owner', 'status', 'created_at',
-              'remark', 'payoff', 'collectable']
+              'client_phone', 'owner', 'status', 'created_at', 'closed_at',
+              'remark', 'ticket_tags', 'payoff', 'collectable']
     readonly_fields = ('client_phone', 'full_address', 'collectable')
     exclude = ['additional', 'created_by']
     actions = ['download_action']
@@ -425,7 +430,8 @@ class TicketAdmin(CustomDjangoObjectActions,
             fields = ()
         fields += (self.readonly_fields or tuple())
         if not is_site_admin(request.user):
-            fields += ('owner', 'payoff', 'remark')
+            fields += ('owner', 'payoff', 'remark', 'ticket_tags',
+                       'closed_at')
             if obj.status not in (u'Kiadva', u'Folyamatban'):
                 fields += ('status',)
         return fields
@@ -607,6 +613,7 @@ admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)
 admin.site.register(Client, ClientAdmin)
 admin.site.register(TicketType)
+admin.site.register(Tag, TagAdmin)
 admin.site.register(Ticket, TicketAdmin)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)

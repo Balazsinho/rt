@@ -327,6 +327,23 @@ class TicketType(BaseEntity):
         return ('name',)
 
 
+class Tag(BaseEntity):
+
+    name = models.CharField(db_column='cimke', max_length=70,
+                            verbose_name=u'Cimke')
+    remark = models.TextField(db_column='megjegyzes',
+                              null=True, blank=True,
+                              verbose_name=u'Megjegyzés')
+
+    class Meta:
+        db_table = 'tag'
+        verbose_name = u'Cimke'
+        verbose_name_plural = u'Cimkék'
+
+    def __unicode__(self):
+        return self.name
+
+
 class Ticket(JsonExtended):
 
     ext_id = models.CharField(db_column='kulso_id', max_length=20,
@@ -335,6 +352,8 @@ class Ticket(JsonExtended):
                                verbose_name=u'Ügyfél')
     ticket_types = models.ManyToManyField(TicketType, db_column='tipus',
                                           verbose_name=u'Jegy típus')
+    ticket_tags = models.ManyToManyField(Tag, db_column='cimkek',
+                                         verbose_name=u'Cimkék')
     city = models.ForeignKey(City, db_column='telepules',
                              verbose_name=u'Település')
     address = models.CharField(db_column='cim', max_length=120,
@@ -361,7 +380,7 @@ class Ticket(JsonExtended):
     has_images = models.BooleanField(default=False, verbose_name=u'Kép')
     closed_at = models.DateTimeField(verbose_name=u'Lezárva',
                                      null=True, blank=True,
-                                     editable=False)
+                                     editable=True)
 
     created_at = models.DateTimeField(verbose_name=u'Létrehozva')
     created_by = models.ForeignKey(User, editable=False,
@@ -439,7 +458,7 @@ class Ticket(JsonExtended):
                 if self.status in (Const.TicketStatus.DONE_SUCC,
                                    Const.TicketStatus.DONE_UNSUCC,
                                    Const.TicketStatus.DUPLICATE,):
-                    self.closed_at = datetime.now()
+                    self.closed_at = self.closed_at or datetime.now()
 
         super(Ticket, self).save(*args, **kwargs)
 
