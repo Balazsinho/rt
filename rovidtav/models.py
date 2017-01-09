@@ -353,6 +353,7 @@ class Ticket(JsonExtended):
     ticket_types = models.ManyToManyField(TicketType, db_column='tipus',
                                           verbose_name=u'Jegy típus')
     ticket_tags = models.ManyToManyField(Tag, db_column='cimkek',
+                                         null=True, blank=True,
                                          verbose_name=u'Cimkék')
     city = models.ForeignKey(City, db_column='telepules',
                              verbose_name=u'Település')
@@ -378,9 +379,9 @@ class Ticket(JsonExtended):
         verbose_name=u'Státusz',
     )
     has_images = models.BooleanField(default=False, verbose_name=u'Kép')
-    closed_at = models.DateTimeField(verbose_name=u'Lezárva',
-                                     null=True, blank=True,
-                                     editable=True)
+    closed_at = models.DateField(verbose_name=u'Lezárva',
+                                 null=True, blank=True,
+                                 editable=True)
 
     created_at = models.DateTimeField(verbose_name=u'Létrehozva')
     created_by = models.ForeignKey(User, editable=False,
