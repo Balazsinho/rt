@@ -318,7 +318,7 @@ class TicketAdmin(CustomDjangoObjectActions,
                     'client_link', 'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status', 'primer',
                     'has_images_nice', 'collectable', 'remark',
-                    'payoff_link',)
+                    'payoff_link', 'ticket_tags_nice')
     # TODO: check if this is useful
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
@@ -405,7 +405,7 @@ class TicketAdmin(CustomDjangoObjectActions,
             if is_site_admin(request.user):
                 return (('created_at', DateRangeFilter),
                         'city__primer', OwnerFilter, IsClosedFilter,
-                        'has_images')
+                        'has_images', 'ticket_tags')
             else:
                 return (IsClosedFilter,)
 
@@ -534,6 +534,11 @@ class TicketAdmin(CustomDjangoObjectActions,
         return u'✓' if obj.has_images else ''
 
     has_images_nice.short_description = u'Kép'
+
+    def ticket_tags_nice(self, obj):
+        return ', '.join([t.name for t in obj.ticket_tags.all()])
+
+    ticket_tags_nice.short_description = u'Cimkék'
 
     # =========================================================================
     # ACTIONS

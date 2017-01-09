@@ -353,7 +353,7 @@ class Ticket(JsonExtended):
     ticket_types = models.ManyToManyField(TicketType, db_column='tipus',
                                           verbose_name=u'Jegy típus')
     ticket_tags = models.ManyToManyField(Tag, db_column='cimkek',
-                                         null=True, blank=True,
+                                         blank=True,
                                          verbose_name=u'Cimkék')
     city = models.ForeignKey(City, db_column='telepules',
                              verbose_name=u'Település')
