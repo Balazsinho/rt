@@ -337,6 +337,11 @@ class TicketAdmin(CustomDjangoObjectActions,
     exclude = ['additional', 'created_by']
     actions = ['download_action']
 
+    class Media:
+        css = {
+            'all': ('css/ticket.css',)
+        }
+
     # =========================================================================
     # METHOD OVERRIDES
     # =========================================================================
