@@ -78,22 +78,24 @@
 			siteSpecificEvents(context={{siteSpecificContext|jsonify|safe}})
 		});
 	}
-	jQuery(document).ready(function(){
-		jQuery(".changeform-tabs li").each(function() {
-			var currItem = jQuery(this);
-			var currLink = currItem.find('a').text();
-			if (currLink != 'Általános') {
-				currItem.click(function() {
-					jQuery('.submit-row').hide();
-				});
-			} else {
-				currItem.click(function() {
-					jQuery('.submit-row').show('300');
-				});
-			}
-			console.log(currLink);
+	if ({{hideSaveOnTabs}}) {
+		jQuery(document).ready(function(){
+			jQuery(".changeform-tabs li").each(function() {
+				var currItem = jQuery(this);
+				var currLink = currItem.find('a').text();
+				if (currLink != 'Általános') {
+					currItem.click(function() {
+						jQuery('.submit-row').hide();
+					});
+				} else {
+					currItem.click(function() {
+						jQuery('.submit-row').show('300');
+					});
+				}
+				console.log(currLink);
+			});
 		});
-	})
+	}
 </script>
 
 {% endblock %}

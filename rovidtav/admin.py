@@ -358,6 +358,7 @@ class TicketAdmin(CustomDjangoObjectActions,
                                 Const.TicketStatus.DONE_UNSUCC,
                                 Const.TicketStatus.DUPLICATE]
         }
+        extra_context['hideSaveOnTabs'] = 'true'
 
         return InlineActionsModelAdminMixin.changeform_view(self, request, object_id=object_id, form_url=form_url, extra_context=extra_context)
 
