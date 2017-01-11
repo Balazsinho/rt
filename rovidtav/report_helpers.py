@@ -146,6 +146,8 @@ class FitSheetWrapper(object):
 class CustomReportAdmin(ReportAdmin):
 
     extra_columns_first_col = 0
+    calculated_columns = []
+    id_url_map = {}
     # This one is set only if the logged in user is not an admin
     data_owner = None
     data_owner_field = 'owner'
@@ -161,6 +163,8 @@ class CustomReportAdmin(ReportAdmin):
             for _, cfield, index in self.related_inline_filters:
                 filter_related_fields[cfield] = by_row[index].value
         form_filter = self.get_form_filter(context_request)
+        if not form_filter.get_filter_kwargs():
+            return
         qs = self.get_query_set(filter_related_fields or form_filter.get_filter_kwargs())
         self._calc_extra_from_qs(qs)
 
