@@ -530,7 +530,7 @@ class TicketAdmin(CustomDjangoObjectActions,
         # return obj.created_at.strftime('%Y.%m.%d %H:%M')
         return obj.created_at.strftime('%Y.%m.%d')
 
-    created_at_fmt.short_description = u'Létrehozva'
+    created_at_fmt.short_description = u'Felvéve'
     created_at_fmt.admin_order_field = ('created_at')
 
     def closed_at_fmt(self, obj):
