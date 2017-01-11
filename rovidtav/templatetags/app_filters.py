@@ -1,3 +1,5 @@
+import json
+
 from django import template
 from django.core.urlresolvers import reverse
 from django.forms import (ModelChoiceField, Select, ModelMultipleChoiceField,
@@ -7,6 +9,12 @@ from jet.utils import get_model_instance_label, get_app_list
 
 
 register = template.Library()
+
+
+def jsonify(obj):
+    return json.dumps(obj)
+
+register.filter('jsonify', jsonify)
 
 
 @register.filter

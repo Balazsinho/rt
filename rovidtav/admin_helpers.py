@@ -9,6 +9,7 @@ from django.contrib.admin.views.main import ChangeList, ORDER_VAR
 from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.admin import GenericTabularInline
+from django import forms
 
 from django_object_actions.utils import DjangoObjectActions
 from jet.admin import CompactInline
@@ -16,6 +17,11 @@ from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner
+
+
+class TicketForm(forms.ModelForm):
+    class Media:
+        js = ('js/ticket_form.js',)
 
 
 class DeviceOwnerListFilter(admin.SimpleListFilter):
@@ -137,6 +143,7 @@ class ReadOnlyInline(object):
 
 
 class ReadOnlyTabularInline(ReadOnlyInline, admin.TabularInline):
+
     template = os.path.join('admin', 'readOnlyInline.html')
 
 

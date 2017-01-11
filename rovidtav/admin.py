@@ -23,14 +23,14 @@ from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
                             is_site_admin, DeviceOwnerListFilter,
                             get_technician_choices, get_technicians,
-                            get_unread_messages_count)
+                            get_unread_messages_count, TicketForm)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
-                     ApplicantAttributes, DeviceOwner, Tag)
+                     ApplicantAttributes, DeviceOwner, Tag, Const)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
 
@@ -311,6 +311,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
     # PARAMETERS
     # =========================================================================
+    form = TicketForm
     add_form_template = os.path.join('rovidtav', 'select2.html')
 
     list_per_page = 500
@@ -330,8 +331,8 @@ class TicketAdmin(CustomDjangoObjectActions,
                WorkItemInline, TicketDeviceInline, HistoryInline)
     ordering = ('-created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
-              'client_phone', 'owner', 'status', 'created_at', 'closed_at',
-              'remark', 'ticket_tags', 'payoff', 'collectable']
+              'client_phone', 'owner', 'status', 'closed_at',
+              'remark', 'ticket_tags', 'payoff', 'collectable', 'created_at', ]
     readonly_fields = ('client_phone', 'full_address', 'collectable')
     exclude = ['additional', 'created_by']
     actions = ['download_action']
@@ -349,6 +350,16 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     def get_changelist(self, request, **kwargs):
         return SpecialOrderingChangeList
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['siteSpecificContext'] = {
+            'closed_statuses': [Const.TicketStatus.DONE_SUCC,
+                                Const.TicketStatus.DONE_UNSUCC,
+                                Const.TicketStatus.DUPLICATE]
+        }
+
+        return InlineActionsModelAdminMixin.changeform_view(self, request, object_id=object_id, form_url=form_url, extra_context=extra_context)
 
     def changelist_view(self, request, extra_context=None):
         """

@@ -366,7 +366,10 @@ class Ticket(JsonExtended):
                               null=True, blank=True,
                               verbose_name=u'Szerelő',
                               limit_choices_to={'groups__name': u'Szerelő'})
-    remark = models.TextField(db_column='megjegyzes',
+    remark = models.CharField(db_column='megjegyzes',
+                              help_text=(u'A kivitelezéssel kapcsolatos információk a'
+                                         u' "Megjegyzések" menü alá mennek.'),
+                              max_length=150,
                               null=True, blank=True,
                               verbose_name=u'Megjegyzés')
     status = models.CharField(
@@ -460,6 +463,8 @@ class Ticket(JsonExtended):
                                    Const.TicketStatus.DONE_UNSUCC,
                                    Const.TicketStatus.DUPLICATE,):
                     self.closed_at = self.closed_at or datetime.now()
+                else:
+                    self.closed_at = None
 
         super(Ticket, self).save(*args, **kwargs)
 
