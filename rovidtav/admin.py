@@ -341,6 +341,7 @@ class TicketAdmin(CustomDjangoObjectActions,
         css = {
             'all': ('css/ticket.css',)
         }
+        js = ('js/ticket_list.js',)
 
     # =========================================================================
     # METHOD OVERRIDES
