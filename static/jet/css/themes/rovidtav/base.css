@@ -372,11 +372,11 @@ body {
     padding: 0
 }
 html {
-    font-size: 87.5%
+    font-size: 90%
 }
 @media only screen and (max-width: 3001px) {
     html {
-	    font-size: 87.5%
+	    font-size: 90%
     }
 }
 body {
@@ -6981,6 +6981,10 @@ body.change-list .object-tools li {
     border-bottom: 1px solid #EFEFEF;
     width: 800px;
     /*padding: 0.71429rem*/
+}
+.form-row-stackedinline {
+    overflow: hidden;
+    padding: 7px;
 }
 .form-row img,
 .form-row input {
