@@ -16,7 +16,7 @@ from jet.admin import CompactInline
 from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
-from rovidtav.models import DeviceOwner
+from rovidtav.models import DeviceOwner, Const
 from django.utils.text import capfirst
 
 
@@ -174,6 +174,22 @@ class CustomInlineActionsMixin(InlineActionsMixin):
     def _evt_param(self, obj):
         return obj
 
+    def get_fieldsets(self, request, obj=None):
+        self._request = request
+        return super(CustomInlineActionsMixin, self).get_fieldsets(request, obj)
+
+    def get_actions(self, request, obj=None):
+        if isinstance(obj, DeviceOwner):
+            ticket_ok = True
+        else:
+            ticket = obj.ticket
+            ticket_ok = ticket.status in [Const.TicketStatus.ASSIGNED,
+                                          Const.TicketStatus.IN_PROGRESS]
+        if request.user.is_superuser or ticket_ok:
+            return self.actions
+        else:
+            return []
+
     def render_actions(self, obj=None):
         if hasattr(self, 'actions'):
             actions = self.actions
@@ -184,7 +200,7 @@ class CustomInlineActionsMixin(InlineActionsMixin):
             return ''
 
         buttons = []
-        for action_name in self.actions:
+        for action_name in self.get_actions(self._request, obj):
             action_func = getattr(self, action_name, None)
             if not action_func:
                 raise RuntimeError("Could not find action `{}`".format(action_name))
