@@ -4,6 +4,7 @@
 {{ inline_admin_formset.formset.management_form }}
 <fieldset class="module">
    <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
+	{% if inline_admin_formset.formset.queryset.count > 0 %}
    {{ inline_admin_formset.formset.non_form_errors }}
    <table>
      <thead><tr>
@@ -72,6 +73,9 @@
 
      </tbody>
    </table>
+       {% else %}
+			<div class="emptyInlineResult">Nincsenek {{ inline_admin_formset.opts.verbose_name_plural|lower }} hozzáadva.</div>
+       {% endif %}
 </fieldset>
   </div>
 </div>
