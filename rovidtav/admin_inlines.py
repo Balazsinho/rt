@@ -48,6 +48,10 @@ class AttachmentInline(RemoveInlineAction,
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def remove(self, request, ticket, obj):
+        super(AttachmentInline, self).remove(request, ticket, obj)
+        ticket.refresh_has_images()
+
     def _pimp_actions(self, actions, obj):
         confirm_txt = (u'onclick="return confirm(\'Név: {} - '
                        u'Törlés?\')"'.format(obj.name))

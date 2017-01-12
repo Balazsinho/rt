@@ -105,9 +105,13 @@ class JsonExtended(BaseEntity):
 
 class ApplicantAttributes(BaseEntity):
 
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(User, verbose_name=u'Felhasználó',)
     percent = models.IntegerField(db_column='szazalek',
-                                  verbose_name=u'Százelék')
+                                  verbose_name=u'Százelék',
+                                  blank=True, null=True)
+    tel_num = models.CharField(db_column='telefon', max_length=60,
+                               verbose_name=u'Telefonszám',
+                               blank=True, null=True)
 
     class Meta:
         db_table = 'alkalmazott_tul'
@@ -408,6 +412,13 @@ class Ticket(JsonExtended):
 
     def devices(self):
         return Device.objects.get(client=self.client)
+
+    def refresh_has_images(self):
+        atts = Attachment.objects.filter(ticket=self)
+        for att in atts:
+            if att.is_image() and not att.name.lower().startswith('imdb'):
+                self.has_images = True
+                self.save()
 
     def technology(self):
         if not hasattr(self, '_technology'):

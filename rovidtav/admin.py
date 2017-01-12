@@ -45,7 +45,18 @@ from copy import copy
 
 
 class CustomUserAdmin(UserAdmin):
-    pass
+
+    list_display = ('username', 'email', 'phone_number',
+                    'first_name', 'last_name',)
+
+    def phone_number(self, obj):
+        attrs = ApplicantAttributes.objects.get(user=obj)
+        if attrs and attrs.tel_num:
+            return attrs.tel_num
+        else:
+            return None
+
+    phone_number.short_description = u'Telefonszám'
 
 
 class AttachmentAdmin(ModelAdminRedirect):
@@ -59,8 +70,6 @@ class AttachmentAdmin(ModelAdminRedirect):
     def save_model(self, request, obj, form, change):
         super(AttachmentAdmin, self).save_model(request, obj, form, change)
         if obj.is_image() and not obj.name.lower().startswith('imdb'):
-            obj.ticket.has_images = True
-
             temp_buff = StringIO.StringIO()
             temp_buff.write(obj.data)
             temp_buff.seek(0)
@@ -75,6 +84,7 @@ class AttachmentAdmin(ModelAdminRedirect):
 
             obj._data = temp_buff.read()
             obj.save()
+            obj.ticket.refresh_has_images()
 
 
 class PayoffAdmin(admin.ModelAdmin):
