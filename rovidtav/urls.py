@@ -26,7 +26,5 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/v1/', include(api.v1.urls)),
     url(r'^reports/', include('model_report.urls')),
-#    url(r'^messages/', include('postman.urls', namespace='postman',
-#                               app_name='postman')),
     url(r'^messages/', include('django_messages.urls')),
 ]

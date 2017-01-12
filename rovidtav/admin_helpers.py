@@ -20,6 +20,7 @@ from rovidtav.models import DeviceOwner
 
 
 class TicketForm(forms.ModelForm):
+
     class Media:
         js = ('js/ticket_form.js',)
 

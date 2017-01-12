@@ -44,8 +44,6 @@ JET_CHANGE_FORM_SIBLING_LINKS = False
 
 INSTALLED_APPS = (
     'rovidtav',
-    # 'django_admin_bootstrapped.bootstrap3',
-    # 'django_admin_bootstrapped',
     'jet',
     'django_messages',
     'django.contrib.admin',
