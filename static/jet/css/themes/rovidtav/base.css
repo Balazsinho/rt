@@ -12106,4 +12106,8 @@ body.login #footer {
     background-image: linear-gradient(#333333, #222222)
 }
 
+.emptyInlineResult {
+	padding: 10px 0px 10px 25px;
+}
+
 /*# sourceMappingURL=base.css.map */
