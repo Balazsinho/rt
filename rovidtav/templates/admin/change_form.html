@@ -85,11 +85,11 @@
 				var currLink = currItem.find('a').text();
 				if (currLink != 'Általános') {
 					currItem.click(function() {
-						jQuery('.submit-row').hide();
+						jQuery('.submit-row').hide('50');
 					});
 				} else {
 					currItem.click(function() {
-						jQuery('.submit-row').show('300');
+						jQuery('.submit-row').show('100');
 					});
 				}
 				console.log(currLink);
