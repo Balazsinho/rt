@@ -81,7 +81,7 @@
 	if ({{hideSaveOnTabs}}) {
 		jQuery(document).ready(function(){
 			var activeTab = jQuery(".changeform-tabs li .selected").find('a').text();
-			if (activeTab != 'Általános') {
+			if (activeTab != '' && activeTab != 'Általános') {
 				jQuery('.submit-row').hide();
 			} else {
 				jQuery('.submit-row').show();
