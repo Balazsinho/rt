@@ -148,9 +148,15 @@ class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
 
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
+    def has_delete_permission(self, request, obj=None):
+        return False
+
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
-        if obj and not obj.owner.get_content_type_name() == u'Ügyfél':
+        if obj and isinstance(obj.owner.owner, Client):
+            del(form.base_fields['owner'])
+            del(form.declared_fields['owner'])
+        elif obj and isinstance(obj.owner.owner, User):
             form.base_fields['owner'].initial = obj.owner.object_id
         else:
             form.base_fields['owner'].initial = request.user.pk

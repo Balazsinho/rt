@@ -17,6 +17,7 @@ from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner
+from django.utils.text import capfirst
 
 
 class TicketForm(forms.ModelForm):
@@ -170,21 +171,54 @@ class ShowCalcFields(object):
 
 class CustomInlineActionsMixin(InlineActionsMixin):
 
-    def _pimp_actions(self, actions, obj):
-        return actions
-
-    def _add_action_attr(self, actions, look_for, new_attr_str):
-        actions_list = re.findall('<input[^>]+>', actions, re.I)
-        for action in actions_list:
-            if look_for in action:
-                new_action = action.replace('<input ',
-                                            u'<input {} '.format(new_attr_str))
-                actions = actions.replace(action, new_action)
-        return actions
+    def _evt_param(self, obj):
+        return obj
 
     def render_actions(self, obj=None):
-        actions = super(CustomInlineActionsMixin, self).render_actions(obj)
-        return self._pimp_actions(actions, obj)
+        if hasattr(self, 'actions'):
+            actions = self.actions
+        else:
+            return ''
+
+        if not obj:
+            return ''
+
+        buttons = []
+        for action_name in self.actions:
+            action_func = getattr(self, action_name, None)
+            if not action_func:
+                raise RuntimeError("Could not find action `{}`".format(action_name))
+            try:
+                description = action_func.short_description
+            except AttributeError:
+                description = capfirst(action_name.replace('_', ' '))
+            try:
+                css_classes = action_func.css_classes
+            except AttributeError:
+                css_classes = ''
+            try:
+                onclick = action_func.onclick
+                o = self._evt_param(obj)
+                onclick = onclick.format(**o.__dict__)
+                onclick = 'onclick="{}"'.format(onclick)
+            except AttributeError:
+                onclick = ''
+
+            # If the form is submitted, we have no information about the requested action.
+            # Hence we need all data to be encoded using the action name.
+            action_data = [action_name,
+                           obj._meta.app_label,
+                           obj._meta.model_name,
+                           str(obj.pk)]
+            buttons.append('<input type="submit" name="{}" value="{}" class="{}" {}>'.format(
+                '_action__{}'.format('__'.join(action_data)),
+                description,
+                css_classes,
+                onclick,
+            ))
+        return '</p><div class="submit_row inline_actions">{}</div><p>'.format(
+            ''.join(buttons)
+        )
 
     render_actions.short_description = u'Lehetőségek'
     render_actions.allow_tags = True
@@ -198,6 +232,7 @@ class RemoveInlineAction(CustomInlineActionsMixin):
         obj.delete()
 
     remove.short_description = u'T&ouml;rl&eacute;s'
+    remove.onclick = u'return confirm(\'Biztosan t&ouml;r&ouml;l?\')'
 
 
 class HideIcons(object):

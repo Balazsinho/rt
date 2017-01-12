@@ -80,12 +80,19 @@
 	}
 	if ({{hideSaveOnTabs}}) {
 		jQuery(document).ready(function(){
+			var activeTab = jQuery(".changeform-tabs li .selected").find('a').text();
+			if (activeTab != 'Általános') {
+				jQuery('.submit-row').hide();
+			} else {
+				jQuery('.submit-row').show();
+			}
+
 			jQuery(".changeform-tabs li").each(function() {
 				var currItem = jQuery(this);
 				var currLink = currItem.find('a').text();
 				if (currLink != 'Általános') {
 					currItem.click(function() {
-						jQuery('.submit-row').hide('50');
+						jQuery('.submit-row').hide('10');
 					});
 				} else {
 					currItem.click(function() {

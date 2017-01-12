@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 import os
-import re
 from datetime import datetime
 
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
-from django.shortcuts import redirect
+from django.core.urlresolvers import reverse
 
 from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
                                     GenericReadOnlyInline, RemoveInlineAction,
-                                    ReadOnlyStackedInline,)
+                                    ReadOnlyStackedInline,
+                                    CustomInlineActionsMixin)
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner)
-from django.http.response import HttpResponseRedirect
+from django.shortcuts import redirect
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -52,10 +52,8 @@ class AttachmentInline(RemoveInlineAction,
         super(AttachmentInline, self).remove(request, ticket, obj)
         ticket.refresh_has_images()
 
-    def _pimp_actions(self, actions, obj):
-        confirm_txt = (u'onclick="return confirm(\'Név: {} - '
-                       u'Törlés?\')"'.format(obj.name))
-        return self._add_action_attr(actions, '_action__remove__rovidtav__attachment', confirm_txt)
+    remove.onclick = u'return confirm(\'{name} - T&ouml;rl&eacute;s?\')'
+    remove.short_description = u'T&ouml;rl&eacute;s'
 
     def f_created(self, obj):
         created_at = obj.created_at.strftime('%Y-%m-%d %H:%M')
@@ -222,10 +220,10 @@ class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
     def f_sn(self, obj):
         return obj.device.sn
 
-    f_type_name.short_description = u'Vonalkód'
+    f_sn.short_description = u'Vonalkód'
 
 
-class TicketDeviceInline(RemoveInlineAction,
+class TicketDeviceInline(CustomInlineActionsMixin,
                          ShowCalcFields,
                          GenericReadOnlyInline):
 
@@ -234,11 +232,7 @@ class TicketDeviceInline(RemoveInlineAction,
     model = DeviceOwner
     formset = TicketDeviceFormset
     fields = ['f_type_name', 'f_sn']
-
-    def _pimp_actions(self, actions, obj):
-        return actions.replace(
-            '<input ', '<input onclick="return confirm(\'SN: {} - '
-                       'Leszerel?\')" '.format(obj.device.sn))
+    actions = ['remove', 'modify']
 
     def remove(self, request, ticket, dev_owner):
         dev_owner.owner = request.user
@@ -246,7 +240,22 @@ class TicketDeviceInline(RemoveInlineAction,
         dev_owner.device.save()
         dev_owner.save()
 
+    def _evt_param(self, obj):
+        if obj.__class__ == DeviceOwner:
+            return obj.device
+        return obj
+
     remove.short_description = u'Leszerel'
+    remove.onclick = u'return confirm(\'{sn} - Leszerel?\')'
+
+    def modify(self, request, ticket, dev_owner):
+        dev = dev_owner.device
+        info = (dev._meta.app_label, dev._meta.model_name)
+        url = reverse('admin:%s_%s_change' % info, args=(dev.pk,))
+        url = '{}?next={}%23/tab/inline_4/#/tab/module_0/'.format(url, request.path)
+        return redirect(url, anchor='')
+
+    modify.short_description = u'M&oacute;dos&iacute;t'
 
     def f_type_name(self, obj):
         return obj.device.type.name
