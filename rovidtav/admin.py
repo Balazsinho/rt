@@ -458,10 +458,9 @@ class TicketAdmin(CustomDjangoObjectActions,
             fields = ()
         fields += (self.readonly_fields or tuple())
         if not is_site_admin(request.user):
-            fields += ('owner', 'payoff', 'remark', 'ticket_tags',
-                       'closed_at')
+            fields += ('owner', 'payoff', 'remark', 'ticket_tags')
             if obj.status not in (u'Kiadva', u'Folyamatban'):
-                fields += ('status',)
+                fields += ('status', 'closed_at')
         return fields
 
     def get_inline_instances(self, request, obj=None):
