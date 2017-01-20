@@ -266,6 +266,15 @@ class NoteAdmin(ModelAdminRedirect):
         return {}
 
 
+def custom_title_filter(title):
+    class Wrapper(admin.FieldListFilter):
+        def __new__(cls, *args, **kwargs):
+            instance = admin.FieldListFilter.create(*args, **kwargs)
+            instance.title = title
+            return instance
+    return Wrapper
+
+
 class OwnerFilter(SimpleListFilter):
 
     title = u'Szerelő'
@@ -439,12 +448,13 @@ class TicketAdmin(CustomDjangoObjectActions,
             if is_site_admin(request.user):
                 return (('created_at', DateRangeFilter),
                         'city__primer', OwnerFilter, IsClosedFilter,
-                        'has_images', 'ticket_tags')
+                        'has_images', 'ticket_tags',
+                        ('payoff__name', custom_title_filter(u'Elszámolás')))
             else:
                 return (IsClosedFilter,)
 
     def lookup_allowed(self, key, value):
-        if key in ('city__primer',):
+        if key in ('city__primer', 'payoff__name'):
             return True
         return super(TicketAdmin, self).lookup_allowed(key, value)
 
