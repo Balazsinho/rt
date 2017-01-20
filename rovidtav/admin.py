@@ -485,8 +485,8 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     def payoff_link(self, obj):
         if obj.payoff:
-            return ('<a href="/admin/rovidtav/payoff/{}/change">{}</a>'
-                    ''.format(obj.payoff.pk, obj.payoff.name))
+            return (u'<a href="/admin/rovidtav/payoff/{}/change">{}</a>'
+                    u''.format(obj.payoff.pk, obj.payoff.name))
         else:
             return None
 
