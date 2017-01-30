@@ -2,10 +2,12 @@
 <div class="inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
   <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
 
+{{ inline_admin_formset.formset.management_form }}
+
 	{% if inline_admin_formset.formset.queryset.count > 0 %}
 
-{{ inline_admin_formset.formset.management_form }}
 {{ inline_admin_formset.formset.non_form_errors }}
+
 
 {% for inline_admin_form in inline_admin_formset %}
 <div class="attachment-inline-related{% if inline_admin_form.original or inline_admin_form.show_url %} has_original{% endif %}{% if forloop.last %} empty-form last-related{% endif %}" id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
