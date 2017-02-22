@@ -32,8 +32,8 @@ def _error(data):
 @permission_classes((IsAuthenticated,))
 def create_ticket(request):
     req_keys = (Fields.CITY, Fields.ZIP, Fields.STREET, Fields.HOUSE_NUM,
-                Fields.NAME1, Fields.PHONE1, Fields.MT_ID, Fields.TASK_TYPE,
-                Fields.TICKET_ID)
+                Fields.NAME1, Fields.MT_ID, Fields.TASK_TYPE, Fields.TICKET_ID,
+                )  # Fields.PHONE1)
 
     # data = json.loads(unicode(request.read(), 'latin-1').encode('utf-8'))
     data = json.loads(request.read())
