@@ -14,6 +14,7 @@
 <link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/base.css" as url %}{{ url|jet_append_version }}" class="base-stylesheet" />
 <link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/select2.theme.css" as url %}{{ url|jet_append_version }}" class="select2-stylesheet" />
 <link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/jquery-ui.theme.css" as url %}{{ url|jet_append_version }}" class="jquery-ui-stylesheet" />
+<link rel="stylesheet" type="text/css" href="{% static "css/news.css" %}" class="jquery-ui-stylesheet" />
 
 {% block extrastyle %}{% endblock %}
 {% if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}" />{% endif %}
@@ -25,6 +26,7 @@
 </script>
 <script type="text/javascript" src="{% url 'jet:jsi18n' %}"></script>
 <script src="{% static "jet/js/build/bundle.min.js" as url %}{{ url|jet_append_version }}"></script>
+<script src="{% static "js/news.js" %}"></script>
 
 {% jet_static_translation_urls as translation_urls %}
 {% for url in translation_urls %}
@@ -41,6 +43,30 @@
 
 <!-- Container -->
 <div id="container">
+
+	{% if strip_messages %}
+	<div class="breakingNews bn-red bn-small" id="news">
+    	<div class="bn-title" style="width: auto;">
+    		<h2 style="display: inline-block;">Üzenetek</h2>
+    		<span></span>
+    	</div>
+        <ul style="left: 125px;">
+        	{% for message in strip_messages %}
+        		<li>
+        			<a href="/messages/view/{{ message.pk }}">
+        				<span>{{ message.sender.username }}</span>
+        				 <!-- - {{ message.subject }} -->
+        				 - {{ message.short_body }}
+        			</a>
+        		</li>
+            {% endfor %}
+        </ul>
+        <div class="bn-navi">
+        	<span></span>
+            <span></span>
+        </div>
+    </div>
+    {% endif %}
 
     {% if not is_popup %}
     <!-- Header -->
@@ -390,6 +416,20 @@
     {% endif %}
 </div>
 <!-- END Container -->
+
+<script>
+
+jQuery(window).load(function(e) {
+	jQuery("#news").breakingNews({
+		effect		:"slide-v",
+		autoplay	:true,
+		timer		:5000,
+		color		:"red",
+		border		:true
+	});
+});
+
+</script>
 
 </body>
 </html>{% endblock %}

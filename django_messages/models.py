@@ -62,6 +62,14 @@ class Message(models.Model):
 
     objects = MessageManager()
 
+    @property
+    def short_body(self):
+        display_chars = 60
+        if len(self.body) <= display_chars:
+            return self.body
+        else:
+            return self.body[:display_chars].strip() + '...'
+
     def new(self):
         """returns whether the recipient has read the message or not"""
         if self.read_at is not None:

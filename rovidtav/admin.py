@@ -23,7 +23,8 @@ from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
                             is_site_admin, DeviceOwnerListFilter,
                             get_technician_choices, get_technicians,
-                            get_unread_messages_count, TicketForm)
+                            get_unread_messages_count, TicketForm,
+                            get_unread_messages)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline)
@@ -37,7 +38,6 @@ from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
 from rovidtav import settings
 from inline_actions.admin import InlineActionsModelAdminMixin
 from django.http.response import HttpResponse
-from copy import copy
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -649,6 +649,7 @@ class CustomAdminSite(AdminSite):
     def each_context(self, request):
         ctx = super(CustomAdminSite, self).each_context(request)
         ctx.update(get_unread_messages_count(request.user))
+        ctx.update(get_unread_messages(request.user))
         return ctx
 
 

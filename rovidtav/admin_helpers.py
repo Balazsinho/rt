@@ -309,3 +309,16 @@ def get_unread_messages_count(user):
     else:
         cnt = 0
     return {'unread_messages': cnt}
+
+
+def get_unread_messages(user):
+    if user.is_authenticated():
+        messages = Message.objects.filter(recipient=user, read_at__isnull=True)
+        if len(messages) > 0:
+            return {
+                'strip_messages': messages,
+            }
+        else:
+            return {}
+    else:
+        return {}
