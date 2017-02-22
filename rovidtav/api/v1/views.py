@@ -47,6 +47,10 @@ def create_ticket(request):
         return _error('duplicate ticket: {}'.format(data[Fields.TICKET_ID]))
     except Ticket.DoesNotExist:
         pass
+    except Ticket.MultipleObjectsReturned:
+        return _error('duplicate ticket;'
+                      ' multiple tickets with id {}'
+                      ''.format(data[Fields.TICKET_ID]))
 
     city, _ = City.objects.get_or_create(
         name=data[Fields.CITY],
