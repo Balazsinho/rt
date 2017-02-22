@@ -64,12 +64,13 @@ def create_ticket(request):
     try:
         client = Client.objects.get(mt_id=mt_id)
     except Client.DoesNotExist:
+        phone1 = data.get(Fields.PHONE1, u'')
         client = Client.objects.create(
             mt_id=mt_id,
             name=data[Fields.NAME1],
             city=city,
             address=addr,
-            phone=data[Fields.PHONE1],
+            phone=phone1,
             created_by=request.user,
         )
 
