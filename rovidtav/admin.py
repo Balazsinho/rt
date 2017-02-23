@@ -266,15 +266,6 @@ class NoteAdmin(ModelAdminRedirect):
         return {}
 
 
-def custom_title_filter(title):
-    class Wrapper(admin.FieldListFilter):
-        def __new__(cls, *args, **kwargs):
-            instance = admin.FieldListFilter.create(*args, **kwargs)
-            instance.title = title
-            return instance
-    return Wrapper
-
-
 class OwnerFilter(SimpleListFilter):
 
     title = u'Szerelő'
@@ -288,6 +279,24 @@ class OwnerFilter(SimpleListFilter):
             return queryset.filter(owner=self.value())
         else:
             return queryset
+
+
+class PayoffFilter(SimpleListFilter):
+
+    title = u'Elszámolás'
+    parameter_name = 'payoff'
+
+    def lookups(self, request, model_admin):
+        payoff_choices = [(p.pk, p.name) for p in Payoff.objects.all()]
+        return [('empty', u'Nincs elszámolva')] + payoff_choices
+
+    def queryset(self, request, queryset):
+        if self.value() == 'empty':
+            return queryset.filter(payoff__isnull=True)
+        elif self.value() in (None, 'all'):
+            return queryset
+        else:
+            return queryset.filter(payoff=self.value())
 
 
 class IsClosedFilter(SimpleListFilter):
@@ -448,8 +457,7 @@ class TicketAdmin(CustomDjangoObjectActions,
             if is_site_admin(request.user):
                 return (('created_at', DateRangeFilter),
                         'city__primer', OwnerFilter, IsClosedFilter,
-                        'has_images', 'ticket_tags',
-                        ('payoff__name', custom_title_filter(u'Elszámolás')))
+                        'has_images', 'ticket_tags', PayoffFilter)
             else:
                 return (IsClosedFilter,)
 
