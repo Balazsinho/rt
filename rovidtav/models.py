@@ -50,6 +50,9 @@ class Const(object):
         '.jpeg': 'image/jpeg',
         '.png': 'image/png',
         '.pdf': 'application/pdf',
+        '.tiff': 'image/tiff',
+        '.xls': 'application/vnd.ms-excel',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     }
 
     @staticmethod
