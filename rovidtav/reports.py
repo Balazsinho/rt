@@ -151,6 +151,13 @@ class OnDemandList(CustomReportAdmin):
                                    for idx, col
                                    in enumerate(self.calculated_columns)]
         self.extra_col_map = id_extra_map
+        self.id_url_map = dict([(t.ext_id, '/admin/rovidtav/ticket/{}/change'.format(t.pk)) for t in qs])
+
+    def get_render_context(self, request, extra_context={}, by_row=None):
+        ctx = super(OnDemandList, self).get_render_context(
+            request, extra_context, by_row)
+        ctx['id_url_map'] = self.id_url_map
+        return ctx
 
 
 reports.register('osszesito', SummaryList)
