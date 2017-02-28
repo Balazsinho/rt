@@ -96,6 +96,8 @@ class OnDemandList(CustomReportAdmin):
         'client__name',
         'city__name',
         'address',
+        'remark',
+        'status',
         'owner__username',
         'created_at',
         'closed_at',
@@ -113,7 +115,7 @@ class OnDemandList(CustomReportAdmin):
     override_field_formats = {
         'closed_at': to_date,
     }
-    extra_columns_first_col = 5
+    extra_columns_first_col = 10
 
     def _calc_extra_from_qs(self, qs):
         remark_key = u'megjegyzés_'
