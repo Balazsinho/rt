@@ -147,6 +147,7 @@ class CustomReportAdmin(ReportAdmin):
 
     extra_columns_first_col = 0
     calculated_columns = []
+    list_filter_classes = {}
     id_url_map = {}
     # This one is set only if the logged in user is not an admin
     data_owner = None
