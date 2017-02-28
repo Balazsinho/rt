@@ -33,6 +33,12 @@ ADMIN_LOGIN_REDIRECT_URL = '/admin/rovidtav/ticket/'
 IMAGE_DOWNSCALE_PX = 900
 IMAGE_THUMB_PX = 180
 
+SELF_URL = 'http://localhost:8000'
+SMTP_SERVER = 'mail.rovid-tav.hu'
+SMTP_USER = 'munka@rovid-tav.hu'
+SMTP_PASS = 'hu7EyieW'
+EMAIL_SENDER = 'nevalaszolj@rovid-tav.hu'
+
 # =============================================================================
 # JET SETTINGS
 # =============================================================================

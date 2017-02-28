@@ -1,0 +1,4 @@
+Új jegyed érkezett.
+
+Jegy azonosító: {{ ticket.ext_id }}
+Cím: {{ ticket.city.name }} {{ ticket.address }}

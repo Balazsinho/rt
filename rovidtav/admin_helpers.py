@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-import re
+import thread
+import smtplib
 
 from django.http.response import HttpResponseRedirect
+from django.utils.text import capfirst
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList, ORDER_VAR
 from django.contrib.auth.models import User, Group
@@ -17,7 +19,7 @@ from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner, Const
-from django.utils.text import capfirst
+import settings
 
 
 class TicketForm(forms.ModelForm):
@@ -322,3 +324,17 @@ def get_unread_messages(user):
             return {}
     else:
         return {}
+
+
+def send_assign_mail(msg, obj):
+    """
+    Sends an email in a new thread to avoid the ~5s wait required for sending
+    through smtp
+    """
+    def _send_email(msg, obj):
+        smtp = smtplib.SMTP(settings.SMTP_SERVER)
+        smtp.login(settings.SMTP_USER, settings.SMTP_PASS)
+        smtp.sendmail(settings.EMAIL_SENDER, obj.owner.email,
+                      msg.as_string())
+
+    thread.start_new_thread(_send_email, (msg, obj))

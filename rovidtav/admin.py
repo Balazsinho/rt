@@ -6,6 +6,9 @@ from PIL import Image
 import StringIO
 import zipfile
 import datetime
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
@@ -24,7 +27,7 @@ from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             is_site_admin, DeviceOwnerListFilter,
                             get_technician_choices, get_technicians,
                             get_unread_messages_count, TicketForm,
-                            get_unread_messages)
+                            get_unread_messages, send_assign_mail)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline)
@@ -38,6 +41,7 @@ from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
 from rovidtav import settings
 from inline_actions.admin import InlineActionsModelAdminMixin
 from django.http.response import HttpResponse
+from django.template.loader import get_template, render_to_string
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -491,6 +495,40 @@ class TicketAdmin(CustomDjangoObjectActions,
         if not obj and not request.path.strip('/').endswith('change'):
             return []
         return super(TicketAdmin, self).get_inline_instances(request, obj=None)
+
+    def save_model(self, request, obj, form, change):
+        """
+        Saves the model and handles notifications if needed
+        """
+        notify = obj.save()
+        if notify and obj.owner.email:
+            try:
+                ticket_html = Attachment.objects.get(ticket=obj,
+                                                     name='Hibajegy.html')
+            except Attachment.DoesNotExist:
+                ticket_html = None
+            ticket_url = ('{}/admin/rovidtav/ticket/{}'
+                          ''.format(settings.SELF_URL, obj.pk))
+
+            ctx = {'ticket_url': ticket_url,
+                   'ticket_html': ticket_html.data if ticket_html else ''}
+
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = u'Új jegy - {} {}'.format(obj.city.name,
+                                                       obj.address)
+            msg['From'] = settings.EMAIL_SENDER
+            msg['To'] = obj.owner.email
+            plain_template = render_to_string('assign_notification.txt',
+                                              context={'ticket': obj})
+            html_template = render_to_string('assign_notification.html',
+                                             context=ctx)
+            part1 = MIMEText(plain_template, 'plain', 'utf-8')
+            part2 = MIMEText(html_template, 'html', 'utf-8')
+
+            msg.attach(part1)
+            msg.attach(part2)
+
+            send_assign_mail(msg, obj)
 
     # =========================================================================
     # FIELDS

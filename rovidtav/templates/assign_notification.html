@@ -1,0 +1,25 @@
+<html>
+	<head>
+		<style>
+			.messageBox {
+				border: 1px solid #CCC;
+				width: 100%;
+				padding: 20px;
+				margin-bottom: 30px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="messageBox">
+			<p>
+				Új jegy került a nevedre. Ez egy automatikusan generált üzenet, kérlek ne válaszolj rá.
+			</p>
+			<p>
+				A jegy adminisztációja (lezárás, anyagok, munkák felvétele) az adminisztrációs felületen keresztül lehetséges.
+				A jegyet <a href={{ ticket_url }}>erre a linkre kattintva</a> éred el az adminisztrációs felületen.
+			</p>
+		</div>
+	</body>
+</html>
+
+{{ ticket_html|safe }}

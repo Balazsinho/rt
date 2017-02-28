@@ -112,6 +112,10 @@ class ApplicantAttributes(BaseEntity):
     percent = models.IntegerField(db_column='szazalek',
                                   verbose_name=u'Százelék',
                                   blank=True, null=True)
+    email_on_assign = models.BooleanField(db_column='email_assign',
+                                          verbose_name=u'Email munkalap kiadásakor',
+                                          default=True,
+                                          blank=False, null=False)
     tel_num = models.CharField(db_column='telefon', max_length=60,
                                verbose_name=u'Telefonszám',
                                blank=True, null=True)
@@ -459,6 +463,7 @@ class Ticket(JsonExtended):
         return ttype[:25] + u'...' if len(ttype) > 25 else ttype
 
     def save(self, *args, **kwargs):
+        notify_owner = False
         if self.pk:
             prev_inst = Ticket.objects.get(pk=self.pk)
             if self.owner != prev_inst.owner:
@@ -469,6 +474,7 @@ class Ticket(JsonExtended):
 
                 elif self.status != Const.TicketStatus.NEW and not self.owner:
                     self.status = Const.TicketStatus.NEW
+                notify_owner = True
 
             if self.status != prev_inst.status:
                 self._status_trans(prev_inst.status, self.status)
@@ -479,8 +485,13 @@ class Ticket(JsonExtended):
                     self.closed_at = self.closed_at or datetime.now()
                 else:
                     self.closed_at = None
+                notify_owner = True
+
+        else:
+            notify_owner = True
 
         super(Ticket, self).save(*args, **kwargs)
+        return notify_owner
 
     def _status_trans(self, old_status, new_status):
         """
