@@ -474,7 +474,8 @@ class Ticket(JsonExtended):
 
                 elif self.status != Const.TicketStatus.NEW and not self.owner:
                     self.status = Const.TicketStatus.NEW
-                notify_owner = True
+                if self.status == Const.TicketStatus.ASSIGNED:
+                    notify_owner = True
 
             if self.status != prev_inst.status:
                 self._status_trans(prev_inst.status, self.status)
@@ -485,7 +486,8 @@ class Ticket(JsonExtended):
                     self.closed_at = self.closed_at or datetime.now()
                 else:
                     self.closed_at = None
-                notify_owner = True
+                if self.status == Const.TicketStatus.ASSIGNED:
+                    notify_owner = True
 
         else:
             notify_owner = True
