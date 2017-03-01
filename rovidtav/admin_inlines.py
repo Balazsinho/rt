@@ -10,7 +10,8 @@ from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
                                     ReadOnlyStackedInline,
                                     CustomInlineActionsMixin)
 from rovidtav.models import (Attachment, Ticket, Note,
-                             TicketMaterial, TicketWorkItem, DeviceOwner)
+                             TicketMaterial, TicketWorkItem, DeviceOwner,
+                             SystemEmail)
 from django.shortcuts import redirect
 
 
@@ -205,6 +206,16 @@ class NoteInline(GenericReadOnlyInline):
     def get_queryset(self, request):
         qs = super(NoteInline, self).get_queryset(request)
         return qs.filter(is_history=False)
+
+
+class SystemEmailInline(GenericReadOnlyInline):
+
+    # consider jet CompactInline
+    verbose_name = u'Email'
+    verbose_name_plural = u'Emailek'
+    model = SystemEmail
+    fields = ('status', 'remark', 'created_by', 'created_at')
+    ordering = ('-created_at',)
 
 
 class DeviceInline(ShowCalcFields, GenericReadOnlyInline):

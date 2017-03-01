@@ -18,7 +18,7 @@ from jet.admin import CompactInline
 from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
-from rovidtav.models import DeviceOwner, Const
+from rovidtav.models import DeviceOwner, Const, SystemEmail
 import settings
 import time
 
@@ -332,20 +332,30 @@ def send_assign_mail(msg, obj):
     Sends an email in a new thread to avoid the ~5s wait required for sending
     through smtp
     """
-    def _send_email(msg, obj):
+    def _send_email(msg, obj, mail_obj):
         for retry in range(6):
             try:
                 smtp = smtplib.SMTP_SSL(settings.SMTP_SERVER)
                 smtp.login(settings.SMTP_USER, settings.SMTP_PASS)
                 smtp.sendmail(settings.EMAIL_SENDER, obj.owner.email,
                               msg.as_string())
+                mail_obj.status = Const.EmailStatus.SENT
+                mail_obj.remark = (u'Sikeresen elküldve neki: {}'
+                                   u''.format(obj.owner.username))
+                mail_obj.save()
             except Exception as e:
                 print e
                 if retry == 5:
+                    mail_obj.status = Const.EmailStatus.ERROR
+                    mail_obj.remark = (u'Sikertelen küldés. Hiba: {}'
+                                       u''.format(e))
+                    mail_obj.save()
                     raise e
                 time.sleep(30*(retry+1))
                 continue
             else:
                 break
 
-    thread.start_new_thread(_send_email, (msg, obj))
+    mail_obj = SystemEmail.objects.create(content_object=obj)
+    mail_obj.save()
+    thread.start_new_thread(_send_email, (msg, obj, mail_obj))

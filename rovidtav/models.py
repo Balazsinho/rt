@@ -43,6 +43,19 @@ class Const(object):
                 (Const.TicketStatus.DUPLICATE,) * 2,
             )
 
+    class EmailStatus:
+        IN_PROGRESS = u'Folyamatban'
+        SENT = u'Elküldve'
+        ERROR = u'Sikertelen'
+
+        @staticmethod
+        def choices():
+            return (
+                (Const.EmailStatus.IN_PROGRESS,) * 2,
+                (Const.EmailStatus.SENT,) * 2,
+                (Const.EmailStatus.ERROR,) * 2,
+            )
+
     EXT_MAP = {
         '.htm': 'text/html',
         '.html': 'text/html',
@@ -762,3 +775,32 @@ class Attachment(BaseEntity):
             self._data = base64.b64encode(self._data)
 
         super(Attachment, self).save(*args, **kwargs)
+
+
+class SystemEmail(BaseEntity):
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+
+    status = models.CharField(
+        db_column='statusz',
+        null=False,
+        blank=False,
+        default=Const.EmailStatus.IN_PROGRESS,
+        choices=Const.EmailStatus.choices(),
+        max_length=100,
+        verbose_name=u'Státusz',
+    )
+    remark = models.TextField(db_column='megjegyzes',
+                              verbose_name=u'Megjegyzés',
+                              null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'rendszeremail'
+        verbose_name = u'Rendszer email'
+        verbose_name_plural = u'Rendszer emailek'

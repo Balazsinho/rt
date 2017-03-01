@@ -6,7 +6,6 @@ from PIL import Image
 import StringIO
 import zipfile
 import datetime
-import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -25,12 +24,13 @@ from daterange_filter.filter import DateRangeFilter
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
                             is_site_admin, DeviceOwnerListFilter,
-                            get_technician_choices, get_technicians,
+                            get_technician_choices,
                             get_unread_messages_count, TicketForm,
                             get_unread_messages, send_assign_mail)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
-                            WorkItemInline, TicketDeviceInline)
+                            WorkItemInline, TicketDeviceInline,
+                            SystemEmailInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
@@ -41,7 +41,8 @@ from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
 from rovidtav import settings
 from inline_actions.admin import InlineActionsModelAdminMixin
 from django.http.response import HttpResponse
-from django.template.loader import get_template, render_to_string
+from django.template.loader import render_to_string
+from rovidtav.models import SystemEmail
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -221,6 +222,27 @@ class ClientAdmin(admin.ModelAdmin):
             return super(ClientAdmin, self).get_model_perms(request)
 
 
+class SystemEmailAdmin(admin.ModelAdmin):
+
+    list_display = ('status', 'related_ticket', 'remark', 'created_by',
+                    'created_at')
+    list_filter = ('status', )
+
+    def related_ticket(self, obj):
+        rel_id = obj.content_object.pk
+        return (u'<a href="/admin/rovidtav/ticket/{}/change">{}</a>'
+                u''.format(rel_id, obj.content_object.ext_id))
+
+    related_ticket.allow_tags = True
+    related_ticket.short_description = u'Jegy'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class MaterialAdmin(admin.ModelAdmin):
 
     list_display = ('sn', 'name', 'category', 'price', 'unit', 'comes_from',
@@ -351,6 +373,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
     form = TicketForm
     add_form_template = os.path.join('rovidtav', 'select2.html')
+    change_form_template = os.path.join('rovidtav', 'ticket',
+                                        'change_form.html')
 
     list_per_page = 200
     list_display = ('ext_id', 'address', 'city_name', 'client_name',
@@ -366,7 +390,7 @@ class TicketAdmin(CustomDjangoObjectActions,
                       'new_device', 'new_workitem')
     changelist_actions = ('summary_list',)
     inlines = (NoteInline, AttachmentInline, MaterialInline,
-               WorkItemInline, TicketDeviceInline)
+               WorkItemInline, TicketDeviceInline, SystemEmailInline)
     ordering = ('-created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
               'client_phone', 'owner', 'status', 'closed_at',
@@ -395,7 +419,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_changelist(self, request, **kwargs):
         return SpecialOrderingChangeList
 
-    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+    def changeform_view(self, request, object_id=None, form_url='',
+                        extra_context=None):
         extra_context = extra_context or {}
         extra_context['siteSpecificContext'] = {
             'closed_statuses': [Const.TicketStatus.DONE_SUCC,
@@ -494,6 +519,10 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):
             return []
+        if not is_site_admin(request.user):
+            # Remove the email inline if not an admin
+            self.inlines = [i for i in self.inlines
+                            if i not in (SystemEmailInline, )]
         return super(TicketAdmin, self).get_inline_instances(request, obj=None)
 
     def save_model(self, request, obj, form, change):
@@ -703,6 +732,7 @@ admin.site = CustomAdminSite()
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group)
+admin.site.register(SystemEmail, SystemEmailAdmin)
 
 admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)
