@@ -343,7 +343,7 @@ def send_assign_mail(msg, obj):
                 print e
                 if retry == 5:
                     raise e
-                time.sleep(10*(retry+1))
+                time.sleep(30*(retry+1))
                 continue
             else:
                 break
