@@ -35,8 +35,8 @@ IMAGE_THUMB_PX = 180
 
 SELF_URL = 'http://localhost:8000'
 SMTP_SERVER = 'mail.rovid-tav.hu'
-SMTP_USER = 'munka@rovid-tav.hu'
-SMTP_PASS = 'hu7EyieW'
+SMTP_USER = 'info@rovidtav.hu'
+SMTP_PASS = 'eiTa6wah'
 EMAIL_SENDER = 'nevalaszolj@rovid-tav.hu'
 
 # =============================================================================
