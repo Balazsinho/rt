@@ -20,6 +20,7 @@ from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner, Const
 import settings
+import time
 
 
 class TicketForm(forms.ModelForm):
@@ -332,9 +333,19 @@ def send_assign_mail(msg, obj):
     through smtp
     """
     def _send_email(msg, obj):
-        smtp = smtplib.SMTP(settings.SMTP_SERVER)
-        smtp.login(settings.SMTP_USER, settings.SMTP_PASS)
-        smtp.sendmail(settings.EMAIL_SENDER, obj.owner.email,
-                      msg.as_string())
+        for retry in range(6):
+            try:
+                smtp = smtplib.SMTP(settings.SMTP_SERVER)
+                smtp.login(settings.SMTP_USER, settings.SMTP_PASS)
+                smtp.sendmail(settings.EMAIL_SENDER, obj.owner.email,
+                              msg.as_string())
+            except Exception as e:
+                print e
+                if retry == 5:
+                    raise e
+                time.sleep(10*(retry+1))
+                continue
+            else:
+                break
 
     thread.start_new_thread(_send_email, (msg, obj))
