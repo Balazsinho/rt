@@ -47,6 +47,7 @@ class Const(object):
         IN_PROGRESS = u'Folyamatban'
         SENT = u'Elküldve'
         ERROR = u'Sikertelen'
+        FIXED = u'Javítva'
 
         @staticmethod
         def choices():
@@ -54,6 +55,7 @@ class Const(object):
                 (Const.EmailStatus.IN_PROGRESS,) * 2,
                 (Const.EmailStatus.SENT,) * 2,
                 (Const.EmailStatus.ERROR,) * 2,
+                (Const.EmailStatus.FIXED,) * 2,
             )
 
     EXT_MAP = {

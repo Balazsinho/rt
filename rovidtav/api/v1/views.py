@@ -18,13 +18,12 @@ from rovidtav.settings import IMAGE_THUMB_PX
 from rovidtav.api.field_const import Fields
 from rovidtav.models import (Client, City, Ticket, TicketType,
                              Note, DeviceType, Device, Attachment,
-                             DeviceOwner)
+                             DeviceOwner, SystemEmail, Const)
 from django.http.response import HttpResponse
 
 
 def _error(data):
-    content = {'error': data}
-    return Response(json.dumps(content))
+    return Response({'error': data})
 
 
 @api_view(['POST'])
@@ -150,7 +149,7 @@ def create_ticket(request):
             created_by=request.user,
         )
 
-    return Response(json.dumps({'ticket_id': ticket.pk}))
+    return Response({'ticket_id': ticket.pk})
 
 
 @api_view(['POST'])
@@ -171,7 +170,7 @@ def download_attachment(request, attachment_id):
             content_type=att.content_type,
         )
     except Attachment.DoesNotExist:
-        return Response(json.dumps({'error': 'File not found'}))
+        return Response({'error': 'File not found'})
 
 
 @api_view(['GET'])
@@ -200,4 +199,26 @@ def download_thumbnail(request, attachment_id):
         else:
             return HttpResponse('')
     except Attachment.DoesNotExist:
-        return Response(json.dumps({'error': 'File not found'}))
+        return Response({'error': 'File not found'})
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def email_stats(request):
+    try:
+        emails = SystemEmail.objects.all()
+        total = len(emails)
+        errors = len(emails.filter(status=Const.EmailStatus.ERROR))
+        sent = len(emails.filter(status=Const.EmailStatus.SENT))
+        fixed = len(emails.filter(status=Const.EmailStatus.FIXED))
+        in_progress = len(emails.filter(status=Const.EmailStatus.IN_PROGRESS))
+        return Response({
+            'total': total,
+            'errors': errors,
+            'sent': sent,
+            'fixed': fixed,
+            'in_progress': in_progress
+        })
+    except Exception as e:
+        return Response({'error': e})
