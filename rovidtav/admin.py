@@ -519,11 +519,15 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):
             return []
-        #if not is_site_admin(request.user):
+        orig_inlines = self.inlines
+        if not is_site_admin(request.user):
             # Remove the email inline if not an admin
-        #    self.inlines = [i for i in self.inlines
-        #                    if i not in (SystemEmailInline, )]
-        return super(TicketAdmin, self).get_inline_instances(request, obj=None)
+            self.inlines = [i for i in self.inlines
+                            if i not in (SystemEmailInline, )]
+        inline_inst = super(TicketAdmin, self).get_inline_instances(request,
+                                                                    obj=None)
+        self.inlines = orig_inlines
+        return inline_inst
 
     def save_model(self, request, obj, form, change):
         """
