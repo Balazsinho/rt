@@ -156,7 +156,24 @@ def create_ticket(request):
 @authentication_classes((SessionAuthentication, BasicAuthentication))
 @permission_classes((IsAuthenticated,))
 def add_ticket_attachment(request):
-    pass
+    req_keys = (Fields.TICKET_ID, 'attachment_name', 'attachment_content')
+    data = json.loads(request.read())
+    if not all(key in data for key in req_keys):
+        missing_keys = list(set(req_keys) - set(data.keys()))
+        return _error({'missing_keys': missing_keys})
+
+    try:
+        ticket = Ticket.objects.get(ext_id=data['ticket_id'])
+    except Ticket.DoesNotExist:
+        return _error('Ticket {} does not exist'.format(data['ticket_id']))
+
+    Attachment.objects.create(
+        ticket=ticket,
+        name=data['attachment_name'],
+        _data=data['attachment_content'],
+        created_by=request.user,
+    )
+    return Response({'OK': 'Done'})
 
 
 @api_view(['GET'])
@@ -170,7 +187,7 @@ def download_attachment(request, attachment_id):
             content_type=att.content_type,
         )
     except Attachment.DoesNotExist:
-        return Response({'error': 'File not found'})
+        return _error('File not found')
 
 
 @api_view(['GET'])
