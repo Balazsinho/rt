@@ -534,7 +534,7 @@ class TicketAdmin(CustomDjangoObjectActions,
         Saves the model and handles notifications if needed
         """
         notify = obj.save()
-        if notify and obj.owner.email:
+        if notify and obj.owner and obj.owner.email:
             try:
                 ticket_html = Attachment.objects.get(ticket=obj,
                                                      name='Hibajegy.html')
