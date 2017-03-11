@@ -213,7 +213,7 @@ def download_thumbnail(request, attachment_id):
             return HttpResponse(temp_buff.read(),
                                 content_type=att.content_type)
 
-        elif att.content_type in ('text/html', 'application/pdf'):
+        else:
             with codecs.open(os.path.join(STATIC_ROOT, 'images',
                                           'document-icon.png')) as icon:
                 img = Image.open(icon)
@@ -224,8 +224,6 @@ def download_thumbnail(request, attachment_id):
                 temp_buff.seek(0)
 
             return HttpResponse(temp_buff.read(), content_type='image/png')
-        else:
-            return HttpResponse('')
     except Attachment.DoesNotExist:
         return _error('File not found')
 
