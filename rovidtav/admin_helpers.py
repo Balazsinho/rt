@@ -3,6 +3,9 @@
 import os
 import thread
 import smtplib
+import time
+
+from unidecode import unidecode
 
 from django.http.response import HttpResponseRedirect
 from django.utils.text import capfirst
@@ -20,7 +23,6 @@ from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner, Const, SystemEmail
 import settings
-import time
 
 
 class TicketForm(forms.ModelForm):
@@ -219,6 +221,7 @@ class CustomInlineActionsMixin(InlineActionsMixin):
                 onclick = action_func.onclick
                 o = self._evt_param(obj)
                 onclick = onclick.format(**o.__dict__)
+                onclick=unidecode(onclick)
                 onclick = 'onclick="{}"'.format(onclick)
             except AttributeError:
                 onclick = ''
