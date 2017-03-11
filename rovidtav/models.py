@@ -766,6 +766,10 @@ class Attachment(BaseEntity):
     def is_image(self):
         return self.content_type.startswith('image')
 
+    def has_thumbnail(self):
+        return self.is_image() or self.content_type in ('application/pdf',
+                                                        'text/html')
+
     def __unicode__(self):
         return self.name
 

@@ -65,9 +65,14 @@ class AttachmentInline(RemoveInlineAction,
             clickable_txt = (u'<img src="/api/v1/thumbnail/{}" />'
                              u''.format(obj.pk))
             download = u' download="{}"'.format(obj.name)
+        elif obj.has_thumbnail():
+            clickable_txt = (u'<img src="/api/v1/thumbnail/{}" />'
+                             u'<br />{}'.format(obj.pk, obj.name))
+            download = u''
         else:
             clickable_txt = obj.name
             download = u''
+
         return (u'<a target="_blank" href="/api/v1/attachment/{}"{}>'
                 u'{}</a>'.format(obj.pk, download, clickable_txt))
 
