@@ -759,7 +759,11 @@ class TicketAdmin(CustomDjangoObjectActions,
                'year': datetime.datetime.now().strftime('%Y'),
                'materials': materials,
                }
-        return render(request, 'leltaruj1.html', ctx)
+        response = render(request, 'leltaruj1.html', ctx)
+        response.content_type = 'text/html'
+        response['Content-Disposition'] = ('attachment; filename=leltar_'
+                                           '{}.html'.format(ticket.ext_id))
+        return response
 
     download_html.label = u'Leltár adatlap'
     download_html.css_class = 'downloadlink'
