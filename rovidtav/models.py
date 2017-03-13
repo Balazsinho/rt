@@ -477,6 +477,14 @@ class Ticket(JsonExtended):
         ttype = u' '.join(t.name for t in self.ticket_types.all())
         return ttype[:25] + u'...' if len(ttype) > 25 else ttype
 
+    def is_install_ticket(self):
+        is_install = False
+        for tt in self.ticket_types.all():
+            if tt.name.lower().startswith(('l-vonal', 'l-mdf')):
+                is_install = True
+                break
+        return is_install
+
     def save(self, *args, **kwargs):
         notify_owner = False
         if self.pk:
@@ -765,10 +773,6 @@ class Attachment(BaseEntity):
 
     def is_image(self):
         return self.content_type.startswith('image')
-
-    def has_thumbnail(self):
-        return self.is_image() or self.content_type in ('application/pdf',
-                                                        'text/html')
 
     def __unicode__(self):
         return self.name

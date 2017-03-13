@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leltárváltozási adatlap</title>
+	<style>
+	  html {
+		 width: 100%; 
+		 margin: 0;
+		 padding: 0;
+	  }
+	  #fej {
+		  text-align: right;
+		  font-size: 11px;
+	  }
+	  #cim {
+		  text-align: center;
+		  padding: 10px;
+	  }
+	  table {
+		  width: 100%;
+		  border-collapse: collapse;
+		  font-size: 12px;
+	  }
+	thead {
+		border: 2px solid black;
+	}
+	 tr.adatlap {
+		border: 2px solid black;
+		height: 30px;
+		font-weight: bold;
+		font-size: 14px;
+		text-align: center;
+	}
+	#primer {
+		border-right: 2px solid;
+		font-size: 13px;
+		font-weight: bold;
+		text-align: left;
+	}
+
+	#ev {
+		width: 16%;
+		font-size: 11px;
+		font-weight: bold;
+		text-align: left;
+	}
+	 tr.rowtwo {
+		border-bottom: 1px solid;	
+	}
+	#jegyszam {
+		border-right : 2px solid;
+		border-bottom: 1px solid;
+	}
+	#labelmunkaelrend {
+		border-bottom: 1px solid;
+		font-size: 10px;
+	}
+	#labelefinev {
+		font-size: 10px;
+	}
+	#kirendeltseg {
+		border-bottom: 2px solid;
+		font-size: 11px;
+		font-weight: bold;
+		text-align: center;
+	}
+	#nyilv {
+		border-bottom: 2px solid;
+	}
+	tr.rowfour  {
+		border-bottom: 1px solid;
+	}
+	tr.rowfive {
+		border-bottom: 1px solid;
+	}
+	#doubleline {
+		border-bottom: 1px solid;
+		height: 1px;
+
+	}
+	tr.row6 td {
+		border: 1px solid;
+	}
+	tr.row7 td {
+		border: 1px solid;
+	}
+	tr.row8 td {
+		border: 1px solid;
+	}
+	tr.row9 td {
+		border: 1px solid;
+	}
+	tr.row10 td {
+		border: 1px solid;
+	}
+	tr.row11 td {
+		border: 1px solid;
+	}
+	#doubleline2 {
+		border-bottom: 1px solid;
+		height: 1px;
+	}
+	tr.row12  {
+		border: 1px solid;
+	}
+	tr.row14  {
+		border: 1px solid;
+	}
+	tr.esemeny  {
+		border: 1px solid;
+	}
+	tr.egyeb  {
+		border: 1px solid;
+	}
+	tr.muszakilag  {
+		border: 1px solid;
+	}
+	#nyilvantartasra {
+		border-top: 2px solid;
+		border-left: 2px solid;
+	}
+	#rajzon {
+		border-left: 2px solid;
+	}
+	#leltarba {
+		border-left: 2px solid;
+	}
+	#II {
+		border: 2px solid black;
+		height: 30px;
+		font-weight: bold;
+		font-size: 14px;
+		text-align: center;
+	}
+	div#rajzhely {
+		position: relative;
+		border-left : 2px solid red;
+		border-right: 2px solid red;
+		height: 390px;
+		padding: 5px 0px 5px 0px;
+		text-align: center;
+	}
+	#rajzhely img{
+		height: 390px;
+	}
+	table.also {
+		width: 100%;
+		  border-collapse: collapse;
+		  font-size: 12px;
+		  border: 2px solid black;
+	}
+	#III {
+		border: 2px solid black;
+		height: 30px;
+		font-weight: bold;
+		font-size: 14px;
+		text-align: center;
+	}
+	tr.szakleltari {
+		border : 1px solid;
+	}
+	tr.nyilvszam {
+		border : 1px solid;
+	}
+	#szsz {
+		text-align: center;
+		border-left: 1px solid;
+	}
+	#leltsz {
+		text-align: center;
+		border-left: 1px solid
+	}
+	#novekedes {
+		text-align: center;
+		border-left: 1px solid
+	}
+	#csokkenes {
+		text-align: center;
+		border: 1px solid
+	}
+	#megnevez {
+		text-align: center;
+		border: 1px solid
+	}
+	#nyilvantartasi {
+		text-align: center;
+	}
+	#beep {
+		text-align: center;
+	}
+	.cellak  td{
+		text-align: center;
+		border: 1px solid;
+	}
+	#kelt {
+		padding-top: 5px;
+		float: left;
+	}
+	#telepules{
+		padding-top: 5px;
+		float: left;
+	}
+	#datetime {
+		padding-top: 5px;
+		padding-left: 20px;
+		float: left;
+	}
+	#pecset {
+		padding-top: 5px;
+		padding-left: 550px;
+
+	}
+	#kitolto {
+		float: left;
+		margin-top: 20px;
+		margin-left: 400px;
+	}
+	#vezeto {
+		
+		margin-top: 20px;
+		margin-left: 600px;
+		
+	}
+	</style>
+
+</head>
+<body>
+<div id="fej">3a. sz. melléklet a 99/2001.sz. Vig utasításhoz</div>
+<div id="cim">Előfizetői munkák leltárváltozási lapja</div>
+<table>
+	
+	<thead>
+	<tr class="adatlap" id="adatlap1">
+		<th colspan ="2">B</th>
+		<th colspan ="2">I. ADATLAP</th>
+		<th colspan ="2" >&nbsp;</th>
+	</tr>
+	<tr class="rowtwo">
+		<td colspan ="2"   width="20%">Primer körzet neve:</td>
+		<td id="primer"    width="32%">{{ city_primer }}     {{ city_name }}</td>
+		<td id="labsorsz"  width="16%">Adatlap sorszáma:</td>
+		<td id="primerkod" width="16%">B56-00</td>
+		<td id="ev"        width="16%">/2016</td>
+	</tr>
+	<tr class="rowthree">
+		<td id="labelmunkaelrend" colspan ="2">Munkaelrendelés száma(OSS):</td>
+		<td id="jegyszam">{{ wfms_id }}</td>
+		<td id="nyilv">Nyilvántartó szervezet:</td>
+		<td id="kirendeltseg" colspan ="2">SZOLNOK</td>
+	</tr>
+	<tr class="rowfour">
+		<td id="labelefinev" colspan ="2">Előfizető neve/kapcsolási száma:</td>
+		<td id="unev" colspan ="4"><span style="margin-right: 15px">{{ client_name }}</span> {{ city_zip }} {{ city_name }}, {{ client_address }}</td>
+	</tr>
+	<tr class="rowfive">
+		<td colspan ="2">Az esemény fajtája:</td>
+		<td colspan ="4">Optikai létesítés</td>
+	</tr>
+	<tr>
+		<td id="doubleline" colspan="6"></td>
+	</tr>
+	<tr class="row6">
+		<td colspan ="2">Nyomvonal adatok:</td>
+		<td>Kifejtési pont kódszáma:</td>
+		<td>Bejövő érpár száma:</td>
+		<td>Kimenő érpár száma:</td>
+		<td>Egyéb:</td>
+	</tr>
+	<tr class="row7">
+		<td colspan ="2">Rendező</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr class="row8">
+		<td colspan ="2">Elosztó</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr class="row9">
+		<td colspan ="2">Tápfej:</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr class="row10">
+		<td colspan ="2">Tápfej:</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr class="row11">
+		<td colspan ="2">Tápfej:</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td id="doubleline2" colspan="6"></td>
+	</tr>
+	</tr>
+		<tr class="row12">
+		<td colspan ="2">Kivitelező szervezet neve:</td>
+		<td colspan ="4">Rövid-Táv Kft.</td>
+	</tr>
+	</tr>
+		<tr class="row13">
+		<td colspan ="2">Kitöltő neve:</td>
+		<td id="szerelo" colspan ="4">{{ owner_name }}</td>
+	</tr>
+	</tr>
+		<tr class="row14">
+		<td colspan ="2">Kitöltés dátuma:</td>
+		<td id="datum" colspan ="4">{{ today }}</td>
+	</tr>
+	<tr class="esemeny">
+		<td colspan ="2">Az esemény fajtája:</td>
+		<td><b id="bekapcsolas">bekapcsolás</b>, áthelyezés, leszerelés</td>
+		<td id="nyilvantartasra" colspan ="3">Nyilvántartásra átvette:</td>
+	</tr>
+	<tr class="egyeb">
+		<td id="elsooszlop">Egyéb:</td>
+		<td id="masodikoszlop">M.szám:</td>
+		<td>&nbsp;</td>
+		<td id="rajzon" colspan ="3">Rajzon átvette:</td>
+	</tr>
+	<tr class="muszakilag">
+		<td colspan ="2">Műszakilag felülvizsgálta:</td>
+		<td>&nbsp;</td>
+		<td id="leltarba" colspan ="3">Leltárba vette:</td>
+	</tr>
+	<tr>
+		<td id="II" colspan="6">II. Kivitelezési vázlatrajz</td>
+	</tr>
+	</thead>
+</table>
+<div id="rajzhely">
+	{% if map %}
+		<img src='data:image/jpeg;base64, {{ map }}' />
+	{% endif %}
+</div>
+<table class="also">
+	<tr>
+		<td id="III" colspan="6">III. Leltárváltozási mennyiségi adatok</td>
+	</tr>
+	<tr class="szakleltari">
+		<td id="szsz" rowspan ="2"   width="10%">Szakleltári szám:</td>
+		<td id="leltsz" colspan ="3" >Leltári egységek</td>
+		<td id="novekedes" rowspan ="2" >Növekedés (m,db)</td>
+		<td id="csokkenes" rowspan ="2" >Csökkenés(m,db)</td>
+	</tr>
+	<tr class="nyilvszam">
+		<td  id="nyilvantartasi" width="10%">nyilvántartási száma</td>
+		<td  id="megnevez" width="32%">megnevezése</td>
+		<td  id="beep" width="16%">Beépítési éve/korcsoportja</td>
+	</tr>
+	<tr class="cellak">
+		<td id="1esanyag1">40292016</td>
+		<td id="1esanyagnyilvszam1"></td>
+		<td id="1esanyagnev1">3M csatlakozó</td>
+		<td id="1esanyagkor1"></td>
+		<td id="1esanyagnovekedes1">{{ materials.40292016 }}</td>
+		<td id="1esanyagcsokkenes1"></td>
+	</tr >
+	<tr class="cellak">
+		<td id="1esanyag2">40296137</td>
+		<td id="1esanyagnyilvszam2"></td>
+		<td id="1esanyagnev2">optikai kábel</td>
+		<td id="1esanyagkor2"></td>
+		<td id="1esanyagnovekedes2">{{ materials.40296137 }}</td>
+		<td id="1esanyagcsokkenes2"></td>
+	</tr>
+	<tr class="cellak">
+		<td id="1esanyag3">40299501</td>
+		<td id="1esanyagnyilvszam3"></td>
+		<td id="1esanyagnev3">kábelvédőcső</td>
+		<td id="1esanyagkor3"></td>
+		<td id="1esanyagnovekedes3">{{ materials.40299501 }}</td>
+		<td id="1esanyagcsokkenes3"></td>
+	</tr>
+	<tr class="cellak">
+		<td id="1esanyag4">40306778</td>
+		<td id="1esanyagnyilvszam4"></td>
+		<td id="1esanyagnev4">LPE25 csőtoldó</td>
+		<td id="1esanyagkor4"></td>
+		<td id="1esanyagnovekedes4">{{ materials.40306778 }}</td>
+		<td id="1esanyagcsokkenes4"></td>
+	</tr>
+	<tr class="cellak">
+		<td id="1esanyag5">40296139</td>
+		<td id="1esanyagnyilvszam5"></td>
+		<td id="1esanyagnev5">légkábel tartóelem</td>
+		<td id="1esanyagkor5"></td>
+		<td id="1esanyagnovekedes5">{{ materials.40296139 }}</td>
+		<td id="1esanyagcsokkenes5"></td>
+	</tr>
+	<tr class="cellak">
+		<td id="1esanyag6">40292261</td>
+		<td id="1esanyagnyilvszam6"></td>
+		<td id="1esanyagnev6">2(1*4) másodlagos osztó "splitter"</td>
+		<td id="1esanyagkor6"></td>
+		<td id="1esanyagnovekedes6">{{ materials.40292261 }}</td>
+		<td id="1esanyagcsokkenes6"></td>
+	</tr>
+	<tr class="cellak">
+		<td id="1esanyag7"></td>
+		<td id="1esanyagnyilvszam7"></td>
+		<td id="1esanyagnev7"></td>
+		<td id="1esanyagkor7"></td>
+		<td id="1esanyagnovekedes7"></td>
+		<td id="1esanyagcsokkenes7">&nbsp;</td>
+	</tr>
+</table>
+<div id="kelt"     >Kelt: </div>
+<div id="telepules">Szolnok </div>    
+<div id="datetime" >{{ year }} év</div>
+<div id="pecset"   >P.H.</div>
+<div id="kitolto"  >kitöltő </div>                      
+<div id="vezeto"   >vezető</div>
+</body>
+</html>

@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
 from django.contrib.admin.filters import SimpleListFilter
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.admin import UserAdmin
@@ -387,7 +387,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'address', 'remark')
     change_actions = ('new_note', 'new_attachment', 'new_material',
-                      'new_device', 'new_workitem')
+                      'new_device', 'new_workitem', 'download_html')
     changelist_actions = ('summary_list',)
     inlines = (NoteInline, AttachmentInline, MaterialInline,
                WorkItemInline, TicketDeviceInline, SystemEmailInline)
@@ -461,10 +461,12 @@ class TicketAdmin(CustomDjangoObjectActions,
                     if att.is_image() and not att.name.lower().startswith('imdb'):
                         attachments.append(att)
                 for att in attachments:
-                    archive.writestr('{}/{}'.format(ticket.ext_id, att.name), att.data)
+                    archive.writestr('{}/{}'.format(ticket.ext_id, att.name),
+                                     att.data)
 
         temp.seek(0)
-        response = HttpResponse(temp, content_type='application/force-download')
+        response = HttpResponse(temp,
+                                content_type='application/force-download')
         fname = datetime.datetime.now().strftime('jegyek_%y%m%d%H%M.zip')
         response['Content-Disposition'] = 'attachment; filename="{}"'.format(fname)
         return response
@@ -475,9 +477,12 @@ class TicketAdmin(CustomDjangoObjectActions,
         obj = Ticket.objects.get(pk=object_id)
         if is_site_admin(request.user) or \
                 obj.status in (u'Kiadva', u'Folyamatban'):
-            return ('new_note', 'new_attachment',
-                    'new_material', 'new_workitem',
-                    'new_device',)
+            actions = ('new_note', 'new_attachment',
+                       'new_material', 'new_workitem',
+                       'new_device')
+            if obj.is_install_ticket():
+                actions += ('download_html',)
+            return actions
         else:
             return ('new_note',)
 
@@ -716,6 +721,48 @@ class TicketAdmin(CustomDjangoObjectActions,
         returnto_tab = self.inlines.index(inline)
         return ('/admin/rovidtav/ticket/{}/change/#/tab/inline_{}/'
                 ''.format(obj.pk, returnto_tab))
+
+    def download_html(self, request, ticket):
+        try:
+            map_img = Attachment.objects.get(ticket=ticket,
+                                             name__istartswith='imdb')
+            map_img = map_img._data
+        except Attachment.DoesNotExist:
+            map_img = None
+
+        materials = {}
+        for material_sn in ('40292016', '40296137', '40299501', '40306778',
+                            '40296139', '40292261'):
+            try:
+                material = Material.objects.get(sn=material_sn)
+            except Material.DoesNotExist:
+                continue
+
+            try:
+                tm = TicketMaterial.objects.get(ticket=ticket,
+                                                material=material)
+                materials[material_sn] = tm.amount
+            except TicketMaterial.DoesNotExist:
+                continue
+
+        ctx = {'wfms_id': ticket.ext_id,
+               'client_name': ticket.client.name,
+               'city_primer': ticket.city.primer or '',
+               'city_name': ticket.city.name,
+               'city_zip': ticket.city.zip,
+               'owner_name': u'{} {}'.format(ticket.owner.last_name,
+                                             ticket.owner.first_name)
+               if ticket.owner else '',
+               'client_address': ticket.address,
+               'map': map_img,
+               'today': datetime.datetime.now().strftime('%Y-%m-%d'),
+               'year': datetime.datetime.now().strftime('%Y'),
+               'materials': materials,
+               }
+        return render(request, 'leltaruj1.html', ctx)
+
+    download_html.label = u'Leltár adatlap'
+    download_html.css_class = 'downloadlink'
 
 
 class CustomAdminSite(AdminSite):
