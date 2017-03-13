@@ -9,11 +9,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
 <link rel="stylesheet" type="text/css" href="{% block stylesheet %}{% static "admin/css/base.css" %}{% endblock %}" />
 
-<link rel="stylesheet" type="text/css" href="{% static "jet/css/vendor.css" as url %}{{ url|jet_append_version }}" />
-<link rel="stylesheet" type="text/css" href="{% static "jet/css/icons/style.css" as url %}{{ url|jet_append_version }}" />
-<link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/base.css" as url %}{{ url|jet_append_version }}" class="base-stylesheet" />
-<link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/select2.theme.css" as url %}{{ url|jet_append_version }}" class="select2-stylesheet" />
-<link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/jquery-ui.theme.css" as url %}{{ url|jet_append_version }}" class="jquery-ui-stylesheet" />
+<link rel="stylesheet" type="text/css" href="{% static "jet/css/vendor.css" %}?cache={{ cache_nullifier }}" />
+<link rel="stylesheet" type="text/css" href="{% static "jet/css/icons/style.css" %}?cache={{ cache_nullifier }}" />
+<link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/base.css" %}?cache={{ cache_nullifier }}" class="base-stylesheet" />
+<link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/select2.theme.css" %}?cache={{ cache_nullifier }}" class="select2-stylesheet" />
+<link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/jquery-ui.theme.css" %}?cache={{ cache_nullifier }}" class="jquery-ui-stylesheet" />
 <link rel="stylesheet" type="text/css" href="{% static "css/news.css" %}" class="jquery-ui-stylesheet" />
 
 {% block extrastyle %}{% endblock %}
@@ -25,8 +25,8 @@
     var DATETIME_FORMAT = "{% jet_get_datetime_format %}";
 </script>
 <script type="text/javascript" src="{% url 'jet:jsi18n' %}"></script>
-<script src="{% static "jet/js/build/bundle.min.js" as url %}{{ url|jet_append_version }}"></script>
-<script src="{% static "js/news.js" %}"></script>
+<script src="{% static "jet/js/build/bundle.min.js" %}?cache={{ cache_nullifier }}"></script>
+<script src="{% static "js/news.js" %}?cache={{ cache_nullifier }}"></script>
 
 {% jet_static_translation_urls as translation_urls %}
 {% for url in translation_urls %}

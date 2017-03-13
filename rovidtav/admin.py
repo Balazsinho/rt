@@ -780,6 +780,7 @@ class CustomAdminSite(AdminSite):
         ctx = super(CustomAdminSite, self).each_context(request)
         ctx.update(get_unread_messages_count(request.user))
         ctx.update(get_unread_messages(request.user))
+        ctx.update({'cache_nullifier': settings.CACHE_REFRESH})
         return ctx
 
 
