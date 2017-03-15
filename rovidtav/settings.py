@@ -41,7 +41,7 @@ EMAIL_SENDER = 'nevalaszolj@rovid-tav.hu'
 
 # Changing this value to a random number or string here will
 # force CSS and JS browser cache refresh
-CACHE_REFRESH = '3213'
+CACHE_REFRESH = '534'
 
 # =============================================================================
 # JET SETTINGS
