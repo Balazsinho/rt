@@ -8,7 +8,9 @@ from django.core.urlresolvers import reverse
 from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
                                     GenericReadOnlyInline, RemoveInlineAction,
                                     ReadOnlyStackedInline,
-                                    CustomInlineActionsMixin)
+                                    CustomInlineActionsMixin,
+    GenericReadOnlyStackedInline, ReadOnlyCompactInline,
+    GenericReadOnlyCompactInline)
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner,
                              SystemEmail)
@@ -79,7 +81,7 @@ class AttachmentInline(RemoveInlineAction,
 
 class MaterialInline(RemoveInlineAction,
                      ShowCalcFields,
-                     ReadOnlyTabularInline):
+                     ReadOnlyCompactInline):
 
     """
     Material inline for the ticket page
@@ -114,7 +116,7 @@ class MaterialInline(RemoveInlineAction,
 
 
 class WorkItemInline(RemoveInlineAction,
-                     ShowCalcFields, ReadOnlyTabularInline):
+                     ShowCalcFields, ReadOnlyCompactInline):
 
     """
     Workitem inline for the ticket page
@@ -196,7 +198,7 @@ class HistoryInline(GenericReadOnlyInline):
         return qs.filter(is_history=True)
 
 
-class NoteInline(GenericReadOnlyInline):
+class NoteInline(GenericReadOnlyCompactInline):
 
     # consider jet CompactInline
     verbose_name = u'Megjegyzés'
@@ -210,7 +212,7 @@ class NoteInline(GenericReadOnlyInline):
         return qs.filter(is_history=False)
 
 
-class SystemEmailInline(GenericReadOnlyInline):
+class SystemEmailInline(GenericReadOnlyStackedInline):
 
     # consider jet CompactInline
     verbose_name = u'Email'
@@ -238,7 +240,7 @@ class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
 
 class TicketDeviceInline(CustomInlineActionsMixin,
                          ShowCalcFields,
-                         GenericReadOnlyInline):
+                         GenericReadOnlyCompactInline):
 
     verbose_name = u'Eszköz'
     verbose_name_plural = u'Eszközök'

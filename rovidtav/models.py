@@ -302,7 +302,7 @@ class DeviceOwner(BaseEntity):
         return super(DeviceOwner, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return self.name
+        return unicode(self.device)
 
     @property
     def name(self):
@@ -564,7 +564,12 @@ class Note(BaseEntity):
         verbose_name_plural = u'Megjegyzések'
 
     def __unicode__(self):
-        return self.remark[:25]
+        remark = self.remark[:45]
+        if len(self.remark) > 45:
+            remark += u'...'
+        return u'{} - {} - {}'.format(self.created_by,
+                                      self.created_at.strftime('%Y-%m-%d'),
+                                      remark)
 
 
 class MaterialCategory(BaseEntity):
@@ -669,8 +674,8 @@ class TicketMaterial(BaseEntity):
         verbose_name_plural = u'Jegy Anyagok'
 
     def __unicode__(self):
-        return u'{} - {}'.format(unicode(self.ticket),
-                                 unicode(self.material))
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
 
 
 class WorkItem(BaseEntity):
@@ -731,8 +736,8 @@ class TicketWorkItem(BaseEntity):
         verbose_name_plural = u'Munkák'
 
     def __unicode__(self):
-        return u'{} - {}'.format(unicode(self.ticket),
-                                 unicode(self.work_item))
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
 
 
 class Attachment(BaseEntity):

@@ -17,12 +17,6 @@
 {% if change %}{% if not is_popup %}
   <ul class="object-tools">
     {% block object-tools-items %}
-    <!--
-    <li>
-        {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
-        <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
-    </li>
-    -->
     {% if has_absolute_url %}<li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>{% endif %}
     {% endblock %}
   </ul>
@@ -42,7 +36,7 @@
 
 {% block field_sets %}
 {% for fieldset in adminform %}
-  {% include "admin/includes/fieldset.html" %}
+  {% include "admin/includes/fieldset_2col.html" %}
 {% endfor %}
 {% endblock %}
 
@@ -78,35 +72,21 @@
 			siteSpecificEvents(context={{siteSpecificContext|jsonify|safe}})
 		});
 	}
-	if ({{hideSaveOnTabs}}) {
-		jQuery(document).ready(function(){
-			var activeTab = '';
-			jQuery(".changeform-tabs li").each(function() {
-				if (jQuery(this).hasClass('selected')) {
-					activeTab = jQuery(this).find('a').text();
-				}
-			});
-			if (activeTab != '' && activeTab != 'Általános') {
-				jQuery('.submit-row').hide();
-			} else {
-				jQuery('.submit-row').show();
+	jQuery(document).ready(function(){
+		jQuery(".changeform-tabs li").each(function() {
+			var currItem = jQuery(this);
+			var currLink = currItem.find('a').text();
+			if (currLink == 'Általános') {
+				currItem.hide();
 			}
-
-			jQuery(".changeform-tabs li").each(function() {
-				var currItem = jQuery(this);
-				var currLink = currItem.find('a').text();
-				if (currLink != 'Általános') {
-					currItem.click(function() {
-						jQuery('.submit-row').hide('10');
-					});
-				} else {
-					currItem.click(function() {
-						jQuery('.submit-row').show('100');
-					});
-				}
-			});
 		});
-	}
+		jQuery(".changeform-tabs li ").first(function() {
+			var currItem = jQuery(this);
+			var currLink = currItem.find('a').text();
+			if (currLink == 'Általános') {
+				currItem.hide();
+			}
+		});
+	});
 </script>
-
 {% endblock %}

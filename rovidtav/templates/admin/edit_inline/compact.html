@@ -1,0 +1,66 @@
+{% load i18n admin_urls admin_static %}
+
+<style>
+	.changeform-tabs ~ 
+	.module.selected,
+	.changeform-tabs ~ .inline-group.selected {
+		display: inline-block !important;
+	}
+	.right-column {
+		width: 48%;
+		min-width: 40%;
+		vertical-align: top;
+	}
+@media only screen and (max-width: 1000px) {
+	.right-column {
+		width: 100%;
+		display: block;
+		vertical-align: top;
+	}
+}
+</style>
+
+<div class="right-column inline-group compact" id="{{ inline_admin_formset.formset.prefix }}-group" data-inline-prefix="{{ inline_admin_formset.formset.prefix }}" data-inline-verbose-name="{{ inline_admin_formset.opts.verbose_name|capfirst }}" data-inline-delete-text="{% trans "Remove" %}">
+    <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
+    {{ inline_admin_formset.formset.management_form }}
+    {{ inline_admin_formset.formset.non_form_errors }}
+
+	{% if inline_admin_formset.formset.queryset.count > 0 %}
+
+    <div class="inline-navigation">
+        <div class="inline-navigation-top"></div>
+        <div class="inline-navigation-bottom"></div>
+        <div class="inline-navigation-content">
+            <div class="inline-navigation-items">
+                {% for inline_admin_form in inline_admin_formset %}
+                    <a href="#" class="inline-navigation-item{% if forloop.last %} empty{% endif %}" data-inline-related-id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
+                        {% if inline_admin_form.original %}
+                            {{ inline_admin_form.original }}
+                        {% else %}
+                            {{ inline_admin_formset.opts.verbose_name|capfirst }} #{{ forloop.counter }}
+                        {% endif %}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% for inline_admin_form in inline_admin_formset %}
+        <div class="inline-related compact{% if inline_admin_form.original or inline_admin_form.show_url %} has_original{% endif %}{% if forloop.last %} empty-form last-related{% endif %}" id="{{ inline_admin_formset.formset.prefix }}-{% if not forloop.last %}{{ forloop.counter0 }}{% else %}empty{% endif %}">
+            <h3>
+            </h3>
+            {% if inline_admin_form.form.non_field_errors %}{{ inline_admin_form.form.non_field_errors }}{% endif %}
+            {% for fieldset in inline_admin_form %}
+                {% include "admin/includes/fieldset.html" %}
+            {% endfor %}
+            {% if inline_admin_form.needs_explicit_pk_field %}{{ inline_admin_form.pk_field.field }}{% endif %}
+            {{ inline_admin_form.fk_field.field }}
+        </div>
+    {% endfor %}
+
+    {% else %}
+		<div class="emptyInlineResult">Nincsenek {{ inline_admin_formset.opts.verbose_name_plural|lower }} hozzáadva.</div>
+    {% endif %}
+
+</div>
+

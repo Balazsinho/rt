@@ -1,5 +1,26 @@
 {% load i18n admin_urls admin_static admin_modify %}
-<div class="inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
+
+<style>
+	.changeform-tabs ~ 
+	.module.selected,
+	.changeform-tabs ~ .inline-group.selected {
+		display: inline-block !important;
+	}
+	.right-column {
+		width: 48%;
+		min-width: 40%;
+		vertical-align: top;
+	}
+@media only screen and (max-width: 1000px) {
+	.right-column {
+		width: 100%;
+		display: block;
+		vertical-align: top;
+	}
+}
+</style>
+
+<div class="right-column inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
   <div class="tabular inline-related {% if forloop.last %}last-related{% endif %}">
 {{ inline_admin_formset.formset.management_form }}
 <fieldset class="module">

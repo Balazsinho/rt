@@ -13,7 +13,8 @@ from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList, ORDER_VAR
 from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.admin import GenericTabularInline
+from django.contrib.contenttypes.admin import GenericTabularInline,\
+    GenericStackedInline
 from django import forms
 
 from django_object_actions.utils import DjangoObjectActions
@@ -155,15 +156,23 @@ class ReadOnlyTabularInline(ReadOnlyInline, admin.TabularInline):
 
 
 class ReadOnlyCompactInline(ReadOnlyInline, CompactInline):
-    pass
+    template = os.path.join('admin', 'edit_inline', 'compact.html')
 
 
 class ReadOnlyStackedInline(ReadOnlyInline, admin.StackedInline):
-    pass
+    template = os.path.join('admin', 'edit_inline', 'readOnlyStacked.html')
 
 
 class GenericReadOnlyInline(ReadOnlyInline, GenericTabularInline):
     template = os.path.join('admin', 'readOnlyInline.html')
+
+
+class GenericReadOnlyCompactInline(ReadOnlyInline, GenericTabularInline):
+    template = os.path.join('admin', 'edit_inline', 'compact.html')
+
+
+class GenericReadOnlyStackedInline(ReadOnlyInline, GenericStackedInline):
+    template = os.path.join('admin', 'edit_inline', 'readOnlyStacked.html')
 
 
 class ShowCalcFields(object):
@@ -196,12 +205,7 @@ class CustomInlineActionsMixin(InlineActionsMixin):
             return []
 
     def render_actions(self, obj=None):
-        if hasattr(self, 'actions'):
-            actions = self.actions
-        else:
-            return ''
-
-        if not obj:
+        if not hasattr(self, 'actions') or not obj:
             return ''
 
         buttons = []
@@ -221,7 +225,7 @@ class CustomInlineActionsMixin(InlineActionsMixin):
                 onclick = action_func.onclick
                 o = self._evt_param(obj)
                 onclick = onclick.format(**o.__dict__)
-                onclick=unidecode(onclick)
+                onclick = unidecode(onclick)
                 onclick = 'onclick="{}"'.format(onclick)
             except AttributeError:
                 onclick = ''
@@ -350,8 +354,7 @@ def send_assign_mail(msg, obj):
                 print e
                 if retry == 5:
                     mail_obj.status = Const.EmailStatus.ERROR
-                    mail_obj.remark = (u'Sikertelen küldés. Hiba: {}'
-                                       u''.format(e))
+                    mail_obj.remark = e
                     mail_obj.save()
                     raise e
                 time.sleep(30*(retry+1))

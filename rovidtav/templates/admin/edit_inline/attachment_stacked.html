@@ -1,5 +1,17 @@
 {% load i18n admin_urls admin_static %}
-<div class="inline-group" id="{{ inline_admin_formset.formset.prefix }}-group">
+<style>
+	.changeform-tabs ~ 
+	.module.selected,
+	.changeform-tabs ~ .inline-group.selected {
+		display: inline-block !important;
+	}
+	.right-column {
+		width: 47%;
+		min-width: 400px;
+	}
+</style>
+
+<div class="inline-group right-column" id="{{ inline_admin_formset.formset.prefix }}-group">
   <h2>{{ inline_admin_formset.opts.verbose_name_plural|capfirst }}</h2>
 
 {{ inline_admin_formset.formset.management_form }}
