@@ -377,7 +377,8 @@ class TicketAdmin(CustomDjangoObjectActions,
                                         'two_column_change_form.html')
 
     list_per_page = 200
-    list_display = ('ext_id', 'address', 'city_name', 'client_name',
+    list_display_links = None
+    list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
                     'client_link', 'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status', 'primer',
                     'has_images_nice', 'collectable', 'remark',
@@ -586,6 +587,13 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     payoff_link.allow_tags = True
     payoff_link.short_description = u'Elszámolás'
+
+    def ext_id_link(self, obj):
+        return (u'<a href="/admin/rovidtav/ticket/{}/change#/tab/inline_0/">'
+                u'{}</a>'.format(obj.pk, obj.ext_id))
+
+    ext_id_link.allow_tags = True
+    ext_id_link.short_description = u'Jegy ID'
 
     def payoff_name(self, obj):
         if obj.payoff:
