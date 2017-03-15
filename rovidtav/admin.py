@@ -373,8 +373,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
     form = TicketForm
     add_form_template = os.path.join('rovidtav', 'select2.html')
-    change_form_template = os.path.join('admin',
-                                        'two_column_change_form.html')
+    #change_form_template = os.path.join('admin',
+    #                                    'two_column_change_form.html')
 
     list_per_page = 200
     list_display_links = None
