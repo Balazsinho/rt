@@ -314,11 +314,17 @@ def get_technician_choices():
 
 
 def get_recipient_choices():
+    def _cap(name):
+        """
+        Capitalize names
+        """
+        return name[0].upper() + name[1:]
+
     groups = Group.objects.filter(name__in=(u'Szerelő', u'admin'))
     users = []
     for group in groups:
         users.extend(list(group.user_set.all()))
-    return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
+    return sorted([(u.pk, _cap(u.username)) for u in users], key=lambda x: x[1])
 
 
 def get_unread_messages_count(user):
