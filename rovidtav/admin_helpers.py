@@ -315,7 +315,7 @@ def get_technician_choices():
 
 def get_recipient_choices():
     groups = Group.objects.filter(name__in=(u'Szerelő', u'admin'))
-    users = list(User.objects.filter(is_superuser=True))
+    users = []
     for group in groups:
         users.extend(list(group.user_set.all()))
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
