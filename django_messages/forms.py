@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django_messages.models import Message
 
-from rovidtav.admin_helpers import get_technician_choices
+from rovidtav.admin_helpers import get_recipient_choices
 
 if "notification" in settings.INSTALLED_APPS and getattr(settings, 'DJANGO_MESSAGES_NOTIFY', True):
     from notification import models as notification
@@ -20,7 +20,7 @@ class ComposeForm(forms.Form):
     """
     user_choices = [(u.pk, u.username) for u in User.objects.all()]
     recipient = MultipleChoiceField(
-        label=_(u"Recipient"), choices=get_technician_choices())
+        label=_(u"Recipient"), choices=get_recipient_choices())
     subject = forms.CharField(label=_(u"Subject"), max_length=140)
     body = forms.CharField(
         label=_(u"Body"),

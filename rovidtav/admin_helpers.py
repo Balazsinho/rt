@@ -313,6 +313,14 @@ def get_technician_choices():
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
 
 
+def get_recipient_choices():
+    groups = Group.objects.filter(name__in=(u'Szerelő', u'admin'))
+    users = list(User.objects.filter(is_superuser=True))
+    for group in groups:
+        users.extend(list(group.user_set.all()))
+    return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
+
+
 def get_unread_messages_count(user):
     if user.is_authenticated():
         cnt = len(Message.objects.filter(recipient=user, read_at__isnull=True))
