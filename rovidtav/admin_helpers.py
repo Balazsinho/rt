@@ -323,8 +323,11 @@ def get_recipient_choices():
     groups = Group.objects.filter(name__in=(u'Szerelő', u'admin'))
     users = []
     for group in groups:
-        users.extend(list(group.user_set.all()))
-    return sorted([(u.pk, _cap(u.username)) for u in users], key=lambda x: x[1])
+        grp_users = list(group.user_set.all())
+        users.append((_cap(group.name),
+                      sorted([(u.pk, _cap(u.username))
+                              for u in grp_users], key=lambda x: x[1])))
+    return users
 
 
 def get_unread_messages_count(user):

@@ -31,6 +31,7 @@ class ComposeForm(forms.Form):
         super(ComposeForm, self).__init__(*args, **kwargs)
         if recipient_filter is not None:
             self.fields['recipient']._recipient_filter = recipient_filter
+        self.fields['recipient'].choices = get_recipient_choices()
 
     def save(self, sender, parent_msg=None):
         recipients = self.cleaned_data['recipient']
