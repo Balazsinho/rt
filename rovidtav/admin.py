@@ -553,8 +553,8 @@ class TicketAdmin(CustomDjangoObjectActions,
                    'ticket_html': ticket_html.data if ticket_html else ''}
 
             msg = MIMEMultipart('alternative')
-            msg['Subject'] = u'Új jegy - {} {}'.format(obj.city.name,
-                                                       obj.address)
+            msg['Subject'] = u'Új jegy - {} {} - Task Nr: {}'.format(
+                obj.city.name, obj.address, obj.ext_id)
             msg['From'] = settings.EMAIL_SENDER
             msg['To'] = obj.owner.email
             plain_template = render_to_string('assign_notification.txt',
