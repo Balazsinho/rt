@@ -802,6 +802,12 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
               'owner', 'status']
     readonly_fields = ('full_address',)
 
+    def get_inline_instances(self, request, obj=None):
+        if not obj and not request.path.strip('/').endswith('change'):
+            return []
+        return super(NetworkTicketAdmin, self).get_inline_instances(request,
+                                                                    obj=None)
+
     def ticket_type(self, obj):
         types = ' / '.join([t.name for t in obj.ticket_types.all()])
         return types[:25].strip() + u'...' if len(types) > 25 else types
