@@ -790,7 +790,8 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
                          admin.ModelAdmin, HideIcons):
 
     list_per_page = 200
-    list_display = ('address', 'city_name',
+    list_display_links = None
+    list_display = ('address_link', 'city_name',
                     'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status',
                     'ticket_tags_nice')
@@ -807,6 +808,13 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
             return []
         return super(NetworkTicketAdmin, self).get_inline_instances(request,
                                                                     obj=None)
+
+    def address_link(self, obj):
+        return (u'<a href="/admin/rovidtav/networkticket/{}/change#'
+                u'/tab/inline_0/">{}</a>'.format(obj.pk, obj.address))
+
+    address_link.allow_tags = True
+    address_link.short_description = u'Cím'
 
     def ticket_type(self, obj):
         types = ' / '.join([t.name for t in obj.ticket_types.all()])
