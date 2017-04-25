@@ -43,6 +43,7 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      ApplicantAttributes, DeviceOwner, Tag, Const)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
+from rovidtav.admin_inlines import NTAttachmentInline
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -87,12 +88,16 @@ class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
             img.thumbnail((pixels, pixels), Image.ANTIALIAS)
             temp_buff = StringIO.StringIO()
             temp_buff.name = obj.name
-            img.save(temp_buff)
+            img.save(temp_buff, exif=img.info['exif'])
             temp_buff.seek(0)
 
             obj._data = temp_buff.read()
             obj.save()
-            obj.ticket.refresh_has_images()
+            try:
+                obj.ticket.refresh_has_images()
+            except AttributeError:
+                # We're not maintaining the boolean for having images
+                pass
 
 
 class PayoffAdmin(admin.ModelAdmin):
@@ -780,13 +785,18 @@ class TicketAdmin(CustomDjangoObjectActions,
     download_html.css_class = 'downloadlink'
 
 
-class NetworkTicketAdmin(admin.ModelAdmin):
+class NetworkTicketAdmin(CustomDjangoObjectActions,
+                         InlineActionsModelAdminMixin,
+                         admin.ModelAdmin, HideIcons):
 
     list_per_page = 200
     list_display = ('address', 'city_name',
                     'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status',
                     'ticket_tags_nice')
+    change_actions = ('new_note', 'new_attachment')
+    inlines = (NoteInline, NTAttachmentInline)
+    ordering = ('-created_at',)
 
     fields = ['address', 'onu', 'ticket_types', 'ticket_tags',
               'owner', 'status']
@@ -829,6 +839,32 @@ class NetworkTicketAdmin(admin.ModelAdmin):
 
     full_address.short_description = u'Cím'
 
+    # =========================================================================
+    # ACTIONS
+    # =========================================================================
+
+    def _returnto(self, obj, inline):
+        returnto_tab = self.inlines.index(inline)
+        return ('/admin/rovidtav/networkticket/{}/change/#/tab/inline_{}/'
+                ''.format(obj.pk, returnto_tab))
+
+    def new_note(self, request, obj):
+        return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
+                        '{}&next={}'.format(obj.get_content_type(),
+                                            obj.pk,
+                                            self._returnto(obj, NoteInline)))
+
+    new_note.label = u'Megjegyzés'
+    new_note.css_class = 'addlink'
+
+    def new_attachment(self, request, obj):
+        return redirect('/admin/rovidtav/ntattachment/add/?ticket={}&next={}'
+                        ''.format(obj.pk,
+                                  self._returnto(obj, NTAttachmentInline)))
+
+    new_attachment.label = u'File'
+    new_attachment.css_class = 'addlink'
+
 
 class CustomAdminSite(AdminSite):
 
@@ -861,6 +897,7 @@ admin.site.register(NetworkTicket, NetworkTicketAdmin)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
+admin.site.register(NTAttachment, AttachmentAdmin)
 
 admin.site.register(WorkItem, WorkItemAdmin)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)

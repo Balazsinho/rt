@@ -4,7 +4,7 @@ import json
 import codecs
 import os
 
-from PIL import Image
+from PIL import Image, ExifTags
 import StringIO
 
 from rest_framework.authentication import (SessionAuthentication,
@@ -20,7 +20,7 @@ from rovidtav.settings import IMAGE_THUMB_PX, STATIC_ROOT
 from rovidtav.api.field_const import Fields
 from rovidtav.models import (Client, City, Ticket, TicketType,
                              Note, DeviceType, Device, Attachment,
-                             DeviceOwner, SystemEmail, Const)
+                             DeviceOwner, SystemEmail, Const, NTAttachment)
 from django.http.response import HttpResponse
 
 
@@ -178,26 +178,20 @@ def add_ticket_attachment(request):
     return Response({'OK': 'Done'})
 
 
-@api_view(['GET'])
-@authentication_classes((SessionAuthentication, BasicAuthentication))
-@permission_classes((IsAuthenticated,))
-def download_attachment(request, attachment_id):
+def _download_from_model(model, pk):
     try:
-        att = Attachment.objects.get(pk=attachment_id)
+        att = model.objects.get(pk=pk)
         return HttpResponse(
             att.data,
             content_type=att.content_type,
         )
-    except Attachment.DoesNotExist:
+    except model.DoesNotExist:
         return _error('File not found')
 
 
-@api_view(['GET'])
-@authentication_classes((SessionAuthentication, BasicAuthentication))
-@permission_classes((IsAuthenticated,))
-def download_thumbnail(request, attachment_id):
+def _thumbnail_from_model(model, pk):
     try:
-        att = Attachment.objects.get(pk=attachment_id)
+        att = model.objects.get(pk=pk)
 
         if att.is_image():
             temp_buff = StringIO.StringIO()
@@ -208,6 +202,16 @@ def download_thumbnail(request, attachment_id):
             img.thumbnail((IMAGE_THUMB_PX, IMAGE_THUMB_PX), Image.ANTIALIAS)
             temp_buff = StringIO.StringIO()
             temp_buff.name = att.name
+            exif = {
+                ExifTags.TAGS[k]: v
+                for k, v in (img._getexif() or {}).items()
+                if k in ExifTags.TAGS
+            }
+            orientation = exif.get('Orientation')
+            if orientation == 6:
+                img = img.rotate(-90, expand=True)
+            elif orientation == 8:
+                img = img.rotate(90, expand=True)
             img.save(temp_buff)
             temp_buff.seek(0)
             return HttpResponse(temp_buff.read(),
@@ -224,8 +228,36 @@ def download_thumbnail(request, attachment_id):
                 temp_buff.seek(0)
 
             return HttpResponse(temp_buff.read(), content_type='image/png')
-    except Attachment.DoesNotExist:
+    except model.DoesNotExist:
         return _error('File not found')
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_attachment(request, attachment_id):
+    return _download_from_model(Attachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_thumbnail(request, attachment_id):
+    return _thumbnail_from_model(Attachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_ntattachment(request, attachment_id):
+    return _download_from_model(NTAttachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_ntthumbnail(request, attachment_id):
+    return _thumbnail_from_model(NTAttachment, attachment_id)
 
 
 @api_view(['GET'])

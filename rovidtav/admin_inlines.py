@@ -9,11 +9,12 @@ from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
                                     GenericReadOnlyInline, RemoveInlineAction,
                                     ReadOnlyStackedInline,
                                     CustomInlineActionsMixin,
-    GenericReadOnlyStackedInline, ReadOnlyCompactInline,
-    GenericReadOnlyCompactInline)
+                                    GenericReadOnlyStackedInline,
+                                    ReadOnlyCompactInline,
+                                    GenericReadOnlyCompactInline)
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner,
-                             SystemEmail)
+                             SystemEmail, NTAttachment)
 from django.shortcuts import redirect
 
 
@@ -35,13 +36,12 @@ class TicketDeviceFormset(IndirectGenericInlineFormSet):
     through_field = 'client'
 
 
-class AttachmentInline(RemoveInlineAction,
-                       ShowCalcFields,
-                       ReadOnlyStackedInline):
+class BaseAttachmentInline(RemoveInlineAction,
+                           ShowCalcFields,
+                           ReadOnlyStackedInline):
 
     fields = ('f_thumbnail', 'f_created')
     ordering = ('-created_at',)
-    model = Attachment
     template = os.path.join('admin', 'edit_inline', 'attachment_stacked.html')
     extra = 0
 
@@ -52,8 +52,12 @@ class AttachmentInline(RemoveInlineAction,
         return False
 
     def remove(self, request, ticket, obj):
-        super(AttachmentInline, self).remove(request, ticket, obj)
-        ticket.refresh_has_images()
+        super(BaseAttachmentInline, self).remove(request, ticket, obj)
+        try:
+            ticket.refresh_has_images()
+        except AttributeError:
+            # Not maintaining has_images boolean
+            pass
 
     remove.onclick = u'return confirm(\'{name} - T&ouml;rl&eacute;s?\')'
     remove.short_description = u'T&ouml;rl&eacute;s'
@@ -61,6 +65,14 @@ class AttachmentInline(RemoveInlineAction,
     def f_created(self, obj):
         created_at = obj.created_at.strftime('%Y-%m-%d %H:%M')
         return u'{} - {}'.format(obj.created_by, created_at)
+
+    def f_thumbnail(self, obj):
+        raise NotImplementedError()
+
+
+class AttachmentInline(BaseAttachmentInline):
+
+    model = Attachment
 
     def f_thumbnail(self, obj):
         if obj.is_image():
@@ -74,6 +86,21 @@ class AttachmentInline(RemoveInlineAction,
 
         return (u'<a target="_blank" href="/api/v1/attachment/{}"{}>'
                 u'{}</a>'.format(obj.pk, download, clickable_txt))
+
+    f_thumbnail.allow_tags = True
+    f_thumbnail.short_description = u'Megnyitás'
+
+
+class NTAttachmentInline(BaseAttachmentInline):
+
+    model = NTAttachment
+
+    def f_thumbnail(self, obj):
+        clickable_txt = (u'<img src="/api/v1/ntthumbnail/{}" />'
+                         u'<br />{}'.format(obj.pk, obj.name))
+
+        return (u'<a target="_blank" href="/api/v1/ntattachment/{}">'
+                u'{}</a>'.format(obj.pk, clickable_txt))
 
     f_thumbnail.allow_tags = True
     f_thumbnail.short_description = u'Megnyitás'
