@@ -12,14 +12,19 @@ from email.mime.text import MIMEText
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
 from django.contrib.admin.filters import SimpleListFilter
-from django.shortcuts import redirect, render
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
+from django.http.response import HttpResponse
+from django.template.loader import render_to_string
+from django.shortcuts import redirect, render
 
 from daterange_filter.filter import DateRangeFilter
+from inline_actions.admin import InlineActionsModelAdminMixin
+
+from rovidtav import settings
 
 from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
@@ -34,19 +39,21 @@ from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
+                     NetworkTicket, NTAttachment, SystemEmail,
                      ApplicantAttributes, DeviceOwner, Tag, Const)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
 
-from rovidtav import settings
-from inline_actions.admin import InlineActionsModelAdminMixin
-from django.http.response import HttpResponse
-from django.template.loader import render_to_string
-from rovidtav.models import SystemEmail
-
 # ============================================================================
 # MODELADMIN CLASSSES
 # ============================================================================
+
+
+class HideOnAdmin(admin.ModelAdmin):
+
+    def get_model_perms(self, request):
+        # Hide from admin index
+        return {}
 
 
 class CustomUserAdmin(UserAdmin):
@@ -64,13 +71,9 @@ class CustomUserAdmin(UserAdmin):
     phone_number.short_description = u'Telefonszám'
 
 
-class AttachmentAdmin(ModelAdminRedirect):
+class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
 
     form = AttachmentForm
-
-    def get_model_perms(self, request):
-        # Hide from admin index
-        return {}
 
     def save_model(self, request, obj, form, change):
         super(AttachmentAdmin, self).save_model(request, obj, form, change)
@@ -103,18 +106,18 @@ class PayoffAdmin(admin.ModelAdmin):
         return super(PayoffAdmin, self).get_inline_instances(request, obj=None)
 
 
-class CityAdmin(admin.ModelAdmin):
+class CityAdmin(HideOnAdmin, admin.ModelAdmin):
 
     list_display = ('name', 'zip', 'primer', 'onuk')
 
 
-class TagAdmin(admin.ModelAdmin):
+class TagAdmin(HideOnAdmin, admin.ModelAdmin):
 
     list_display = ('name', 'remark')
 
 
-class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
-                       HideIcons):
+class DeviceOwnerAdmin(CustomDjangoObjectActions, HideOnAdmin,
+                       ModelAdminRedirect, HideIcons):
 
     hide_add = False
     form = DeviceOwnerForm
@@ -134,13 +137,9 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
         form.base_fields['device'].queryset = devices
         return form
 
-    def get_model_perms(self, request):
-        # Hide from admin index
-        return {}
 
-
-class DeviceAdmin(CustomDjangoObjectActions, ModelAdminRedirect,
-                  HideIcons):
+class DeviceAdmin(CustomDjangoObjectActions, HideOnAdmin,
+                  ModelAdminRedirect, HideIcons):
 
     list_display = ('sn', 'device_type', 'owner_link', 'returned_at')
     search_fields = ('type__name', 'sn')
@@ -251,14 +250,10 @@ class MaterialAdmin(admin.ModelAdmin):
     list_filter = ('category__name', )
 
 
-class TicketMaterialAdmin(ModelAdminRedirect):
+class TicketMaterialAdmin(HideOnAdmin, ModelAdminRedirect):
 
     form = TicketMaterialForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
-
-    def get_model_perms(self, request):
-        # Hide from admin index
-        return {}
 
 
 class WorkItemAdmin(admin.ModelAdmin):
@@ -267,29 +262,33 @@ class WorkItemAdmin(admin.ModelAdmin):
                     'given_price', 'technology')
 
 
-class DeviceTypeAdmin(admin.ModelAdmin):
+class DeviceTypeAdmin(HideOnAdmin, admin.ModelAdmin):
 
     list_display = ('name', 'technology', 'sn_pattern')
     ordering = ('name',)
 
 
-class TicketWorkItemAdmin(ModelAdminRedirect):
+class TicketWorkItemAdmin(HideOnAdmin, ModelAdminRedirect):
 
     form = TicketWorkItemForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
-    def get_model_perms(self, request):
-        # Hide from admin index
-        return {}
 
-
-class NoteAdmin(ModelAdminRedirect):
+class NoteAdmin(HideOnAdmin, ModelAdminRedirect):
 
     form = NoteForm
 
-    def get_model_perms(self, request):
-        # Hide from admin index
-        return {}
+
+class MaterialCategoryAdmin(HideOnAdmin, admin.ModelAdmin):
+    pass
+
+
+class TicketTypeAdmin(HideOnAdmin, admin.ModelAdmin):
+    pass
+
+# =============================================================================
+# FILTERS
+# =============================================================================
 
 
 class OwnerFilter(SimpleListFilter):
@@ -362,6 +361,10 @@ class IsClosedFilter(SimpleListFilter):
         elif self.value() == 'all':
             return queryset
 
+# =============================================================================
+# ADMIN PAGES
+# =============================================================================
+
 
 class TicketAdmin(CustomDjangoObjectActions,
                   InlineActionsModelAdminMixin,
@@ -373,7 +376,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
     form = TicketForm
     add_form_template = os.path.join('rovidtav', 'select2.html')
-    #change_form_template = os.path.join('admin',
+    # change_form_template = os.path.join('admin',
     #                                    'two_column_change_form.html')
 
     list_per_page = 200
@@ -777,6 +780,56 @@ class TicketAdmin(CustomDjangoObjectActions,
     download_html.css_class = 'downloadlink'
 
 
+class NetworkTicketAdmin(admin.ModelAdmin):
+
+    list_per_page = 200
+    list_display = ('address', 'city_name',
+                    'ticket_type', 'created_at_fmt',
+                    'closed_at_fmt', 'owner', 'status',
+                    'ticket_tags_nice')
+
+    fields = ['address', 'onu', 'ticket_types', 'ticket_tags',
+              'owner', 'status']
+    readonly_fields = ('full_address',)
+
+    def ticket_type(self, obj):
+        types = ' / '.join([t.name for t in obj.ticket_types.all()])
+        return types[:25].strip() + u'...' if len(types) > 25 else types
+
+    ticket_type.short_description = u'Tipus'
+
+    def created_at_fmt(self, obj):
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return obj.created_at.strftime('%Y.%m.%d')
+
+    created_at_fmt.short_description = u'Felvéve'
+    created_at_fmt.admin_order_field = ('created_at')
+
+    def closed_at_fmt(self, obj):
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return obj.closed_at.strftime('%Y.%m.%d') if obj.closed_at else None
+
+    closed_at_fmt.short_description = u'Lezárva'
+    closed_at_fmt.admin_order_field = ('closed_at')
+
+    def ticket_tags_nice(self, obj):
+        return ', '.join([t.name for t in obj.ticket_tags.all()])
+
+    ticket_tags_nice.short_description = u'Cimkék'
+
+    def city_name(self, obj):
+        return u'{} {}'.format(obj.city.name, obj.city.zip)
+
+    city_name.short_description = u'Település'
+    city_name.admin_order_field = 'city__name'
+
+    def full_address(self, obj):
+        return u'{} {}, {}'.format(obj.city.zip, obj.city.name,
+                                   obj.address)
+
+    full_address.short_description = u'Cím'
+
+
 class CustomAdminSite(AdminSite):
 
     def login(self, request, extra_context=None):
@@ -788,7 +841,7 @@ class CustomAdminSite(AdminSite):
         ctx = super(CustomAdminSite, self).each_context(request)
         ctx.update(get_unread_messages_count(request.user))
         ctx.update(get_unread_messages(request.user))
-        ctx.update({'cache_nullifier': settings.CACHE_REFRESH})
+        ctx.update({'c': 'sadf'})
         return ctx
 
 
@@ -801,9 +854,10 @@ admin.site.register(SystemEmail, SystemEmailAdmin)
 admin.site.register(City, CityAdmin)
 admin.site.register(Payoff, PayoffAdmin)
 admin.site.register(Client, ClientAdmin)
-admin.site.register(TicketType)
+admin.site.register(TicketType, TicketTypeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Ticket, TicketAdmin)
+admin.site.register(NetworkTicket, NetworkTicketAdmin)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
@@ -816,5 +870,5 @@ admin.site.register(DeviceOwner, DeviceOwnerAdmin)
 admin.site.register(DeviceType, DeviceTypeAdmin)
 
 admin.site.register(Material, MaterialAdmin)
-admin.site.register(MaterialCategory)
+admin.site.register(MaterialCategory, MaterialCategoryAdmin)
 admin.site.register(TicketMaterial, TicketMaterialAdmin)

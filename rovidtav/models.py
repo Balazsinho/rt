@@ -334,6 +334,8 @@ class Payoff(BaseEntity):
 
 class TicketType(BaseEntity):
 
+    network_ticket = models.BooleanField(default=False,
+                                         verbose_name=u'Hálózati jegy típus')
     name = models.CharField(db_column='nev', max_length=250,
                             verbose_name=u'Név')
     remark = models.TextField(db_column='megjegyzes',
@@ -370,14 +372,8 @@ class Tag(BaseEntity):
         return self.name
 
 
-class Ticket(JsonExtended):
+class BaseTicket(BaseEntity):
 
-    ext_id = models.CharField(db_column='kulso_id', max_length=20,
-                              verbose_name=u'Jegy ID')
-    client = models.ForeignKey(Client, db_column='ugyfel',
-                               verbose_name=u'Ügyfél')
-    ticket_types = models.ManyToManyField(TicketType, db_column='tipus',
-                                          verbose_name=u'Jegy típus')
     ticket_tags = models.ManyToManyField(Tag, db_column='cimkek',
                                          blank=True,
                                          verbose_name=u'Cimkék')
@@ -385,19 +381,6 @@ class Ticket(JsonExtended):
                              verbose_name=u'Település')
     address = models.CharField(db_column='cim', max_length=120,
                                verbose_name=u'Cím')
-    payoff = models.ForeignKey(Payoff, db_column='elszamolas',
-                               null=True, blank=True,
-                               verbose_name=u'Elszámolás')
-    owner = models.ForeignKey(User, related_name='tulajdonos',
-                              null=True, blank=True,
-                              verbose_name=u'Szerelő',
-                              limit_choices_to={'groups__name': u'Szerelő'})
-    remark = models.CharField(db_column='megjegyzes',
-                              help_text=(u'A kivitelezéssel kapcsolatos információk a'
-                                         u' "Megjegyzések" menü alá mennek.'),
-                              max_length=150,
-                              null=True, blank=True,
-                              verbose_name=u'Megjegyzés')
     status = models.CharField(
         db_column='statusz',
         null=False,
@@ -407,14 +390,101 @@ class Ticket(JsonExtended):
         max_length=100,
         verbose_name=u'Státusz',
     )
+    owner = models.ForeignKey(User,
+                              related_name="%(class)s_tulajdonos",
+                              related_query_name="%(class)s_tulajdonos",
+                              null=True, blank=True,
+                              verbose_name=u'Szerelő',
+                              limit_choices_to={'groups__name': u'Szerelő'})
     has_images = models.BooleanField(default=False, verbose_name=u'Kép')
     closed_at = models.DateField(verbose_name=u'Lezárva',
                                  null=True, blank=True,
                                  editable=True)
 
-    created_at = models.DateTimeField(verbose_name=u'Létrehozva')
+    created_at = models.DateTimeField(verbose_name=u'Létrehozva',
+                                      default=datetime.now)
     created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létrehozó')
+                                   verbose_name=u'Létr, ehozó')
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        notify_owner = False
+        if self.pk:
+            prev_inst = self.__class__.objects.get(pk=self.pk)
+            if self.owner != prev_inst.owner:
+                self._owner_trans(prev_inst)
+
+                if self.status == Const.TicketStatus.NEW and self.owner:
+                    self.status = Const.TicketStatus.ASSIGNED
+
+                elif self.status != Const.TicketStatus.NEW and not self.owner:
+                    self.status = Const.TicketStatus.NEW
+                if self.status == Const.TicketStatus.ASSIGNED:
+                    notify_owner = True
+
+            if self.status != prev_inst.status:
+                self._status_trans(prev_inst.status, self.status)
+
+                if self.status in (Const.TicketStatus.DONE_SUCC,
+                                   Const.TicketStatus.DONE_UNSUCC,
+                                   Const.TicketStatus.DUPLICATE,):
+                    self.closed_at = self.closed_at or datetime.now()
+                else:
+                    self.closed_at = None
+                if self.status == Const.TicketStatus.ASSIGNED:
+                    notify_owner = True
+
+        else:
+            notify_owner = True
+
+        super(BaseTicket, self).save(*args, **kwargs)
+        return notify_owner
+
+    def _status_trans(self, old_status, new_status):
+        """
+        Does a status transition from old to new
+        """
+        self._trans(u'Státusz változás', old_status, new_status)
+
+    def _owner_trans(self, prev_inst):
+        """
+        Creates the ticketevent for an owner change and returns the owners
+        """
+        prev_owner = Const.NO_OWNER if not prev_inst.owner else \
+            prev_inst.owner.username
+        owner = Const.NO_OWNER if not self.owner else self.owner.username
+        self._trans(u'Új tulajdonos', prev_owner, owner)
+
+    def _trans(self, event, old, new):
+        """
+        Creates the ticketevent object for a change
+        """
+        remark = u'{}: '.format(event) if event else u''
+        remark += u'{} >> {}'.format(old, new)
+        Note.objects.create(content_object=self,
+                            remark=remark, is_history=True)
+
+
+class Ticket(BaseTicket, JsonExtended):
+
+    ticket_types = models.ManyToManyField(
+        TicketType, db_column='tipus', verbose_name=u'Jegy típus',
+        limit_choices_to={'network_ticket': False})
+    ext_id = models.CharField(db_column='kulso_id', max_length=20,
+                              verbose_name=u'Jegy ID')
+    client = models.ForeignKey(Client, db_column='ugyfel',
+                               verbose_name=u'Ügyfél')
+    payoff = models.ForeignKey(Payoff, db_column='elszamolas',
+                               null=True, blank=True,
+                               verbose_name=u'Elszámolás')
+    remark = models.CharField(
+        db_column='megjegyzes',
+        help_text=(u'A kivitelezéssel kapcsolatos információk a'
+                   u' "Megjegyzések" menü alá mennek.'),
+        max_length=150, null=True, blank=True,
+        verbose_name=u'Megjegyzés')
 
     class Meta:
         db_table = 'jegy'
@@ -485,62 +555,21 @@ class Ticket(JsonExtended):
                 break
         return is_install
 
-    def save(self, *args, **kwargs):
-        notify_owner = False
-        if self.pk:
-            prev_inst = Ticket.objects.get(pk=self.pk)
-            if self.owner != prev_inst.owner:
-                self._owner_trans(prev_inst)
 
-                if self.status == Const.TicketStatus.NEW and self.owner:
-                    self.status = Const.TicketStatus.ASSIGNED
+class NetworkTicket(BaseTicket):
 
-                elif self.status != Const.TicketStatus.NEW and not self.owner:
-                    self.status = Const.TicketStatus.NEW
-                if self.status == Const.TicketStatus.ASSIGNED:
-                    notify_owner = True
+    ticket_types = models.ManyToManyField(
+        TicketType, db_column='tipus',
+        verbose_name=u'Jegy típus',
+        limit_choices_to={'network_ticket': True})
+    onu = models.CharField(db_column='onu', max_length=70,
+                           verbose_name=u'Onu',
+                           null=True, blank=True)
 
-            if self.status != prev_inst.status:
-                self._status_trans(prev_inst.status, self.status)
-
-                if self.status in (Const.TicketStatus.DONE_SUCC,
-                                   Const.TicketStatus.DONE_UNSUCC,
-                                   Const.TicketStatus.DUPLICATE,):
-                    self.closed_at = self.closed_at or datetime.now()
-                else:
-                    self.closed_at = None
-                if self.status == Const.TicketStatus.ASSIGNED:
-                    notify_owner = True
-
-        else:
-            notify_owner = True
-
-        super(Ticket, self).save(*args, **kwargs)
-        return notify_owner
-
-    def _status_trans(self, old_status, new_status):
-        """
-        Does a status transition from old to new
-        """
-        self._trans(u'Státusz változás', old_status, new_status)
-
-    def _owner_trans(self, prev_inst):
-        """
-        Creates the ticketevent for an owner change and returns the owners
-        """
-        prev_owner = Const.NO_OWNER if not prev_inst.owner else \
-            prev_inst.owner.username
-        owner = Const.NO_OWNER if not self.owner else self.owner.username
-        self._trans(u'Új tulajdonos', prev_owner, owner)
-
-    def _trans(self, event, old, new):
-        """
-        Creates the ticketevent object for a change
-        """
-        remark = u'{}: '.format(event) if event else u''
-        remark += u'{} >> {}'.format(old, new)
-        Note.objects.create(content_object=self,
-                            remark=remark, is_history=True)
+    class Meta:
+        db_table = 'halozat_jegy'
+        verbose_name = u'Hálózat jegy'
+        verbose_name_plural = u'Hálózat jegyek'
 
 
 class Note(BaseEntity):
@@ -740,10 +769,11 @@ class TicketWorkItem(BaseEntity):
         return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
 
 
-class Attachment(BaseEntity):
+class BaseAttachment(BaseEntity):
 
-    ticket = models.ForeignKey(Ticket, db_column='jegy',
-                               verbose_name=u'Jegy')
+    class Meta:
+        abstract = True
+
     name = models.CharField(db_column='nev', max_length=120,
                             verbose_name=u'Név',
                             null=True, blank=True)
@@ -757,11 +787,6 @@ class Attachment(BaseEntity):
                                       verbose_name=u'Létrehozva')
     created_by = models.ForeignKey(User, editable=False,
                                    verbose_name=u'Létrehozó')
-
-    class Meta:
-        db_table = 'csatolmany'
-        verbose_name = u'File'
-        verbose_name_plural = u'Fileok'
 
     @staticmethod
     def autocomplete_search_fields():
@@ -789,7 +814,33 @@ class Attachment(BaseEntity):
         if not r.match(self._data):
             self._data = base64.b64encode(self._data)
 
-        super(Attachment, self).save(*args, **kwargs)
+        super(BaseAttachment, self).save(*args, **kwargs)
+
+
+class Attachment(BaseAttachment):
+
+    ticket = models.ForeignKey(Ticket, db_column='jegy',
+                               verbose_name=u'Jegy')
+
+    class Meta:
+        db_table = 'csatolmany'
+        verbose_name = u'File'
+        verbose_name_plural = u'Fileok'
+
+
+class NTAttachment(BaseAttachment):
+
+    """
+    Network ticket attachment
+    """
+
+    ticket = models.ForeignKey(NetworkTicket, db_column='jegy',
+                               verbose_name=u'Jegy')
+
+    class Meta:
+        db_table = 'halo_jegy_csatolmany'
+        verbose_name = u'File'
+        verbose_name_plural = u'Fileok'
 
 
 class SystemEmail(BaseEntity):

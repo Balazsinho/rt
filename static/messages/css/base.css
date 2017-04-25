@@ -26,3 +26,12 @@
 	display: inline-block;
 	width: 70px;
 }
+#id_recipient {
+	width: 350px;
+}
+#id_subject {
+	width: 350px;
+}
+#id_body {
+	width: 350px;
+}
