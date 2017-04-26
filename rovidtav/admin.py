@@ -289,7 +289,8 @@ class MaterialCategoryAdmin(HideOnAdmin, admin.ModelAdmin):
 
 
 class TicketTypeAdmin(HideOnAdmin, admin.ModelAdmin):
-    pass
+
+    fields = ['name', 'remark']
 
 # =============================================================================
 # FILTERS
@@ -802,6 +803,9 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     fields = ['address', 'onu', 'ticket_types', 'ticket_tags',
               'owner', 'status']
     readonly_fields = ('full_address',)
+
+    class Media:
+        js = ('js/network_ticket.js',)
 
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):
