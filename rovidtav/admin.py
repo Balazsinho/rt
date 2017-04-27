@@ -288,9 +288,9 @@ class MaterialCategoryAdmin(HideOnAdmin, admin.ModelAdmin):
     pass
 
 
-class TicketTypeAdmin(HideOnAdmin, admin.ModelAdmin):
+class TicketTypeAdmin(admin.ModelAdmin):
 
-    fields = ['name', 'remark']
+    fields = ['name', 'remark', 'network_ticket']
 
 # =============================================================================
 # FILTERS
