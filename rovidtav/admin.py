@@ -792,7 +792,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
 
     list_per_page = 200
     list_display_links = None
-    list_display = ('address_link', 'city_name',
+    list_display = ('address_link', 'city_name', 'onu',
                     'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status',
                     'ticket_tags_nice')
@@ -800,9 +800,10 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     inlines = (NoteInline, NTAttachmentInline)
     ordering = ('-created_at',)
 
-    fields = ['address', 'onu', 'ticket_types', 'ticket_tags',
-              'owner', 'status']
+    fields = ['city', 'address', 'onu', 'ticket_types',
+              'ticket_tags', 'owner', 'status']
     readonly_fields = ('full_address',)
+    list_filter = ('onu', OwnerFilter, IsClosedFilter, 'ticket_tags')
 
     class Media:
         js = ('js/network_ticket.js',)
