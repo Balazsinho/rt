@@ -44,6 +44,7 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
 from rovidtav.admin_inlines import NTAttachmentInline
+from rovidtav.forms import TicketTypeForm
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -288,9 +289,9 @@ class MaterialCategoryAdmin(HideOnAdmin, admin.ModelAdmin):
     pass
 
 
-class TicketTypeAdmin(admin.ModelAdmin):
+class TicketTypeAdmin(HideOnAdmin, admin.ModelAdmin):
 
-    fields = ['name', 'remark', 'network_ticket']
+    form = TicketTypeForm
 
 # =============================================================================
 # FILTERS

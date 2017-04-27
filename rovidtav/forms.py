@@ -8,6 +8,7 @@ from django import forms
 
 from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketWorkItem, Payoff, Device, DeviceOwner, Const)
+from rovidtav.models import TicketType
 
 
 class AttachmentForm(forms.ModelForm):
@@ -148,3 +149,13 @@ class DeviceToCustomerForm(forms.Form):
 
     owner = ModelChoiceField(queryset=User.objects.all(),
                              label=u'Tulajdonos')
+
+
+class TicketTypeForm(forms.ModelForm):
+
+    class Meta:
+        model = TicketType
+        fields = '__all__'
+        widgets = {
+            'network_ticket': forms.HiddenInput(),
+        }
