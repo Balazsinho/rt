@@ -809,6 +809,14 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     class Media:
         js = ('js/network_ticket.js',)
 
+    def get_actions(self, request):
+        actions = super(NetworkTicketAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):
             return []
