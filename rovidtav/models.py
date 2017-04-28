@@ -572,6 +572,7 @@ class NetworkTicket(BaseTicket):
         User, db_column='szerelo',
         verbose_name=u'Szerelő',
         related_name='halozati_szerelo',
+        null=True, blank=True,
         limit_choices_to={'groups__name': u'Hálózat szerelő'})
 
     class Meta:
