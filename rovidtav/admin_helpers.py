@@ -15,7 +15,6 @@ from django.contrib.auth.models import User, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.admin import GenericTabularInline,\
     GenericStackedInline
-from django import forms
 
 from django_object_actions.utils import DjangoObjectActions
 from jet.admin import CompactInline
@@ -303,6 +302,16 @@ def get_technicians():
 
 def get_technician_choices():
     users = get_technicians()
+    return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
+
+
+def get_network_technicians():
+    group = Group.objects.get(name=u'Hálózat szerelő')
+    return group.user_set.all()
+
+
+def get_network_technician_choices():
+    users = get_network_technicians()
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
 
 

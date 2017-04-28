@@ -30,6 +30,7 @@ from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
                             is_site_admin, DeviceOwnerListFilter,
                             get_technician_choices,
+                            get_network_technician_choices,
                             get_unread_messages_count,
                             get_unread_messages, send_assign_mail)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
@@ -913,7 +914,6 @@ class CustomAdminSite(AdminSite):
 
     def login(self, request, extra_context=None):
         extra_context = extra_context or {}
-        extra_context[REDIRECT_FIELD_NAME] = settings.ADMIN_LOGIN_REDIRECT_URL
         return super(CustomAdminSite, self).login(request, extra_context)
 
     def each_context(self, request):
