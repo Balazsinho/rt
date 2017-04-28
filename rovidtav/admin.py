@@ -30,7 +30,7 @@ from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             CustomDjangoObjectActions, HideIcons,
                             is_site_admin, DeviceOwnerListFilter,
                             get_technician_choices,
-                            get_unread_messages_count, TicketForm,
+                            get_unread_messages_count,
                             get_unread_messages, send_assign_mail)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
@@ -42,9 +42,9 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      NetworkTicket, NTAttachment, SystemEmail,
                      ApplicantAttributes, DeviceOwner, Tag, Const)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
-                    TicketWorkItemForm, DeviceOwnerForm, DeviceForm)
+                    TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
+                    TicketForm, TicketTypeForm)
 from rovidtav.admin_inlines import NTAttachmentInline
-from rovidtav.forms import TicketTypeForm
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -305,6 +305,21 @@ class OwnerFilter(SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return get_technician_choices()
+
+    def queryset(self, request, queryset):
+        if self.value() not in (None, 'all'):
+            return queryset.filter(owner=self.value())
+        else:
+            return queryset
+
+
+class NetworkOwnerFilter(SimpleListFilter):
+
+    title = u'Szerelő'
+    parameter_name = 'owner'
+
+    def lookups(self, request, model_admin):
+        return get_network_technician_choices()
 
     def queryset(self, request, queryset):
         if self.value() not in (None, 'all'):

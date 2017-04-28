@@ -145,7 +145,6 @@ class ReadOnlyInline(object):
 
 
 class ReadOnlyTabularInline(ReadOnlyInline, admin.TabularInline):
-
     template = os.path.join('admin', 'readOnlyInline.html')
 
 
@@ -304,16 +303,6 @@ def get_technicians():
 
 def get_technician_choices():
     users = get_technicians()
-    return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
-
-
-def get_network_technicians():
-    group = Group.objects.get(name=u'Hálózati jegy szerelő')
-    return group.user_set.all()
-
-
-def get_network_technician_choices():
-    users = get_network_technicians()
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
 
 

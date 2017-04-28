@@ -7,8 +7,8 @@ from django.db.models import Q
 from django import forms
 
 from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
-                     TicketWorkItem, Payoff, Device, DeviceOwner, Const)
-from rovidtav.models import TicketType
+                     TicketWorkItem, Device, DeviceOwner, Const,
+                     TicketType)
 
 
 class AttachmentForm(forms.ModelForm):
@@ -149,6 +149,12 @@ class DeviceToCustomerForm(forms.Form):
 
     owner = ModelChoiceField(queryset=User.objects.all(),
                              label=u'Tulajdonos')
+
+
+class TicketForm(forms.ModelForm):
+
+    class Media:
+        js = ('js/ticket_form.js',)
 
 
 class TicketTypeForm(forms.ModelForm):
