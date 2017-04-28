@@ -26,12 +26,6 @@ from rovidtav.models import DeviceOwner, Const, SystemEmail
 import settings
 
 
-class TicketForm(forms.ModelForm):
-
-    class Media:
-        js = ('js/ticket_form.js',)
-
-
 class DeviceOwnerListFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
@@ -310,6 +304,16 @@ def get_technicians():
 
 def get_technician_choices():
     users = get_technicians()
+    return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
+
+
+def get_network_technicians():
+    group = Group.objects.get(name=u'Hálózati jegy szerelő')
+    return group.user_set.all()
+
+
+def get_network_technician_choices():
+    users = get_network_technicians()
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
 
 
