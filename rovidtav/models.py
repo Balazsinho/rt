@@ -390,12 +390,6 @@ class BaseTicket(BaseEntity):
         max_length=100,
         verbose_name=u'Státusz',
     )
-    owner = models.ForeignKey(User,
-                              related_name="%(class)s_tulajdonos",
-                              related_query_name="%(class)s_tulajdonos",
-                              null=True, blank=True,
-                              verbose_name=u'Szerelő',
-                              limit_choices_to={'groups__name': u'Szerelő'})
     has_images = models.BooleanField(default=False, verbose_name=u'Kép')
     closed_at = models.DateField(verbose_name=u'Lezárva',
                                  null=True, blank=True,
@@ -409,11 +403,14 @@ class BaseTicket(BaseEntity):
     class Meta:
         abstract = True
 
+    def _owner_changed(self, prev_inst):
+        return self.owner != prev_inst.owner
+
     def save(self, *args, **kwargs):
         notify_owner = False
         if self.pk:
             prev_inst = self.__class__.objects.get(pk=self.pk)
-            if self.owner != prev_inst.owner:
+            if self._owner_changed(prev_inst):
                 self._owner_trans(prev_inst)
 
                 if self.status == Const.TicketStatus.NEW and self.owner:
@@ -448,15 +445,6 @@ class BaseTicket(BaseEntity):
         """
         self._trans(u'Státusz változás', old_status, new_status)
 
-    def _owner_trans(self, prev_inst):
-        """
-        Creates the ticketevent for an owner change and returns the owners
-        """
-        prev_owner = Const.NO_OWNER if not prev_inst.owner else \
-            prev_inst.owner.username
-        owner = Const.NO_OWNER if not self.owner else self.owner.username
-        self._trans(u'Új tulajdonos', prev_owner, owner)
-
     def _trans(self, event, old, new):
         """
         Creates the ticketevent object for a change
@@ -485,6 +473,12 @@ class Ticket(BaseTicket, JsonExtended):
                    u' "Megjegyzések" menü alá mennek.'),
         max_length=150, null=True, blank=True,
         verbose_name=u'Megjegyzés')
+    owner = models.ForeignKey(User,
+                              related_name="%(class)s_tulajdonos",
+                              related_query_name="%(class)s_tulajdonos",
+                              null=True, blank=True,
+                              verbose_name=u'Szerelő',
+                              limit_choices_to={'groups__name': u'Szerelő'})
 
     class Meta:
         db_table = 'jegy'
@@ -555,6 +549,15 @@ class Ticket(BaseTicket, JsonExtended):
                 break
         return is_install
 
+    def _owner_trans(self, prev_inst):
+        """
+        Creates the ticketevent for an owner change and returns the owners
+        """
+        prev_owner = Const.NO_OWNER if not prev_inst.owner else \
+            prev_inst.owner.username
+        owner = Const.NO_OWNER if not self.owner else self.owner.username
+        self._trans(u'Új tulajdonos', prev_owner, owner)
+
 
 class NetworkTicket(BaseTicket):
 
@@ -565,6 +568,11 @@ class NetworkTicket(BaseTicket):
     onu = models.CharField(db_column='onu', max_length=70,
                            verbose_name=u'Onu',
                            null=True, blank=True)
+    owner = models.ManyToManyField(
+        User, db_column='szerelo',
+        verbose_name=u'Szerelő',
+        related_name='halozati_szerelo',
+        limit_choices_to={'groups__name': u'Hálózat szerelő'})
 
     class Meta:
         db_table = 'halozat_jegy'

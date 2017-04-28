@@ -811,7 +811,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     list_display_links = None
     list_display = ('address_link', 'city_name', 'onu',
                     'ticket_type', 'created_at_fmt',
-                    'closed_at_fmt', 'owner', 'status',
+                    'closed_at_fmt', 'owner_display', 'status',
                     'ticket_tags_nice')
     change_actions = ('new_note', 'new_attachment')
     inlines = (NoteInline, NTAttachmentInline)
@@ -821,7 +821,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
               'ticket_tags', 'owner', 'status',
               'created_at']
     readonly_fields = ('full_address',)
-    list_filter = ('onu', OwnerFilter, IsClosedFilter, 'ticket_tags')
+    list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_tags')
 
     class Media:
         js = ('js/network_ticket.js',)
@@ -831,6 +831,12 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         del actions['delete_selected']
         return actions
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super(NetworkTicketAdmin, self).get_form(request, obj, **kwargs)
+        self._hide_icons(form, ('owner',))
+        self._hide_icons(form, ('city',))
+        return form
+
     def has_delete_permission(self, request, obj=None):
         return False
 
@@ -839,6 +845,10 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
             return []
         return super(NetworkTicketAdmin, self).get_inline_instances(request,
                                                                     obj=None)
+
+    def save_formset(self, request, form, formset, change):
+        formset.save() # this will save the children
+        form.instance.save() # form.instance is the parent
 
     def address_link(self, obj):
         return (u'<a href="/admin/rovidtav/networkticket/{}/change#'
@@ -883,6 +893,11 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
                                    obj.address)
 
     full_address.short_description = u'Cím'
+
+    def owner_display(self, obj):
+        return u', '.join([u.username for u in obj.owner.all()])
+
+    owner_display.short_description = u'Szerelő'
 
     # =========================================================================
     # ACTIONS
