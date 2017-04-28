@@ -1,5 +1,6 @@
 **/.*
 *.pyc
-db.sqlite3
-rovidtav/static
-rovidtav/migrations/
+*.sqlite3
+static/
+migrations/
+local_settings.py
