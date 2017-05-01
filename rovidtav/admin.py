@@ -836,6 +836,14 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         self._hide_icons(form, ('city',))
         return form
 
+    def get_queryset(self, request):
+        qs = super(NetworkTicketAdmin, self).get_queryset(request)
+        if hasattr(request, 'user'):
+            if is_site_admin(request.user):
+                return qs
+            return qs.filter(owner__in=[request.user.pk])
+        return qs
+
     def has_delete_permission(self, request, obj=None):
         return False
 
