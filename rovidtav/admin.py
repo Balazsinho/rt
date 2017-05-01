@@ -818,8 +818,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     ordering = ('-created_at',)
 
     fields = ['city', 'address', 'onu', 'ticket_types',
-              'ticket_tags', 'owner', 'status',
-              'created_at']
+              'ticket_tags', 'owner', 'status']
     readonly_fields = ('full_address',)
     list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_tags')
 
