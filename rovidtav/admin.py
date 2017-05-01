@@ -845,10 +845,6 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         return super(NetworkTicketAdmin, self).get_inline_instances(request,
                                                                     obj=None)
 
-    def save_formset(self, request, form, formset, change):
-        formset.save() # this will save the children
-        form.instance.save() # form.instance is the parent
-
     def address_link(self, obj):
         return (u'<a href="/admin/rovidtav/networkticket/{}/change#'
                 u'/tab/inline_0/">{}</a>'.format(obj.pk, obj.address))
