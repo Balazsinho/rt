@@ -46,7 +46,8 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      NetworkTicketMaterial, NetworkTicketWorkItem)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
-                    TicketForm, TicketTypeForm)
+                    TicketForm, TicketTypeForm, NetworkTicketWorkItemForm,
+                    NetworkTicketMaterialForm)
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -264,6 +265,12 @@ class TicketMaterialAdmin(HideOnAdmin, ModelAdminRedirect):
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
 
+class NetworkTicketMaterialAdmin(HideOnAdmin, ModelAdminRedirect):
+
+    form = NetworkTicketMaterialForm
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
+
 class WorkItemAdmin(admin.ModelAdmin):
 
     list_display = ('art_number', 'name', 'art_price', 'bulk_price',
@@ -279,6 +286,12 @@ class DeviceTypeAdmin(HideOnAdmin, admin.ModelAdmin):
 class TicketWorkItemAdmin(HideOnAdmin, ModelAdminRedirect):
 
     form = TicketWorkItemForm
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
+
+class NetworkTicketWorkItemAdmin(HideOnAdmin, ModelAdminRedirect):
+
+    form = NetworkTicketWorkItemForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
 
@@ -996,8 +1009,8 @@ admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(NTAttachment, AttachmentAdmin)
-admin.site.register(NetworkTicketMaterial, HideOnAdmin)
-admin.site.register(NetworkTicketWorkItem, HideOnAdmin)
+admin.site.register(NetworkTicketMaterial, NetworkTicketMaterialAdmin)
+admin.site.register(NetworkTicketWorkItem, NetworkTicketWorkItemAdmin)
 
 admin.site.register(WorkItem, WorkItemAdmin)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)

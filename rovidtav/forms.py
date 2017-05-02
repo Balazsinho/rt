@@ -8,7 +8,7 @@ from django import forms
 
 from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketWorkItem, Device, DeviceOwner, Const,
-                     TicketType)
+                     TicketType, NetworkTicketMaterial, NetworkTicketWorkItem)
 
 
 class AttachmentForm(forms.ModelForm):
@@ -75,6 +75,48 @@ class TicketWorkItemForm(forms.ModelForm):
 
     class Meta:
         model = TicketWorkItem
+        widgets = {
+          'ticket': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
+class NetworkTicketMaterialForm(forms.ModelForm):
+
+    material = ModelChoiceField(
+        Material.objects.all(),
+        widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
+        label='Anyag',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(NetworkTicketMaterialForm, self).__init__(*args, **kwargs)
+        suggestions = Material.objects.filter(technology=Const.HALOZAT)
+        self.fields['material'].queryset = suggestions
+
+    class Meta:
+        model = NetworkTicketMaterial
+        widgets = {
+          'ticket': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
+class NetworkTicketWorkItemForm(forms.ModelForm):
+
+    work_item = ModelChoiceField(
+        WorkItem.objects.all(),
+        widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
+        label='Munka',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(NetworkTicketWorkItemForm, self).__init__(*args, **kwargs)
+        suggestions = WorkItem.objects.filter(technology=Const.HALOZAT)
+        self.fields['work_item'].queryset = suggestions
+
+    class Meta:
+        model = NetworkTicketWorkItem
         widgets = {
           'ticket': forms.HiddenInput(),
         }
