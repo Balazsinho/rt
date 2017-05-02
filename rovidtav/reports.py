@@ -4,7 +4,7 @@ from django.forms.fields import ChoiceField
 from model_report.report import reports
 
 from rovidtav.report_helpers import CustomReportAdmin, Label
-from rovidtav.models import Ticket, Note
+from rovidtav.models import Ticket, Note, NetworkTicket
 from _collections import defaultdict
 
 
@@ -114,6 +114,7 @@ class OnDemandList(CustomReportAdmin):
     }
     override_field_formats = {
         'closed_at': to_date,
+        'created_at': to_date,
     }
     extra_columns_first_col = 10
 
@@ -160,5 +161,76 @@ class OnDemandList(CustomReportAdmin):
         return ctx
 
 
+class OnDemandNetworkTicketList(CustomReportAdmin):
+
+    title = u'Hálózati jegy lista cimkék alapján'
+    model = NetworkTicket
+    fields = [
+        'address',
+        'onu',
+        'status',
+        'created_at',
+        'closed_at',
+    ]
+
+    list_filter = ['ticket_tags', 'owner', 'created_at', 'closed_at']
+    list_order_by = ('-created_at',)
+    type = 'report'
+    override_field_labels = {
+        'created_at': Label(u'Felvéve'),
+        'closed_at': Label(u'Lezárva'),
+        'city__name': Label(u'Település'),
+    }
+    override_field_formats = {
+        'closed_at': to_date,
+        'created_at': to_date,
+    }
+    extra_columns_first_col = 6
+
+    def _calc_extra_from_qs(self, qs):
+        remark_key = u'megjegyzés_'
+        history_key = u'történet_'
+
+        id_extra_map = defaultdict(dict)
+        for ticket in qs:
+            notes = Note.objects.filter(content_type=ticket.get_content_type(),
+                                        object_id=ticket.pk,
+                                        is_history=False)
+            for idx, note in enumerate(notes):
+                note_txt = u'{} ({}) - {}'.format(note.created_by.username,
+                                                  to_date(note.created_at),
+                                                  note.remark)
+                id_extra_map[ticket.pk][remark_key+str(idx+1)] = note_txt
+            history = Note.objects.filter(content_type=ticket.get_content_type(),
+                                          object_id=ticket.pk,
+                                          is_history=True)
+            for idx, note in enumerate(history):
+                note_txt = u'{} ({}) - {}'.format(note.created_by.username,
+                                                  to_date(note.created_at),
+                                                  note.remark)
+                id_extra_map[ticket.pk][history_key+str(idx+1)] = note_txt
+
+            id_extra_map[ticket.pk][u'Szerelő'] = u', '.join([u.username for u in ticket.owner.all()])
+        self.calculated_columns = [u'Szerelő']
+        for ticket_cols in id_extra_map.values():
+            cols = ticket_cols.keys()
+            for col in cols:
+                if col not in self.calculated_columns:
+                    self.calculated_columns.append(col)
+        self.calculated_columns.sort()
+        self.calculated_columns = [(idx+self.extra_columns_first_col, col)
+                                   for idx, col
+                                   in enumerate(self.calculated_columns)]
+        self.extra_col_map = id_extra_map
+        self.id_url_map = dict([(t.address, '/admin/rovidtav/networkticket/{}/change'.format(t.pk)) for t in qs])
+
+    def get_render_context(self, request, extra_context={}, by_row=None):
+        ctx = super(OnDemandNetworkTicketList, self).get_render_context(
+            request, extra_context, by_row)
+        ctx['id_url_map'] = self.id_url_map
+        return ctx
+
+
 reports.register('osszesito', SummaryList)
 reports.register('riport_cimkek_alapjan', OnDemandList)
+reports.register('halozati_riport_cimkek_alapjan', OnDemandNetworkTicketList)
