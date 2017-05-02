@@ -828,6 +828,13 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     class Media:
         js = ('js/network_ticket.js',)
 
+    def get_list_filter(self, request):
+        if hasattr(request, 'user'):
+            if is_site_admin(request.user):
+                return self.list_filter
+            else:
+                return ('onu', IsClosedFilter,)
+
     def get_readonly_fields(self, request, obj=None):
         fields = self.readonly_fields
         if not is_site_admin(request.user):
