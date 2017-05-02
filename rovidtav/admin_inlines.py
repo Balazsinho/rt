@@ -4,6 +4,7 @@ from datetime import datetime
 
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
 from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
 
 from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
                                     GenericReadOnlyInline, RemoveInlineAction,
@@ -14,8 +15,8 @@ from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
                                     GenericReadOnlyCompactInline)
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner,
-                             SystemEmail, NTAttachment)
-from django.shortcuts import redirect
+                             SystemEmail, NTAttachment, NetworkTicketMaterial,
+                             NetworkTicketWorkItem)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -106,15 +107,14 @@ class NTAttachmentInline(BaseAttachmentInline):
     f_thumbnail.short_description = u'Megnyitás'
 
 
-class MaterialInline(RemoveInlineAction,
-                     ShowCalcFields,
-                     ReadOnlyCompactInline):
+class BaseMaterialInline(RemoveInlineAction,
+                         ShowCalcFields,
+                         ReadOnlyCompactInline):
 
     """
     Material inline for the ticket page
     """
 
-    model = TicketMaterial
     fields = ('f_material_name', 'f_material_category', 'amount',
               'f_material_unit', 'f_material_comes_from', )
     verbose_name = u'Anyag'
@@ -142,14 +142,23 @@ class MaterialInline(RemoveInlineAction,
     f_material_comes_from.short_description = u'Biztosítja'
 
 
-class WorkItemInline(RemoveInlineAction,
-                     ShowCalcFields, ReadOnlyCompactInline):
+class MaterialInline(BaseMaterialInline):
+
+    model = TicketMaterial
+
+
+class NetworkMaterialInline(BaseMaterialInline):
+
+    model = NetworkTicketMaterial
+
+
+class BaseWorkItemInline(RemoveInlineAction,
+                         ShowCalcFields, ReadOnlyCompactInline):
 
     """
     Workitem inline for the ticket page
     """
 
-    model = TicketWorkItem
     fields = ('f_workitem_name', 'f_art_number', 'amount',
               'f_workitem_art_price', 'f_workitem_total_price')
     verbose_name = u'Munka'
@@ -185,6 +194,16 @@ class WorkItemInline(RemoveInlineAction,
         return obj.work_item.given_price
 
     f_workitem_given_price.short_description = u'Szerződött tétel ár'
+
+
+class WorkItemInline(BaseWorkItemInline):
+
+    model = TicketWorkItem
+
+
+class NetworkWorkItemInline(BaseWorkItemInline):
+
+    model = NetworkTicketWorkItem
 
 
 class TicketInline(ShowCalcFields, ReadOnlyTabularInline):

@@ -23,6 +23,7 @@ class Const(object):
     KOAX = 2
     OPTIKA = 3
     SAT = 4
+    HALOZAT = 5
 
     class TicketStatus:
         NEW = u'Új'
@@ -78,6 +79,7 @@ class Const(object):
             (Const.OPTIKA, u'Optika'),
             (Const.KOAX, u'Koax'),
             (Const.SAT, u'SAT'),
+            (Const.HALOZAT, u'Hálózat'),
         )
 
 
@@ -716,6 +718,32 @@ class TicketMaterial(BaseEntity):
         return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
 
 
+class NetworkTicketMaterial(BaseEntity):
+
+    ticket = models.ForeignKey(NetworkTicket, db_column='halozat_jegy',
+                               related_name='anyag_halozat_jegy',
+                               verbose_name=u'Jegy')
+    material = models.ForeignKey(Material, db_column='anyag',
+                                 verbose_name=u'Anyag')
+    amount = models.FloatField(db_column='mennyiseg',
+                               verbose_name=u'Mennyiség',
+                               default=1)
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'anyag_halozat_jegy'
+        verbose_name = u'Hálózat Jegy Anyag'
+        verbose_name_plural = u'Hálüzat Jegy Anyagok'
+
+    def __unicode__(self):
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
+
+
 class WorkItem(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=300,
@@ -772,6 +800,32 @@ class TicketWorkItem(BaseEntity):
         db_table = 'munka_jegy'
         verbose_name = u'Munka'
         verbose_name_plural = u'Munkák'
+
+    def __unicode__(self):
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
+
+
+class NetworkTicketWorkItem(BaseEntity):
+
+    ticket = models.ForeignKey(NetworkTicket, db_column='halozat_jegy',
+                               related_name='munka_halozat_jegy',
+                               verbose_name=u'Jegy')
+    work_item = models.ForeignKey(WorkItem, db_column='munka',
+                                  verbose_name=u'Munka')
+    amount = models.FloatField(db_column='mennyiseg',
+                               verbose_name=u'Mennyiség',
+                               default=1)
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'munka_halozat_jegy'
+        verbose_name = u'Hálózat Munka'
+        verbose_name_plural = u'Hálózat Munkák'
 
     def __unicode__(self):
         amount = int(self.amount) if self.amount % 1 == 0 else self.amount

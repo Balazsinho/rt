@@ -13,7 +13,7 @@ from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
 from django.contrib.admin.filters import SimpleListFilter
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth import REDIRECT_FIELD_NAME
+# from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
@@ -36,16 +36,17 @@ from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline,
-                            SystemEmailInline)
+                            SystemEmailInline, NTAttachmentInline,
+                            NetworkMaterialInline, NetworkWorkItemInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
                      NetworkTicket, NTAttachment, SystemEmail,
-                     ApplicantAttributes, DeviceOwner, Tag, Const)
+                     ApplicantAttributes, DeviceOwner, Tag, Const,
+                     NetworkTicketMaterial, NetworkTicketWorkItem)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
                     TicketForm, TicketTypeForm)
-from rovidtav.admin_inlines import NTAttachmentInline
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -813,17 +814,30 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
                     'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner_display', 'status',
                     'ticket_tags_nice')
-    change_actions = ('new_note', 'new_attachment')
-    inlines = (NoteInline, NTAttachmentInline)
+    change_actions = ('new_note', 'new_attachment', 'new_material',
+                      'new_workitem',)
+    inlines = (NoteInline, NTAttachmentInline, NetworkMaterialInline,
+               NetworkWorkItemInline)
     ordering = ('-created_at',)
 
     fields = ['city', 'address', 'onu', 'ticket_types',
-              'ticket_tags', 'owner', 'status']
+              'ticket_tags', 'owner', 'status', 'closed_at']
     readonly_fields = ('full_address',)
     list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_tags')
 
     class Media:
         js = ('js/network_ticket.js',)
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = self.readonly_fields
+        if not is_site_admin(request.user):
+            fields += ('owner', 'address', 'ticket_types', 'ticket_tags',
+                       'city', 'closed_at', 'onu')
+            if obj.status not in (Const.TicketStatus.NEW,
+                                  Const.TicketStatus.IN_PROGRESS,
+                                  Const.TicketStatus.ASSIGNED):
+                fields += ('status',)
+        return fields
 
     def get_actions(self, request):
         actions = super(NetworkTicketAdmin, self).get_actions(request)
@@ -832,8 +846,9 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
 
     def get_form(self, request, obj=None, **kwargs):
         form = super(NetworkTicketAdmin, self).get_form(request, obj, **kwargs)
-        self._hide_icons(form, ('owner',))
-        self._hide_icons(form, ('city',))
+        if is_site_admin(request.user):
+            self._hide_icons(form, ('owner',))
+            self._hide_icons(form, ('city',))
         return form
 
     def get_queryset(self, request):
@@ -848,10 +863,10 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         return False
 
     def get_inline_instances(self, request, obj=None):
-        if not obj and not request.path.strip('/').endswith('change'):
+        if not obj and not request.path.split('#')[0].strip('/').endswith('change'):
             return []
         return super(NetworkTicketAdmin, self).get_inline_instances(request,
-                                                                    obj=None)
+                                                                    obj)
 
     def address_link(self, obj):
         return (u'<a href="/admin/rovidtav/networkticket/{}/change#'
@@ -928,6 +943,20 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     new_attachment.label = u'File'
     new_attachment.css_class = 'addlink'
 
+    def new_material(self, request, obj):
+        return redirect('/admin/rovidtav/networkticketmaterial/add/?ticket={}&next={}'
+                        ''.format(obj.pk, self._returnto(obj, NetworkMaterialInline)))
+
+    new_material.label = u'Anyag'
+    new_material.css_class = 'addlink'
+
+    def new_workitem(self, request, obj):
+        return redirect('/admin/rovidtav/networkticketworkitem/add/?ticket={}&next={}'
+                        ''.format(obj.pk, self._returnto(obj, NetworkWorkItemInline)))
+
+    new_workitem.label = u'Munka'
+    new_workitem.css_class = 'addlink'
+
 
 class CustomAdminSite(AdminSite):
 
@@ -960,6 +989,8 @@ admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(NTAttachment, AttachmentAdmin)
+admin.site.register(NetworkTicketMaterial, HideOnAdmin)
+admin.site.register(NetworkTicketWorkItem, HideOnAdmin)
 
 admin.site.register(WorkItem, WorkItemAdmin)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)
