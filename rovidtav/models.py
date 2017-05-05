@@ -369,6 +369,7 @@ class Tag(BaseEntity):
         db_table = 'tag'
         verbose_name = u'Cimke'
         verbose_name_plural = u'Cimkék'
+        ordering = ['name']
 
     def __unicode__(self):
         return self.name
