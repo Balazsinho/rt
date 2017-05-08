@@ -315,8 +315,22 @@ class DeviceOwner(BaseEntity):
 
 class Payoff(BaseEntity):
 
+    year = models.IntegerField(db_column='ev', verbose_name=u'Év',
+                               choices=[(str(i), i) for i in
+                                        range(2016, 2030)],
+                               null=True)
+    month = models.IntegerField(db_column='honap', verbose_name=u'Hónap',
+                                choices=enumerate(
+                                    (u'Január', u'Február', u'Március',
+                                     u'Április', u'Május', u'Június',
+                                     u'Augusztus', u'Szeptember',
+                                     u'Október', u'November',
+                                     u'December'), 1),
+                                null=True)
+
     name = models.CharField(db_column='nev', max_length=70,
-                            verbose_name=u'Név')
+                            verbose_name=u'Név',
+                            help_text=u'Az év és hónap utáni, kiegészítő rész',)
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés',
                               null=True, blank=True)
@@ -325,6 +339,7 @@ class Payoff(BaseEntity):
         db_table = 'elszamolas'
         verbose_name = u'Elszámolás'
         verbose_name_plural = u'Elszámolások'
+        ordering = ['-name']
 
     def __unicode__(self):
         return unicode(self.name)
