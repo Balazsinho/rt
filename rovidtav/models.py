@@ -244,7 +244,8 @@ class Device(BaseEntity):
     sn = models.CharField(db_column='vonalkod', max_length=50,
                           verbose_name=u'Vonalkód')
     type = models.ForeignKey(DeviceType, db_column='tipus',
-                             verbose_name=u'Típus')
+                             verbose_name=u'Típus',
+                             null=True, blank=True)
     card_sn = models.CharField(db_column='kartya', max_length=50,
                                verbose_name=u'Kártya',
                                null=True, blank=True)
