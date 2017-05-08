@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+
 from django.forms.models import ModelChoiceField
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
@@ -8,7 +10,8 @@ from django import forms
 
 from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketWorkItem, Device, DeviceOwner, Const,
-                     TicketType, NetworkTicketMaterial, NetworkTicketWorkItem)
+                     TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
+                     Payoff)
 
 
 class AttachmentForm(forms.ModelForm):
@@ -195,8 +198,32 @@ class DeviceToCustomerForm(forms.Form):
 
 class TicketForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super(TicketForm, self).__init__(*args, **kwargs)
+        now = datetime.datetime.now()
+        if now.month == 1:
+            prev_year = now.year - 1
+            prev_month = 12
+        else:
+            prev_year = now.year
+            prev_month = now.month - 1
+        suggestions = Payoff.objects.filter(year__in=(prev_year, now.year),
+                                            month__in=(prev_month, now.month))
+        self.fields['payoff'].queryset = suggestions
+
     class Media:
         js = ('js/ticket_form.js',)
+
+
+class PayoffForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(PayoffForm, self).__init__(*args, **kwargs)
+        now = datetime.datetime.now()
+        self.fields['year'].choices = [(i, i) for i in
+                                       range(now.year-1, now.year+2)]
+        self.fields['year'].initial = now.year
+        self.fields['month'].initial = now.month
 
 
 class TicketTypeForm(forms.ModelForm):

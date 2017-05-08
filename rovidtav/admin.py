@@ -47,7 +47,7 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
                     TicketForm, TicketTypeForm, NetworkTicketWorkItemForm,
-                    NetworkTicketMaterialForm)
+                    NetworkTicketMaterialForm, PayoffForm)
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -108,6 +108,7 @@ class PayoffAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'remark')
     inlines = (TicketInline,)
+    form = PayoffForm
 
     def get_inline_instances(self, request, obj=None):
         if not obj:
