@@ -316,7 +316,7 @@ class DeviceOwner(BaseEntity):
 class Payoff(BaseEntity):
 
     year = models.IntegerField(db_column='ev', verbose_name=u'Év',
-                               choices=[(str(i), i) for i in
+                               choices=[(i, i) for i in
                                         range(2016, 2030)],
                                null=True)
     month = models.IntegerField(db_column='honap', verbose_name=u'Hónap',
