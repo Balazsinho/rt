@@ -39,6 +39,8 @@ SMTP_USER = 'nevalaszolj@rovid-tav.hu'
 SMTP_PASS = '(5g_Owv0!;en'
 EMAIL_SENDER = 'nevalaszolj@rovid-tav.hu'
 
+TIME_ZONE = 'Europe/Budapest'
+
 # Changing this value to a random number or string here will
 # force CSS and JS browser cache refresh
 CACHE_REFRESH = '534'
