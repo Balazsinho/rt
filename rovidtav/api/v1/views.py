@@ -202,11 +202,17 @@ def _thumbnail_from_model(model, pk):
             img.thumbnail((IMAGE_THUMB_PX, IMAGE_THUMB_PX), Image.ANTIALIAS)
             temp_buff = StringIO.StringIO()
             temp_buff.name = att.name
+
+            try:
+                raw_exif = img._getexif() or {}
+            except AttributeError:
+                raw_exif = {}
             exif = {
                 ExifTags.TAGS[k]: v
-                for k, v in (img._getexif() or {}).items()
+                for k, v in raw_exif.items()
                 if k in ExifTags.TAGS
             }
+
             orientation = exif.get('Orientation')
             if orientation == 6:
                 img = img.rotate(-90, expand=True)
