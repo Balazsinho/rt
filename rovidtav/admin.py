@@ -92,7 +92,7 @@ class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
             img.thumbnail((pixels, pixels), Image.ANTIALIAS)
             temp_buff = StringIO.StringIO()
             temp_buff.name = obj.name
-            img.save(temp_buff, exif=img.info.get('exif'))
+            img.save(temp_buff, exif=img.info.get('exif', b''))
             temp_buff.seek(0)
 
             obj._data = temp_buff.read()
