@@ -342,7 +342,7 @@ class Payoff(BaseEntity):
         ordering = ['-name']
 
     def __unicode__(self):
-        return u'{}.{}hó {}'.format(self.year, self.month, self.name)
+        return u'{}.{:02d}hó {}'.format(self.year, int(self.month), self.name)
 
     @staticmethod
     def autocomplete_search_fields():
