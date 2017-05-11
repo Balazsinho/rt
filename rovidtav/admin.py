@@ -106,7 +106,7 @@ class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
 
 class PayoffAdmin(admin.ModelAdmin):
 
-    list_display = ('name', 'remark')
+    list_display = ('full_name', 'remark')
     inlines = (TicketInline,)
     form = PayoffForm
 
@@ -115,6 +115,8 @@ class PayoffAdmin(admin.ModelAdmin):
             return []
         return super(PayoffAdmin, self).get_inline_instances(request, obj=None)
 
+    def full_name(self, obj):
+        return unicode(obj)
 
 class CityAdmin(HideOnAdmin, admin.ModelAdmin):
 
