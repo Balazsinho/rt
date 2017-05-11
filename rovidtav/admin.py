@@ -456,7 +456,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_form(self, request, obj=None, **kwargs):
         form = super(TicketAdmin, self).get_form(request, obj, **kwargs)
         if obj and is_site_admin(request.user):
-            self._hide_icons(form, ('payoff',), show_add=True)
+            self._hide_icons(form, ('payoffs',), show_add=True)
             self._hide_icons(form, ('owner',))
         return form
 
@@ -483,11 +483,11 @@ class TicketAdmin(CustomDjangoObjectActions,
         response = super(TicketAdmin, self).changelist_view(request,
                                                             extra_context)
         if not is_site_admin(request.user):
-            subst = {'payoff_link': 'payoff_name',
-                     'client_link': 'client_mt_id',
+            subst = {'client_link': 'client_mt_id',
                      }
+            exclude = ['payoff_link']
             columns = response.context_data['cl'].list_display
-            new_cols = [subst.get(c, c) for c in columns]
+            new_cols = [subst.get(c, c) for c in columns if c not in exclude]
             response.context_data['cl'].list_display = new_cols
         return response
 
@@ -540,7 +540,7 @@ class TicketAdmin(CustomDjangoObjectActions,
                 return (IsClosedFilter,)
 
     def lookup_allowed(self, key, value):
-        if key in ('city__primer', 'payoff__name'):
+        if key in ('city__primer'):
             return True
         return super(TicketAdmin, self).lookup_allowed(key, value)
 
@@ -560,7 +560,7 @@ class TicketAdmin(CustomDjangoObjectActions,
             fields = ()
         fields += (self.readonly_fields or tuple())
         if not is_site_admin(request.user):
-            fields += ('owner', 'payoff', 'remark', 'ticket_tags')
+            fields += ('owner', 'payoffs', 'remark', 'ticket_tags')
             if obj.status not in (u'Kiadva', u'Folyamatban'):
                 fields += ('status', 'closed_at')
         return fields
@@ -641,14 +641,6 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     ext_id_link.allow_tags = True
     ext_id_link.short_description = u'Jegy ID'
-
-    def payoff_name(self, obj):
-        if obj.payoff:
-            return obj.payoff.name
-        else:
-            return None
-
-    payoff_name.short_description = u'Elszámolás'
 
     def client_link(self, obj):
         return ('<a href="/admin/rovidtav/client/{}/change">{}</a>'

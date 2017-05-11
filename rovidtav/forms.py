@@ -200,7 +200,7 @@ class TicketForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(TicketForm, self).__init__(*args, **kwargs)
-        if 'payoff' in self.fields:
+        if 'payoffs' in self.fields:
             now = datetime.datetime.now()
             if now.month == 1:
                 prev_year = now.year - 1
@@ -210,7 +210,7 @@ class TicketForm(forms.ModelForm):
                 prev_month = now.month - 1
             suggestions = Payoff.objects.filter(year__in=(prev_year, now.year),
                                                 month__in=(prev_month, now.month))
-            self.fields['payoff'].queryset = suggestions
+            self.fields['payoffs'].queryset = suggestions
 
     class Media:
         js = ('js/ticket_form.js',)
