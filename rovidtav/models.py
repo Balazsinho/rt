@@ -482,9 +482,9 @@ class Ticket(BaseTicket, JsonExtended):
                               verbose_name=u'Jegy ID')
     client = models.ForeignKey(Client, db_column='ugyfel',
                                verbose_name=u'Ügyfél')
-    payoff = models.ForeignKey(Payoff, db_column='elszamolas',
-                               null=True, blank=True,
-                               verbose_name=u'Elszámolás')
+    #payoff = models.ForeignKey(Payoff, db_column='elszamolas',
+    #                           null=True, blank=True,
+    #                           verbose_name=u'Elszámolás')
     payoffs = models.ManyToManyField(
         Payoff, db_column='elszamolasok',
         verbose_name=u'Elszámolás',

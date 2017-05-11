@@ -16,7 +16,7 @@ from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner,
                              SystemEmail, NTAttachment, NetworkTicketMaterial,
-                             NetworkTicketWorkItem)
+                             NetworkTicketWorkItem, Payoff)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -228,6 +228,42 @@ class TicketInline(ShowCalcFields, ReadOnlyTabularInline):
         return obj.created_at.strftime('%Y.%m.%d')
 
     f_created_at_fmt.short_description = u'Létrehozva'
+
+
+class PayoffTicketInline(ShowCalcFields, ReadOnlyTabularInline):
+
+    model = Ticket.payoffs.through
+    ordering = []
+    fields = ['f_ticket_link', 'f_ticket_created']
+    verbose_name = u'Jegy'
+    verbose_name_plural = u'Jegyek'
+
+    def f_ticket_link(self, obj):
+        return (u'<a href="/admin/rovidtav/ticket/{}/change">{}</a>'
+                u''.format(obj.ticket.pk, unicode(obj.ticket)))
+
+    f_ticket_link.allow_tags = True
+    f_ticket_link.short_description = u'Jegy'
+
+    def f_ticket_address(self, obj):
+        return obj.ticket.address
+
+    f_ticket_address.short_description = u'Cím'
+
+    def f_ticket_owner(self, obj):
+        return obj.ticket.owner
+
+    f_ticket_owner.short_description = u'Szerelő'
+
+    def f_ticket_status(self, obj):
+        return obj.ticket.status
+
+    f_ticket_status.short_description = u'Státusz'
+
+    def f_ticket_created(self, obj):
+        return obj.ticket.created_at.strftime('%Y.%m.%d')
+
+    f_ticket_created.short_description = u'Létrehozva'
 
 
 class HistoryInline(GenericReadOnlyInline):

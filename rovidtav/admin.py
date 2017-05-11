@@ -48,6 +48,7 @@ from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
                     TicketForm, TicketTypeForm, NetworkTicketWorkItemForm,
                     NetworkTicketMaterialForm, PayoffForm)
+from rovidtav.admin_inlines import PayoffTicketInline
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -107,7 +108,7 @@ class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
 class PayoffAdmin(admin.ModelAdmin):
 
     list_display = ('full_name', 'remark')
-    inlines = (TicketInline,)
+    inlines = (PayoffTicketInline,)
     form = PayoffForm
     ordering = ('-year', '-month', '-name')
 
