@@ -324,14 +324,13 @@ class Payoff(BaseEntity):
                                 choices=enumerate(
                                     (u'Január', u'Február', u'Március',
                                      u'Április', u'Május', u'Június',
-                                     u'Augusztus', u'Szeptember',
+                                     u'Július', u'Augusztus', u'Szeptember',
                                      u'Október', u'November',
                                      u'December'), 1),
                                 null=True)
 
     name = models.CharField(db_column='nev', max_length=70,
-                            verbose_name=u'Név',
-                            help_text=u'Az év és hónap utáni, kiegészítő rész',)
+                            verbose_name=u'MAE')
     remark = models.TextField(db_column='megjegyzes',
                               verbose_name=u'Megjegyzés',
                               null=True, blank=True)
@@ -343,7 +342,7 @@ class Payoff(BaseEntity):
         ordering = ['-name']
 
     def __unicode__(self):
-        return unicode(self.name)
+        return u'{} {}hó {}'.format(self.year, self.month, self.name)
 
     @staticmethod
     def autocomplete_search_fields():
@@ -486,6 +485,12 @@ class Ticket(BaseTicket, JsonExtended):
     payoff = models.ForeignKey(Payoff, db_column='elszamolas',
                                null=True, blank=True,
                                verbose_name=u'Elszámolás')
+    payoffs = models.ManyToManyField(
+        Payoff, db_column='elszamolasok',
+        verbose_name=u'Elszámolás',
+        related_name='jegy_elszamolas',
+        blank=True
+    )
     remark = models.CharField(
         db_column='megjegyzes',
         help_text=(u'A kivitelezéssel kapcsolatos információk a'

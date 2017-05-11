@@ -27,19 +27,18 @@ class SummaryList(CustomReportAdmin):
         'city__primer',
         'owner__username',
         'closed_at',
-        'payoff__name'
+        'payoffs'
     ]
 
-    list_filter = ['owner', 'payoff__name', 'city__primer', 'created_at', 'closed_at']
+    list_filter = ['owner', 'payoffs', 'city__primer', 'created_at', 'closed_at']
     list_filter_classes = {
         'city__primer': ChoiceField,
-        'payoff__name': ChoiceField,
     }
     list_order_by = ('-created_at',)
     type = 'report'
     override_field_labels = {
         'owner__username': Label(u'Szerelő'),
-        'payoff__name': Label(u'Elszámolás'),
+        #'payoffs': Label(u'Elszámolás'),
         'created_at': Label(u'Felvéve'),
         'closed_at': Label(u'Lezárva'),
         'city__name': Label(u'Település'),
@@ -71,10 +70,15 @@ class SummaryList(CustomReportAdmin):
             material_keys |= set([tm.material for tm in tms])
             id_extra_map[ticket.pk].update(dict([(tm.material.sn, tm.amount) for tm in tms]))
 
+            # Elszamolasok
+            payoffs = ', '.join([str(t) for t in ticket.payoffs.all()])
+            id_extra_map[ticket.pk][u'Elszámolás'] = payoffs
+
         workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number)
         material_keys = sorted(list(material_keys), key=lambda x: x.sn)
         wo_offsets = list(enumerate(workitem_keys + material_keys))
         self.calculated_columns = [(e[0]+self.extra_columns_first_col, e[1].art_number if hasattr(e[1], 'art_number') else e[1].sn) for e in wo_offsets]
+        self.calculated_columns.insert(0, (self.extra_columns_first_col-1, u'Elszámolás'))
         self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
         self.extra_col_map = id_extra_map
         self.id_url_map = dict([(t.ext_id, '/admin/rovidtav/ticket/{}/change'.format(t.pk)) for t in qs])

@@ -436,7 +436,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     ordering = ('-created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
               'client_phone', 'owner', 'status', 'closed_at',
-              'remark', 'ticket_tags', 'payoff', 'collectable', 'created_at', ]
+              'remark', 'ticket_tags', 'payoff', 'payoffs', 'collectable', 'created_at', ]
     readonly_fields = ('client_phone', 'full_address', 'collectable')
     exclude = ['additional', 'created_by']
     actions = ['download_action']
@@ -620,9 +620,13 @@ class TicketAdmin(CustomDjangoObjectActions,
     collectable.short_description = u'Beszedés'
 
     def payoff_link(self, obj):
-        if obj.payoff:
-            return (u'<a href="/admin/rovidtav/payoff/{}/change">{}</a>'
-                    u''.format(obj.payoff.pk, obj.payoff.name))
+        payoffs = []
+        if obj.payoffs:
+            for payoff in obj.payoffs.all():
+                payoff_a = (u'<a href="/admin/rovidtav/payoff/{}/change">{}'
+                            u'</a>'.format(payoff.pk, unicode(payoff)))
+                payoffs.append(payoff_a)
+            return u',&nbsp'.join(payoffs)
         else:
             return None
 

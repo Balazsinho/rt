@@ -313,7 +313,7 @@ class ReportAdmin(object):
             model_field = None
 
         value = self.get_value_text(value, index, model_field)
-        if value is None or unicode(value) == u'None':
+        if value is None or value == u'None':
             value = ''
         return value
 
