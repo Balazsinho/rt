@@ -354,16 +354,16 @@ class PayoffFilter(SimpleListFilter):
     parameter_name = 'payoff'
 
     def lookups(self, request, model_admin):
-        payoff_choices = [(p.pk, p.name) for p in Payoff.objects.all()]
+        payoff_choices = [(p.pk, unicode(p)) for p in Payoff.objects.all()]
         return [('empty', u'Nincs elszámolva')] + payoff_choices
 
     def queryset(self, request, queryset):
         if self.value() == 'empty':
-            return queryset.filter(payoff__isnull=True)
+            return queryset.filter(payoffs__isnull=True)
         elif self.value() in (None, 'all'):
             return queryset
         else:
-            return queryset.filter(payoff=self.value())
+            return queryset.filter(payoffs=self.value())
 
 
 class IsClosedFilter(SimpleListFilter):
