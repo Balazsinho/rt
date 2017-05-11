@@ -109,6 +109,7 @@ class PayoffAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'remark')
     inlines = (TicketInline,)
     form = PayoffForm
+    ordering = ('-year', '-month', '-name')
 
     def get_inline_instances(self, request, obj=None):
         if not obj:
@@ -117,6 +118,7 @@ class PayoffAdmin(admin.ModelAdmin):
 
     def full_name(self, obj):
         return unicode(obj)
+
 
 class CityAdmin(HideOnAdmin, admin.ModelAdmin):
 
