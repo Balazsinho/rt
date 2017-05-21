@@ -65,6 +65,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'daterange_filter',
     'model_report',
+    'multiselectfield',
 )
 
 MIDDLEWARE_CLASSES = (

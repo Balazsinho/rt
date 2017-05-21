@@ -4,6 +4,7 @@ import os
 import re
 import json
 import base64
+from datetime import datetime
 
 from unidecode import unidecode
 
@@ -11,7 +12,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
-from datetime import datetime
+from multiselectfield import MultiSelectField
 
 
 class Const(object):
@@ -700,6 +701,12 @@ class Material(BaseEntity):
         null=True, blank=True,
         verbose_name=u'Technológia',
     )
+    technologies = MultiSelectField(
+        db_column='technologiak',
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
+        verbose_name=u'Technológia',
+    )
 
     class Meta:
         db_table = 'anyag'
@@ -783,6 +790,12 @@ class WorkItem(BaseEntity):
                                       verbose_name=u'Kiadott ár', default=0)
     technology = models.IntegerField(
         db_column='technologia',
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
+        verbose_name=u'Technológia',
+    )
+    technologies = MultiSelectField(
+        db_column='technologiak',
         choices=Const.get_tech_choices(),
         null=True, blank=True,
         verbose_name=u'Technológia',
