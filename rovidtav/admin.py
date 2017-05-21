@@ -37,7 +37,8 @@ from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline,
                             SystemEmailInline, NTAttachmentInline,
-                            NetworkMaterialInline, NetworkWorkItemInline)
+                            NetworkMaterialInline, NetworkWorkItemInline,
+                            PayoffTicketInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
@@ -47,8 +48,8 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
                     TicketForm, TicketTypeForm, NetworkTicketWorkItemForm,
-                    NetworkTicketMaterialForm, PayoffForm)
-from rovidtav.admin_inlines import PayoffTicketInline
+                    NetworkTicketMaterialForm, PayoffForm, WorkItemForm,
+                    MaterialForm)
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -260,9 +261,16 @@ class SystemEmailAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
 
     list_display = ('sn', 'name', 'category', 'price', 'unit', 'comes_from',
-                    'technology')
+                    'tech_display')
     search_fields = ('sn', 'name', 'category__name')
     list_filter = ('category__name', )
+    form = MaterialForm
+
+    def tech_display(self, obj):
+        tech_dict = dict([(str(t[0]), t[1]) for t in Const.get_tech_choices()])
+        return ', '.join([tech_dict[t] for t in obj.technologies])
+
+    tech_display.short_description = u'Technológia'
 
 
 class TicketMaterialAdmin(HideOnAdmin, ModelAdminRedirect):
@@ -279,8 +287,16 @@ class NetworkTicketMaterialAdmin(HideOnAdmin, ModelAdminRedirect):
 
 class WorkItemAdmin(admin.ModelAdmin):
 
+    form = WorkItemForm
+
     list_display = ('art_number', 'name', 'art_price', 'bulk_price',
-                    'given_price', 'technology')
+                    'given_price', 'tech_display')
+
+    def tech_display(self, obj):
+        tech_dict = dict([(str(t[0]), t[1]) for t in Const.get_tech_choices()])
+        return ', '.join([tech_dict[t] for t in obj.technologies])
+
+    tech_display.short_description = u'Technológia'
 
 
 class DeviceTypeAdmin(HideOnAdmin, admin.ModelAdmin):

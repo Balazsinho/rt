@@ -48,7 +48,8 @@ class TicketMaterialForm(forms.ModelForm):
         if ticket_id:
             ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
             suggestions = Material.objects.filter(
-                Q(technology=ticket.technology()) | Q(technology=Const.MIND))
+                Q(technologies__contains=ticket.technology()) |
+                Q(technologies__contains=Const.MIND))
             self.fields['material'].queryset = suggestions
 
     class Meta:
@@ -73,7 +74,8 @@ class TicketWorkItemForm(forms.ModelForm):
         if ticket_id:
             ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
             suggestions = WorkItem.objects.filter(
-                Q(technology=ticket.technology()) | Q(technology=Const.MIND))
+                Q(technologies__contains=ticket.technology()) |
+                Q(technologies__contains=Const.MIND))
             self.fields['work_item'].queryset = suggestions
 
     class Meta:
@@ -94,7 +96,9 @@ class NetworkTicketMaterialForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(NetworkTicketMaterialForm, self).__init__(*args, **kwargs)
-        suggestions = Material.objects.filter(technology=Const.HALOZAT)
+        suggestions = Material.objects.filter(
+            Q(technologies__contains=Const.HALOZAT) |
+            Q(technologies__contains=Const.MIND))
         self.fields['material'].queryset = suggestions
 
     class Meta:
@@ -115,7 +119,9 @@ class NetworkTicketWorkItemForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(NetworkTicketWorkItemForm, self).__init__(*args, **kwargs)
-        suggestions = WorkItem.objects.filter(technology=Const.HALOZAT)
+        suggestions = WorkItem.objects.filter(
+            Q(technologies__contains=Const.HALOZAT) |
+            Q(technologies__contains=Const.MIND))
         self.fields['work_item'].queryset = suggestions
 
     class Meta:
@@ -227,3 +233,17 @@ class TicketTypeForm(forms.ModelForm):
         widgets = {
             'network_ticket': forms.HiddenInput(),
         }
+
+
+class WorkItemForm(forms.ModelForm):
+
+    technologies = forms.MultipleChoiceField(choices=Const.get_tech_choices(),
+                                             required=False,
+                                             label=u'Technológia')
+
+
+class MaterialForm(forms.ModelForm):
+
+    technologies = forms.MultipleChoiceField(choices=Const.get_tech_choices(),
+                                             required=False,
+                                             label=u'Technológia')
