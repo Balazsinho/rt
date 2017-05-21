@@ -268,7 +268,10 @@ class MaterialAdmin(admin.ModelAdmin):
 
     def tech_display(self, obj):
         tech_dict = dict([(str(t[0]), t[1]) for t in Const.get_tech_choices()])
-        return ', '.join([tech_dict[t] for t in obj.technologies])
+        if obj.technologies:
+            return u', '.join([tech_dict[t] for t in obj.technologies])
+        else:
+            return u''
 
     tech_display.short_description = u'Technológia'
 
@@ -294,7 +297,10 @@ class WorkItemAdmin(admin.ModelAdmin):
 
     def tech_display(self, obj):
         tech_dict = dict([(str(t[0]), t[1]) for t in Const.get_tech_choices()])
-        return ', '.join([tech_dict[t] for t in obj.technologies])
+        if obj.technologies:
+            return u', '.join([tech_dict[t] for t in obj.technologies])
+        else:
+            return u''
 
     tech_display.short_description = u'Technológia'
 
