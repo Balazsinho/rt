@@ -201,7 +201,8 @@ class TicketForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(TicketForm, self).__init__(*args, **kwargs)
         suggestions = Payoff.objects.all().order_by('-year', '-month', '-name')
-        self.fields['payoffs'].queryset = suggestions
+        if 'payoffs' in self.fields:
+            self.fields['payoffs'].queryset = suggestions
 
     class Media:
         js = ('js/ticket_form.js',)
