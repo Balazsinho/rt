@@ -268,7 +268,7 @@ class MaterialAdmin(admin.ModelAdmin):
 
     def tech_display(self, obj):
         tech_dict = dict([(str(t[0]), t[1]) for t in Const.get_tech_choices()])
-        if obj.technologies != [u'None']:  # Problem coming from data migration
+        if not obj.technologies:
             return u', '.join([tech_dict[t] for t in obj.technologies])
         else:
             return u''
@@ -297,7 +297,7 @@ class WorkItemAdmin(admin.ModelAdmin):
 
     def tech_display(self, obj):
         tech_dict = dict([(str(t[0]), t[1]) for t in Const.get_tech_choices()])
-        if obj.technologies != [u'None']:  # Problem coming from data migration
+        if not obj.technologies:
             return u', '.join([tech_dict[t] for t in obj.technologies])
         else:
             return u''
