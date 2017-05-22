@@ -695,12 +695,12 @@ class Material(BaseEntity):
         null=True, blank=True,
         verbose_name=u'Biztosítja',
     )
-    # technology = models.IntegerField(
-    #    db_column='technologia',
-    #    choices=Const.get_tech_choices(),
-    #    null=True, blank=True,
-    #    verbose_name=u'Technológia',
-    # )
+    technology = models.IntegerField(
+        db_column='technologia',
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
+        verbose_name=u'Technológia',
+    )
     technologies = MultiSelectField(
         db_column='technologiak',
         choices=Const.get_tech_choices(),
@@ -788,12 +788,12 @@ class WorkItem(BaseEntity):
                                      verbose_name=u'Csoportos anyag ár')
     given_price = models.IntegerField(db_column='kiadott_ar',
                                       verbose_name=u'Kiadott ár', default=0)
-    # technology = models.IntegerField(
-    #    db_column='technologia',
-    #    choices=Const.get_tech_choices(),
-    #    null=True, blank=True,
-    #    verbose_name=u'Technológia',
-    # )
+    technology = models.IntegerField(
+        db_column='technologia',
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
+        verbose_name=u'Technológia',
+    )
     technologies = MultiSelectField(
         db_column='technologiak',
         choices=Const.get_tech_choices(),
