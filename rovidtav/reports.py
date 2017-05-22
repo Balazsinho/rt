@@ -170,6 +170,7 @@ class OnDemandNetworkTicketList(CustomReportAdmin):
     title = u'Hálózati jegy lista cimkék alapján'
     model = NetworkTicket
     fields = [
+        'city__name',
         'address',
         'onu',
         'status',
@@ -215,6 +216,7 @@ class OnDemandNetworkTicketList(CustomReportAdmin):
                 id_extra_map[ticket.pk][history_key+str(idx+1)] = note_txt
 
             id_extra_map[ticket.pk][u'Szerelő'] = u', '.join([u.username for u in ticket.owner.all()])
+
         self.calculated_columns = [u'Szerelő']
         for ticket_cols in id_extra_map.values():
             cols = ticket_cols.keys()
@@ -235,6 +237,78 @@ class OnDemandNetworkTicketList(CustomReportAdmin):
         return ctx
 
 
+class NetworkTicketSummaryList(CustomReportAdmin):
+
+    title = u'Hálózati jegy összesítő lista'
+    model = NetworkTicket
+    fields = [
+        'address',
+        'city__name',
+        'onu',
+        'status',
+        'created_at',
+        'closed_at',
+    ]
+
+    list_filter = ['owner', 'city__name', 'onu', 'created_at', 'closed_at']
+    list_filter_classes = {
+        'city__name': ChoiceField,
+        'onu': ChoiceField,
+    }
+    list_order_by = ('-created_at',)
+    type = 'report'
+    override_field_labels = {
+        'owner__username': Label(u'Szerelő'),
+        'created_at': Label(u'Felvéve'),
+        'closed_at': Label(u'Lezárva'),
+        'city__name': Label(u'Település'),
+    }
+    override_field_formats = {
+        'closed_at': to_date,
+        'created_at': to_date,
+    }
+    extra_columns_first_col = 6
+
+    def get_form_filter(self, request):
+        self._check_admin_user(request)
+        if self.data_owner:
+            self.list_filter = [f for f in self.list_filter if f not in ('owner',)]
+        return CustomReportAdmin.get_form_filter(self, request)
+
+    def _calc_extra_from_qs(self, qs):
+        workitem_keys = set()
+        material_keys = set()
+        id_extra_map = defaultdict(dict)
+        for ticket in qs:
+            tws = ticket.munka_halozat_jegy.all()
+            workitem_keys |= set([tw.work_item for tw in tws])
+            id_extra_map[ticket.pk].update(dict([(tw.work_item.art_number, tw.amount) for tw in tws]))
+            price = sum([tw.work_item.art_price * tw.amount for tw in tws])
+            if id_extra_map[ticket.pk]:
+                id_extra_map[ticket.pk][u'Ár összesen'] = int(price)
+
+            tms = ticket.anyag_halozat_jegy.all()
+            material_keys |= set([tm.material for tm in tms])
+            id_extra_map[ticket.pk].update(dict([(tm.material.sn, tm.amount) for tm in tms]))
+            id_extra_map[ticket.pk][u'Szerelő'] = u', '.join([u.username for u in ticket.owner.all()])
+
+        workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number)
+        material_keys = sorted(list(material_keys), key=lambda x: x.sn)
+        wo_offsets = list(enumerate(workitem_keys + material_keys))
+        self.calculated_columns = [(self.extra_columns_first_col, u'Szerelő')]
+        self.calculated_columns.extend([(e[0]+self.extra_columns_first_col+1, e[1].art_number if hasattr(e[1], 'art_number') else e[1].sn) for e in wo_offsets])
+        self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
+        self.extra_col_map = id_extra_map
+        self.id_url_map = dict([(t.address, '/admin/rovidtav/networkticket/{}/change'.format(t.pk)) for t in qs])
+
+    def get_render_context(self, request, extra_context={}, by_row=None):
+        ctx = super(NetworkTicketSummaryList, self).get_render_context(
+            request, extra_context, by_row)
+        ctx['id_url_map'] = self.id_url_map
+        return ctx
+
+
 reports.register('osszesito', SummaryList)
 reports.register('riport_cimkek_alapjan', OnDemandList)
 reports.register('halozati_riport_cimkek_alapjan', OnDemandNetworkTicketList)
+reports.register('halozati_jegy_osszesito', NetworkTicketSummaryList)
