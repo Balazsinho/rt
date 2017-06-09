@@ -857,7 +857,8 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
                NetworkWorkItemInline)
     ordering = ('-created_at',)
 
-    fields = ['city', 'address', 'onu', 'ticket_types',
+    fields = ['city', 'address', 'onu', 'master_sn',
+              'psu_placement', 'ticket_types',
               'ticket_tags', 'owner', 'status', 'closed_at']
     readonly_fields = ('full_address',)
     list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_tags')
@@ -876,7 +877,8 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         fields = self.readonly_fields
         if not is_site_admin(request.user):
             fields += ('owner', 'address', 'ticket_types', 'ticket_tags',
-                       'city', 'closed_at', 'onu')
+                       'city', 'closed_at', 'onu', 'master_sn',
+                       'psu_placement',)
             if obj.status not in (Const.TicketStatus.NEW,
                                   Const.TicketStatus.IN_PROGRESS,
                                   Const.TicketStatus.ASSIGNED):

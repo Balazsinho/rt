@@ -60,6 +60,21 @@ class Const(object):
                 (Const.EmailStatus.FIXED,) * 2,
             )
 
+    class PSUPlacement:
+        IN_BUILDING = u'Épületen belül'
+        OUTSIDE_RACK = u'Kültéri szekrény'
+        TELEKOM_POLE = u'Telekom oszlopon'
+        POLE = u'Oszlopon'
+
+        @staticmethod
+        def choices():
+            return (
+                (Const.PSUPlacement.IN_BUILDING,) * 2,
+                (Const.PSUPlacement.OUTSIDE_RACK,) * 2,
+                (Const.PSUPlacement.TELEKOM_POLE,) * 2,
+                (Const.PSUPlacement.POLE,) * 2,
+            )
+
     EXT_MAP = {
         '.htm': 'text/html',
         '.html': 'text/html',
@@ -593,6 +608,15 @@ class NetworkTicket(BaseTicket):
     onu = models.CharField(db_column='onu', max_length=70,
                            verbose_name=u'Onu',
                            null=True, blank=True)
+    master_sn = models.CharField(db_column='master_gysz',
+                                 max_length=70,
+                                 verbose_name=u'Master gysz.',
+                                 null=True, blank=True)
+    psu_placement = models.CharField(
+        db_column='psu_placement', max_length=120,
+        verbose_name=u'Tápegység elhelyezése',
+        null=True, blank=True,
+        choices=Const.PSUPlacement.choices())
     owner = models.ManyToManyField(
         User, db_column='szerelo',
         verbose_name=u'Szerelő',
