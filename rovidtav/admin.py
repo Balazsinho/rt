@@ -856,6 +856,8 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     inlines = (NoteInline, NTAttachmentInline, NetworkMaterialInline,
                NetworkWorkItemInline)
     ordering = ('-created_at',)
+    search_fields = ('city__name', 'city__zip', 'address',
+                     'master_sn')
 
     fields = ['city', 'address', 'onu', 'master_sn',
               'psu_placement', 'ticket_types',
