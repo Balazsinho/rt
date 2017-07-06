@@ -864,6 +864,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
               'ticket_tags', 'owner', 'status', 'closed_at']
     readonly_fields = ('full_address',)
     list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_tags')
+    actions = ['download_action']
 
     class Media:
         js = ('js/network_ticket.js',)
@@ -915,6 +916,27 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
             return []
         return super(NetworkTicketAdmin, self).get_inline_instances(request,
                                                                     obj)
+
+    def download_action(self, request, queryset):
+        temp = StringIO.StringIO()
+        with zipfile.ZipFile(temp, 'w') as archive:
+            for ticket in queryset:
+                attachments = []
+                for att in NTAttachment.objects.filter(ticket=ticket):
+                    if att.is_image():
+                        attachments.append(att)
+                for att in attachments:
+                    addr = ticket.address.replace(u'/', u'-')
+                    archive.writestr(u'{}/{}'.format(addr, att.name), att.data)
+
+        temp.seek(0)
+        response = HttpResponse(temp,
+                                content_type='application/force-download')
+        fname = datetime.datetime.now().strftime('halozat_jegyek_%y%m%d%H%M.zip')
+        response['Content-Disposition'] = 'attachment; filename="{}"'.format(fname)
+        return response
+
+    download_action.short_description = u'Letöltés ZIP-ben'
 
     def address_link(self, obj):
         return (u'<a href="/admin/rovidtav/networkticket/{}/change#'
