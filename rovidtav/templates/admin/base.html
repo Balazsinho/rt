@@ -25,7 +25,7 @@
     var DATETIME_FORMAT = "{% jet_get_datetime_format %}";
 </script>
 <script type="text/javascript" src="{% url 'jet:jsi18n' %}"></script>
-<script src="{% static "jet/js/build/bundle.min.js" %}?cache={{ cache_nullifier }}"></script>
+<script src="{% static "jet/js/build/bundle.min.js" %}?cache={{ cache_nullifier }}11"></script>
 <script src="{% static "js/news.js" %}?cache={{ cache_nullifier }}"></script>
 
 {% jet_static_translation_urls as translation_urls %}
@@ -35,6 +35,10 @@
 
 {% block extrahead %}{% endblock %}
 {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
+
+<script src="{% static "admin/js/calendar.js" %}?cache={{ cache_nullifier }}"></script>
+<script src="{% static "admin/js/admin/DateTimeShortcuts.js" %}?cache={{ cache_nullifier }}"></script>
+
 </head>
 {% load i18n %}
 
@@ -71,7 +75,11 @@
     {% if not is_popup %}
     <!-- Header -->
     <div id="header">    
-        <div id="branding">{% block branding %}{% endblock %}</div>
+        <div id="branding">
+            <span id="branding-menu" class="sidebar-header-menu-icon icon-menu sidebar-toggle"></span>
+            <span id="branding-pin" class="sidebar-link-icon icon-pin sidebar-pin"></span>
+            {% block branding %}{% endblock %}
+        </div>
         {% block usertools %}
         {% if user.is_active and user.is_staff or has_permission %}
         <div id="user-tools">
@@ -131,14 +139,28 @@
     {% if change and show_siblings %}
         <div class="changeform-navigation">
             {% spaceless %}
-                {% jet_previous_object_url as url %}
-                <a{% if url %} href="{{ url }}"{% endif %} class="segmented-button left{% if not url %} disabled{% endif %}">
-                    <span class="changeform-navigation-button icon-arrow-left"></span>
+                {% jet_previous_object as sibling %}
+                <a{% if sibling.url %} href="{{ sibling.url }}"{% endif %} class="changeform-navigation-button segmented-button left{% if not sibling %} disabled{% endif %}" title="{{ sibling.label }}">
+                    <span class="changeform-navigation-button-icon left icon-arrow-left"></span>
+                    <span class="changeform-navigation-button-label">
+                        {% if sibling %}
+                            {{ sibling.label }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </span>
                 </a>
 
-                {% jet_next_object_url as url %}
-                <a{% if url %} href="{{ url }}"{% endif %} class="segmented-button right{% if not url %} disabled{% endif %}">
-                    <span class="changeform-navigation-button icon-arrow-right"></span>
+                {% jet_next_object as sibling %}
+                <a{% if sibling.url %} href="{{ sibling.url }}"{% endif %} class="changeform-navigation-button segmented-button right{% if not sibling %} disabled{% endif %}" title="{{ sibling.label }}">
+                    <span class="changeform-navigation-button-icon right icon-arrow-right"></span>
+                    <span class="changeform-navigation-button-label">
+                        {% if sibling %}
+                            {{ sibling.label }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </span>
                 </a>
             {% endspaceless %}
         </div>
@@ -146,36 +168,38 @@
 
     {% jet_get_side_menu_compact as SIDE_MENU_COMPACT %}
     {% if not is_popup %}
-        <div class="related-popup-container scrollable">
-            <a href="#" class="related-popup-back">
-                <span class="related-popup-back-icon icon-arrow-left"></span>
-                <span class="related-popup-back-label">{% trans "back" %}</span>
-            </a>
-            <span class="icon-refresh loading-indicator"></span>
-        </div>
+		        <div class="related-popup-container scrollable">
+		            <a href="#" class="related-popup-back">
+		                <span class="related-popup-back-icon icon-arrow-left"></span>
+		                <span class="related-popup-back-label">{% trans "back" %}</span>
+		            </a>
+		            <span class="icon-refresh loading-indicator"></span>
+		        </div>
 
-        <div class="sidebar-header-wrapper sidebar-dependent">
-            <div class="sidebar-header sidebar-dependent">
-                <a href="#" class="sidebar-header-menu sidebar-toggle">
-                    <span class="sidebar-header-menu-icon icon-menu"></span>
-                    <span class="sidebar-header-menu-icon icon-cross"></span>
-                </a>
-                {% if user.is_superuser %}
-		            <a href="/admin/rovidtav/ticket/" class="sidebar-header-menu quicklink">
-		                <span style="font-size: 0.9em">Jegyek</span>
-		            </a>
-		            <a href="/reports/" class="sidebar-header-menu quicklink">
-		                <span style="font-size: 0.9em">Riportok</span>
-		            </a>
-                {% endif %}
-	            <a href="/messages/" class="sidebar-header-menu quicklink{% if unread_messages %} unread{% endif %}">
-	                <span style="font-size: 1.3em">&#x2709;</span>
-                	<span style="font-size: 0.8em">
-                	{% if unread_messages %}
-                		({{unread_messages}})
-                	{% endif %}
-                	</span>
-	            </a>
+		        <div class="sidebar-header-wrapper sidebar-dependent">
+		            <div class="sidebar-header sidebar-dependent">
+		                <a href="#" class="sidebar-header-menu sidebar-toggle">
+		                    <span class="sidebar-header-menu-icon icon-menu"></span>
+		                    <span class="sidebar-header-menu-icon icon-cross"></span>
+		                </a>
+			            {% if user.is_superuser %}
+				            <a href="/admin/rovidtav/ticket/" class="sidebar-header-menu quicklink">
+				                <span style="font-size: 0.9em">Jegyek</span>
+				            </a>
+				            <a href="/reports/" class="sidebar-header-menu quicklink">
+				                <span style="font-size: 0.9em">Riportok</span>
+				            </a>
+		                {% endif %}
+			            <a href="/messages/" class="sidebar-header-menu quicklink{% if unread_messages %} unread{% endif %}">
+			                <span style="font-size: 1.3em">&#x2709;</span>
+		                	<span style="font-size: 0.8em">
+		                	{% if unread_messages %}
+		                		({{unread_messages}})
+		                	{% endif %}
+		                	</span>
+			            </a>
+		            </div>
+		        </div>
             </div>
         </div>
         <div class="sidebar sidebar-dependent">
