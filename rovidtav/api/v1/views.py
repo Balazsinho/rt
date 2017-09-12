@@ -74,6 +74,8 @@ def create_ticket(request):
             phone=phone1,
             created_by=request.user,
         )
+    except Client.MultipleObjectsReturned:
+        client = Client.objects.filter(mt_id=mt_id)[0]
 
     ticket_types = []
     if data.get(Fields.TASK_TYPE_LIST):
