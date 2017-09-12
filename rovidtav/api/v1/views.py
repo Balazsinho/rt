@@ -63,7 +63,9 @@ def create_ticket(request):
                            data[Fields.HOUSE_NUM])
 
     try:
-        client = Client.objects.get(mt_id=mt_id)
+        client = Client.objects.get(mt_id=mt_id,
+                                    city=city,
+                                    name__startswith=data[Fields.NAME1][0])
     except Client.DoesNotExist:
         phone1 = data.get(Fields.PHONE1, u'')
         client = Client.objects.create(
@@ -75,7 +77,9 @@ def create_ticket(request):
             created_by=request.user,
         )
     except Client.MultipleObjectsReturned:
-        client = Client.objects.filter(mt_id=mt_id)[0]
+        client = Client.objects.filter(mt_id=mt_id,
+                                       city=city,
+                                       name__startswith=data[Fields.NAME1][0])[0]
 
     ticket_types = []
     if data.get(Fields.TASK_TYPE_LIST):
