@@ -58,7 +58,7 @@ def create_ticket(request):
         zip=int(data[Fields.ZIP]),
     )
 
-    mt_id = data[Fields.MT_ID]
+    mt_id = str(data[Fields.MT_ID])
     addr = u'{} {}'.format(data[Fields.STREET],
                            data[Fields.HOUSE_NUM])
 
