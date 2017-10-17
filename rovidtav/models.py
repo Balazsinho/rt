@@ -519,6 +519,12 @@ class Ticket(BaseTicket, JsonExtended):
                               null=True, blank=True,
                               verbose_name=u'Szerelő',
                               limit_choices_to={'groups__name': u'Szerelő'})
+    agreed_time_from = models.DateTimeField(
+        verbose_name=u'Egyeztetett időpont (-tól)',
+        null=True, blank=True, editable=True)
+    agreed_time_to = models.DateTimeField(
+        verbose_name=u'Egyeztetett időpont (-ig)',
+        null=True, blank=True, editable=True)
 
     class Meta:
         db_table = 'jegy'

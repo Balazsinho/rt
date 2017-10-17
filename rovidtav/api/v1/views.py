@@ -3,6 +3,7 @@
 import json
 import codecs
 import os
+import datetime
 
 from PIL import Image, ExifTags
 import StringIO
@@ -91,6 +92,23 @@ def create_ticket(request):
             name=data[Fields.TASK_TYPE])
         ticket_types.append(ticket_type)
 
+    if Fields.AGREED_TIME_FROM in data and data[Fields.AGREED_TIME_FROM]:
+        try:
+            time_fmt = '%Y-%m-%d %H:%M:%S'
+            time_from_raw = data[Fields.AGREED_TIME_FROM]
+            time_from = datetime.datetime.strptime(time_from_raw, time_fmt)
+            time_to_raw = data.get(Fields.AGREED_TIME_TO)
+            if time_to_raw:
+                time_to = datetime.datetime.strptime(time_to_raw, time_fmt)
+        except Exception:
+            return _error('Error interpreting agreed times'
+                          ' FROM {} TO {}'
+                          ''.format(data[Fields.AGREED_TIME_FROM],
+                                    data[Fields.AGREED_TIME_TO]))
+    else:
+        time_from = None
+        time_to = None
+
     ticket = Ticket.objects.create(
         ext_id=data[Fields.TICKET_ID],
         client=client,
@@ -98,6 +116,8 @@ def create_ticket(request):
         address=addr,
         created_by=request.user,
         created_at=data['mail_date'],
+        agreed_time_from=time_from,
+        agreed_time_to=time_to,
     )
 
     ticket.ticket_types.add(*ticket_types)

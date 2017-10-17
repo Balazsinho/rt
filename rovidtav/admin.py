@@ -463,8 +463,10 @@ class TicketAdmin(CustomDjangoObjectActions,
     ordering = ('-created_at',)
     fields = ['ext_id', 'client', 'ticket_types', 'city', 'address',
               'client_phone', 'owner', 'status', 'closed_at',
+              'agreed_time_from', 'agreed_time_to',
               'remark', 'ticket_tags', 'payoffs', 'collectable', 'created_at', ]
-    readonly_fields = ('client_phone', 'full_address', 'collectable')
+    readonly_fields = ('client_phone', 'full_address', 'collectable',
+                       'agreed_time_from', 'agreed_time_to')
     exclude = ['additional', 'created_by']
     actions = ['download_action']
 
