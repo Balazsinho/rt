@@ -448,8 +448,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     list_display_links = None
     list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
                     'client_link', 'ticket_type', 'created_at_fmt',
-                    'closed_at_fmt', 'owner', 'status', 'primer',
-                    'has_images_nice', 'collectable', 'remark',
+                    'closed_at_fmt', 'owner', 'status', 'agreed_time_fmt',
+                    'primer', 'has_images_nice', 'collectable', 'remark',
                     'payoff_link', 'ticket_tags_nice')
     # TODO: check if this is useful
     # list_editable = ('owner', )
@@ -716,6 +716,18 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     created_at_fmt.short_description = u'Felvéve'
     created_at_fmt.admin_order_field = ('created_at')
+
+    def agreed_time_fmt(self, obj):
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        result = None
+        if obj.agreed_time_from:
+            result = obj.agreed_time_from.strftime('%m.%d %H')
+        if obj.agreed_time_to:
+            result += '-' + obj.agreed_time_to.strftime('%H')
+        return result
+
+    agreed_time_fmt.short_description = u'Egy. idő'
+    agreed_time_fmt.admin_order_field = ('agreed_time_from')
 
     def closed_at_fmt(self, obj):
         # return obj.created_at.strftime('%Y.%m.%d %H:%M')
