@@ -8,6 +8,7 @@ import zipfile
 import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import pytz
 
 from django.contrib import admin
 from django.contrib.admin.sites import AdminSite
@@ -721,9 +722,9 @@ class TicketAdmin(CustomDjangoObjectActions,
         # return obj.created_at.strftime('%Y.%m.%d %H:%M')
         result = None
         if obj.agreed_time_from:
-            result = obj.agreed_time_from.strftime('%m.%d %H')
+            result = obj.agreed_time_from.astimezone(pytz.timezone("Europe/Budapest")).strftime('%m.%d %H')
         if obj.agreed_time_to:
-            result += '-' + obj.agreed_time_to.strftime('%H')
+            result += '-' + obj.agreed_time_to.astimezone(pytz.timezone("Europe/Budapest")).strftime('%H')
         return result
 
     agreed_time_fmt.short_description = u'Egy. idő'
