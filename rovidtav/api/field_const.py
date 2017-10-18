@@ -24,7 +24,9 @@ class Fields(object):
     NAME2 = 'name2'
     PHONE1 = 'phone1'
     PHONE2 = 'phone2'
-    AGREED_TIME = 'agreed_time'
+    AGREED_TIME_FROM = 'agreed_time_from'
+    AGREED_TIME_TO = 'agreed_time_to'
+    AGREED_TIME_RAW = 'agreed_time_raw'
     REQ_TYPE = 'req_type'
 
     TITLE = 'title'
