@@ -308,7 +308,30 @@ class NetworkTicketSummaryList(CustomReportAdmin):
         return ctx
 
 
+class HistoryReport(CustomReportAdmin):
+
+    title = u'Jegy történet riport'
+    model = Note
+    fields = [
+        'remark',
+        'created_at',
+    ]
+
+    list_filter = ['created_at', 'created_by']
+    list_order_by = ('-created_at',)
+    type = 'report'
+    override_field_formats = {
+        'created_at': to_date,
+    }
+    extra_col_map = {}
+
+    def get_query_set(self, filter_kwargs):
+        qs = CustomReportAdmin.get_query_set(self, filter_kwargs)
+        return qs.filter(is_history=True)
+
+
 reports.register('osszesito', SummaryList)
 reports.register('riport_cimkek_alapjan', OnDemandList)
 reports.register('halozati_riport_cimkek_alapjan', OnDemandNetworkTicketList)
 reports.register('halozati_jegy_osszesito', NetworkTicketSummaryList)
+reports.register('tortenet', HistoryReport) 
