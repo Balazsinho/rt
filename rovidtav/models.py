@@ -635,6 +635,10 @@ class NetworkTicket(BaseTicket):
         verbose_name = u'Hálózat jegy'
         verbose_name_plural = u'Hálózat jegyek'
 
+    def __unicode__(self):
+        return unicode(u'{} - {}'.format(self.city,
+                                         self.address))
+
 
 class Note(BaseEntity):
 
