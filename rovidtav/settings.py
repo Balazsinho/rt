@@ -54,6 +54,7 @@ JET_CHANGE_FORM_SIBLING_LINKS = False
 
 INSTALLED_APPS = (
     'rovidtav',
+    'daterange_filter',
     'jet',
     'django_messages',
     'django.contrib.admin',
@@ -63,7 +64,6 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'daterange_filter',
     'model_report',
     'multiselectfield',
 )
@@ -80,7 +80,7 @@ MIDDLEWARE_CLASSES = (
 
     'rovidtav.middleware.adminlocale.AdminLocaleMiddleware',
     'rovidtav.middleware.whodidwhat.WhoDidWhat',
-    'rovidtav.middleware.preservefilters.PreserveFilters',
+    # 'rovidtav.middleware.preservefilters.PreserveFilters',
 )
 
 ROOT_URLCONF = 'rovidtav.urls'
