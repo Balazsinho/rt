@@ -448,7 +448,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     list_per_page = 200
     list_display_links = None
     list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
-                    'client_link', 'ticket_type', 'created_at_fmt',
+                    # 'client_link',
+                    'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status', 'agreed_time_fmt',
                     'primer', 'has_images_nice', 'collectable', 'remark',
                     'payoff_link', 'ticket_tags_nice')
