@@ -80,7 +80,7 @@ MIDDLEWARE_CLASSES = (
 
     'rovidtav.middleware.adminlocale.AdminLocaleMiddleware',
     'rovidtav.middleware.whodidwhat.WhoDidWhat',
-    # 'rovidtav.middleware.preservefilters.PreserveFilters',
+    'rovidtav.middleware.preservefilters.PreserveFilters',
 )
 
 ROOT_URLCONF = 'rovidtav.urls'
