@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '6#2$ud-v84q82=r_z)z4q-#zqp+n&g+!x&*nz(wf46jel-^k$_'
+SECRET_KEY = ''
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -34,10 +34,10 @@ IMAGE_DOWNSCALE_PX = 900
 IMAGE_THUMB_PX = 180
 
 SELF_URL = 'http://localhost:8000'
-SMTP_SERVER = 'mail.rovid-tav.hu'
-SMTP_USER = 'nevalaszolj@rovid-tav.hu'
-SMTP_PASS = '(5g_Owv0!;en'
-EMAIL_SENDER = 'nevalaszolj@rovid-tav.hu'
+SMTP_SERVER = ''
+SMTP_USER = ''
+SMTP_PASS = ''
+EMAIL_SENDER = ''
 
 # Changing this value to a random number or string here will
 # force CSS and JS browser cache refresh
@@ -109,12 +109,6 @@ WSGI_APPLICATION = 'rovidtav.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rovidtav',
-        'USER': 'rovidtav',
-        'PASSWORD': 'R0v1dt4v',
-        'HOST': 'localhost',
-        'PORT': '3306',
     }
 }
 
