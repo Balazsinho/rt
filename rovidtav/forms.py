@@ -12,6 +12,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketWorkItem, Device, DeviceOwner, Const,
                      TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
                      Payoff)
+from rovidtav.models import MaterialMovementMaterial
 
 
 class AttachmentForm(forms.ModelForm):
@@ -34,6 +35,15 @@ class AttachmentForm(forms.ModelForm):
             return self.files['_data'].name
 
 
+class MMAttachmentForm(AttachmentForm):
+
+    class Meta:
+        fields = ('materialmovement', '_data', 'remark')
+        widgets = {
+          'materialmovement': forms.HiddenInput(),
+        }
+
+
 class TicketMaterialForm(forms.ModelForm):
 
     material = ModelChoiceField(
@@ -48,7 +58,7 @@ class TicketMaterialForm(forms.ModelForm):
         if ticket_id:
             ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
             suggestions = Material.objects.filter(
-                Q(technologies__contains=ticket.technology()) |
+                Q(technologies__contains=ticket.technology) |
                 Q(technologies__contains=Const.MIND))
             self.fields['material'].queryset = suggestions
 
@@ -56,6 +66,19 @@ class TicketMaterialForm(forms.ModelForm):
         model = TicketMaterial
         widgets = {
           'ticket': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
+class MMMaterialForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(MMMaterialForm, self).__init__(*args, **kwargs)
+
+    class Meta:
+        model = MaterialMovementMaterial
+        widgets = {
+          'materialmovement': forms.HiddenInput(),
         }
         fields = '__all__'
 
@@ -74,7 +97,7 @@ class TicketWorkItemForm(forms.ModelForm):
         if ticket_id:
             ticket = Ticket.objects.get(pk=kwargs['initial']['ticket'])
             suggestions = WorkItem.objects.filter(
-                Q(technologies__contains=ticket.technology()) |
+                Q(technologies__contains=ticket.technology) |
                 Q(technologies__contains=Const.MIND))
             self.fields['work_item'].queryset = suggestions
 

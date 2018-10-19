@@ -19,9 +19,9 @@ from rest_framework.decorators import permission_classes
 
 from rovidtav.settings import IMAGE_THUMB_PX, STATIC_ROOT
 from rovidtav.api.field_const import Fields
-from rovidtav.models import (Client, City, Ticket, TicketType,
-                             Note, DeviceType, Device, Attachment,
-                             DeviceOwner, SystemEmail, Const, NTAttachment)
+from rovidtav.models import (
+    Client, City, Ticket, TicketType, Note, DeviceType, Device, Attachment,
+    DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment)
 from django.http.response import HttpResponse
 
 
@@ -290,6 +290,20 @@ def download_ntattachment(request, attachment_id):
 @permission_classes((IsAuthenticated,))
 def download_ntthumbnail(request, attachment_id):
     return _thumbnail_from_model(NTAttachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_mmattachment(request, attachment_id):
+    return _download_from_model(MMAttachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_mmthumbnail(request, attachment_id):
+    return _thumbnail_from_model(MMAttachment, attachment_id)
 
 
 @api_view(['GET'])

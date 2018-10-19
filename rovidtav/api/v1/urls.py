@@ -18,6 +18,7 @@ from django.conf.urls import url
 from rovidtav.api.v1.views import (create_ticket, add_ticket_attachment,
                                    download_attachment, download_thumbnail,
                                    download_ntattachment, download_ntthumbnail,
+                                   download_mmattachment, download_mmthumbnail,
                                    email_stats)
 
 
@@ -28,5 +29,7 @@ urlpatterns = [
     url(r'^thumbnail/(?P<attachment_id>\d+)$', download_thumbnail),
     url(r'^ntattachment/(?P<attachment_id>\d+)$', download_ntattachment),
     url(r'^ntthumbnail/(?P<attachment_id>\d+)$', download_ntthumbnail),
+    url(r'^mmattachment/(?P<attachment_id>\d+)$', download_mmattachment),
+    url(r'^mmthumbnail/(?P<attachment_id>\d+)$', download_mmthumbnail),
     url(r'^email_stats$', email_stats),
 ]

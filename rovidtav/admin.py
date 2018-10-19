@@ -22,7 +22,7 @@ from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
 
-from daterange_filter.filter import DateRangeFilter
+from jet.filters import DateRangeFilter
 from inline_actions.admin import InlineActionsModelAdminMixin
 
 from rovidtav import settings
@@ -39,18 +39,22 @@ from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             WorkItemInline, TicketDeviceInline,
                             SystemEmailInline, NTAttachmentInline,
                             NetworkMaterialInline, NetworkWorkItemInline,
-                            PayoffTicketInline)
+                            PayoffTicketInline, MMMaterialInline,
+                            MMDeviceInline, MMAttachmentInline)
 from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      Note, TicketType, MaterialCategory, Material,
                      TicketMaterial, WorkItem, TicketWorkItem, Payoff,
                      NetworkTicket, NTAttachment, SystemEmail,
                      ApplicantAttributes, DeviceOwner, Tag, Const,
-                     NetworkTicketMaterial, NetworkTicketWorkItem)
+                     NetworkTicketMaterial, NetworkTicketWorkItem,
+                     MaterialMovement, MaterialMovementMaterial)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
                     TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
                     TicketForm, TicketTypeForm, NetworkTicketWorkItemForm,
                     NetworkTicketMaterialForm, PayoffForm, WorkItemForm,
                     MaterialForm)
+from rovidtav.models import MMAttachment
+from rovidtav.forms import MMAttachmentForm, MMMaterialForm
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -107,6 +111,17 @@ class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
                 pass
 
 
+class MMAttachmentAdmin(AttachmentAdmin):
+
+    form = MMAttachmentForm
+
+
+class MMMaterialAdmin(ModelAdminRedirect, HideOnAdmin):
+
+    form = MMMaterialForm
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
+
 class PayoffAdmin(admin.ModelAdmin):
 
     list_display = ('full_name', 'remark')
@@ -143,7 +158,7 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, HideOnAdmin,
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceOwnerAdmin, self).get_form(request, obj, **kwargs)
         self._hide_icons(form, ('device',))
-        warehouse_group = Group.objects.get(name=u'Raktár')
+        warehouse_group = Group.objects.get(name=u'Szerelő')
         warehouse_ids = [w.pk for w in warehouse_group.user_set.all()]
         allowed_ids = warehouse_ids + [request.user.pk]
         client_ct = ContentType.objects.get(
@@ -177,10 +192,8 @@ class DeviceAdmin(CustomDjangoObjectActions, HideOnAdmin,
         if obj and isinstance(obj.owner.owner, Client):
             del(form.base_fields['owner'])
             del(form.declared_fields['owner'])
-        elif obj and isinstance(obj.owner.owner, User):
+        elif obj and isinstance(obj.owner.owner, MaterialMovement):
             form.base_fields['owner'].initial = obj.owner.object_id
-        else:
-            form.base_fields['owner'].initial = request.user.pk
         self._hide_icons(form, ('type',))
         return form
 
@@ -432,6 +445,116 @@ class IsClosedFilter(SimpleListFilter):
 # =============================================================================
 
 
+class MaterialMovementAdmin(CustomDjangoObjectActions,
+                            admin.ModelAdmin):
+    list_per_page = 200
+    list_display_links = None
+    list_display = ('direction_icon', 'mm_link', 'created', 'materials_count')
+
+    inlines = (NoteInline, MMAttachmentInline, MMMaterialInline,
+               MMDeviceInline)
+    change_actions = ('new_note', 'new_attachment', 'new_material',
+                      'new_device',)
+    add_form_template = os.path.join('rovidtav', 'select2.html')
+    fields = ['city', 'owner', 'direction', 'created_at']
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_actions(self, request):
+        actions = super(MaterialMovementAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+    def get_change_actions(self, request, object_id, form_url):
+        if not object_id:
+            return []
+        if is_site_admin(request.user):
+            actions = ('new_note', 'new_attachment',
+                       'new_material', 'new_device')
+            return actions
+        else:
+            return ('new_note',)
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj and not request.path.strip('/').endswith('change'):
+            return []
+        return super(MaterialMovementAdmin, self).get_inline_instances(request, obj=None)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ['created_at', 'owner', 'city', 'direction']
+        else:
+            return []
+
+    def new_note(self, request, obj):
+        return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
+                        '{}&next={}'.format(obj.get_content_type(),
+                                            obj.pk,
+                                            self._returnto(obj, NoteInline)))
+
+    new_note.label = u'Megjegyzés'
+    new_note.css_class = 'addlink'
+
+    def new_attachment(self, request, obj):
+        return redirect('/admin/rovidtav/mmattachment/add/?materialmovement'
+                        '={}&next={}'.format(
+                            obj.pk, self._returnto(obj, MMAttachmentInline)))
+
+    new_attachment.label = u'File'
+    new_attachment.css_class = 'addlink'
+
+    def new_material(self, request, obj):
+        return redirect('/admin/rovidtav/materialmovementmaterial/add/?'
+                        'materialmovement={}&next={}'
+                        ''.format(obj.pk, self._returnto(obj, MMMaterialInline)))
+
+    new_material.label = u'Anyag'
+    new_material.css_class = 'addlink'
+
+    def new_device(self, request, obj):
+        return redirect('/admin/rovidtav/deviceowner/add/?content_type={}'
+                        '&object_id={}&next={}'
+                        ''.format(obj.get_content_type(), obj.pk,
+                                  self._returnto(obj, MMDeviceInline)))
+
+    new_device.label = u'Eszköz'
+    new_device.css_class = 'addlink'
+
+    def _returnto(self, obj, inline):
+        returnto_tab = self.inlines.index(inline)
+        return ('/admin/rovidtav/materialmovement/{}/change/#/tab/inline_{}/'
+                ''.format(obj.pk, returnto_tab))
+
+    # =========================================================================
+    # FIELDS
+    # =========================================================================
+
+    def direction_icon(self, obj):
+        image = 'arrow_in.png' if obj.direction == 1 else 'arrow_out.png'
+        return u'<img style="width: 15px; height: 15px" src="/static/images/{}" />'.format(image)
+
+    direction_icon.allow_tags = True
+    direction_icon.short_description = u''
+
+    def created(self, obj):
+        return u'{} - {}'.format(obj.created_by, obj.created_at.strftime('%Y-%m-%d'))
+
+    created.short_description = u'Rögzítette'
+
+    def materials_count(self, obj):
+        return len(MaterialMovementMaterial.objects.filter(materialmovement=obj))
+
+    materials_count.short_description = u'Anyagok száma'
+
+    def mm_link(self, obj):
+        return (u'<a href="/admin/rovidtav/materialmovement/{}/change#/tab/inline_0/">'
+                u'{}</a>'.format(obj.pk, obj.owner))
+
+    mm_link.allow_tags = True
+    mm_link.short_description = u'Jegy ID'
+
+
 class TicketAdmin(CustomDjangoObjectActions,
                   InlineActionsModelAdminMixin,
                   admin.ModelAdmin,
@@ -451,7 +574,7 @@ class TicketAdmin(CustomDjangoObjectActions,
                     # 'client_link',
                     'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status', 'agreed_time_fmt',
-                    'primer', 'has_images_nice', 'collectable', 'remark',
+                    'primer', 'has_images_nice', 'display_technology', 'collectable', 'remark',
                     'payoff_link', 'ticket_tags_nice')
     # TODO: check if this is useful
     # list_editable = ('owner', )
@@ -562,9 +685,10 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
-                return (('created_at', DateRangeFilter),
+                return (
                         'city__primer', OwnerFilter, IsClosedFilter,
-                        'has_images', 'ticket_tags', PayoffFilter)
+                        'has_images', 'ticket_tags', PayoffFilter,
+                        ('created_at', DateRangeFilter),)
             else:
                 return (IsClosedFilter,)
 
@@ -649,6 +773,9 @@ class TicketAdmin(CustomDjangoObjectActions,
         return obj[Ticket.Keys.COLLECTABLE_MONEY] or '-'
 
     collectable.short_description = u'Beszedés'
+
+    def display_technology(self, obj):
+        return Const.TECH_TEXT_MAP.get(obj.technology)
 
     def payoff_link(self, obj):
         payoffs = []
@@ -1077,6 +1204,10 @@ admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(NTAttachment, AttachmentAdmin)
 admin.site.register(NetworkTicketMaterial, NetworkTicketMaterialAdmin)
 admin.site.register(NetworkTicketWorkItem, NetworkTicketWorkItemAdmin)
+
+admin.site.register(MaterialMovement, MaterialMovementAdmin)
+admin.site.register(MaterialMovementMaterial, MMMaterialAdmin)
+admin.site.register(MMAttachment, MMAttachmentAdmin)
 
 admin.site.register(WorkItem, WorkItemAdmin)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)

@@ -16,7 +16,8 @@ from rovidtav.admin_helpers import (ReadOnlyTabularInline, ShowCalcFields,
 from rovidtav.models import (Attachment, Ticket, Note,
                              TicketMaterial, TicketWorkItem, DeviceOwner,
                              SystemEmail, NTAttachment, NetworkTicketMaterial,
-                             NetworkTicketWorkItem, Payoff)
+                             NetworkTicketWorkItem, Payoff, MMAttachment,
+                             MaterialMovementMaterial)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -107,6 +108,21 @@ class NTAttachmentInline(BaseAttachmentInline):
     f_thumbnail.short_description = u'Megnyitás'
 
 
+class MMAttachmentInline(BaseAttachmentInline):
+
+    model = MMAttachment
+
+    def f_thumbnail(self, obj):
+        clickable_txt = (u'<img src="/api/v1/mmthumbnail/{}" />'
+                         u'<br />{}'.format(obj.pk, obj.name))
+
+        return (u'<a target="_blank" href="/api/v1/mmattachment/{}">'
+                u'{}</a>'.format(obj.pk, clickable_txt))
+
+    f_thumbnail.allow_tags = True
+    f_thumbnail.short_description = u'Megnyitás'
+
+
 class BaseMaterialInline(RemoveInlineAction,
                          ShowCalcFields,
                          ReadOnlyCompactInline):
@@ -150,6 +166,11 @@ class MaterialInline(BaseMaterialInline):
 class NetworkMaterialInline(BaseMaterialInline):
 
     model = NetworkTicketMaterial
+
+
+class MMMaterialInline(BaseMaterialInline):
+
+    model = MaterialMovementMaterial
 
 
 class BaseWorkItemInline(RemoveInlineAction,
@@ -330,6 +351,51 @@ class TicketDeviceInline(CustomInlineActionsMixin,
     formset = TicketDeviceFormset
     fields = ['f_type_name', 'f_sn']
     actions = ['remove', 'modify']
+
+    def remove(self, request, ticket, dev_owner):
+        dev_owner.owner = request.user
+        dev_owner.device.returned_at = datetime.now()
+        dev_owner.device.save()
+        dev_owner.save()
+
+    def _evt_param(self, obj):
+        if obj.__class__ == DeviceOwner:
+            return obj.device
+        return obj
+
+    remove.short_description = u'Leszerel'
+    remove.onclick = u'return confirm(\'{sn} - Leszerel?\')'
+
+    def modify(self, request, ticket, dev_owner):
+        dev = dev_owner.device
+        info = (dev._meta.app_label, dev._meta.model_name)
+        url = reverse('admin:%s_%s_change' % info, args=(dev.pk,))
+        url = '{}?next={}%23/tab/inline_4/#/tab/module_0/'.format(url, request.path)
+        return redirect(url, anchor='')
+
+    modify.short_description = u'M&oacute;dos&iacute;t'
+
+    def f_type_name(self, obj):
+        return obj.device.type.name
+
+    f_type_name.short_description = u'Típus'
+
+    def f_sn(self, obj):
+        return obj.device.sn
+
+    f_sn.short_description = u'Vonalkód'
+
+
+class MMDeviceInline(
+        CustomInlineActionsMixin, ShowCalcFields,
+        GenericReadOnlyCompactInline):
+
+    verbose_name = u'Eszköz'
+    verbose_name_plural = u'Eszközök'
+    model = DeviceOwner
+    # formset = TicketDeviceFormset
+    fields = ['f_type_name', 'f_sn']
+    # actions = ['remove', 'modify']
 
     def remove(self, request, ticket, dev_owner):
         dev_owner.owner = request.user

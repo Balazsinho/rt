@@ -26,6 +26,18 @@ class Const(object):
     SAT = 4
     HALOZAT = 5
 
+    ANYAGKIADAS = 0
+    ANYAGBEVETEL = 1
+
+    TECH_TEXT_MAP = {
+        MIND: u'Mind',
+        REZ: u'Réz',
+        OPTIKA: u'Optika',
+        KOAX: u'Koax',
+        SAT: u'SAT',
+        HALOZAT: u'Hálózat',
+    }
+
     class TicketStatus:
         NEW = u'Új'
         ASSIGNED = u'Kiadva'
@@ -406,13 +418,27 @@ class Tag(BaseEntity):
         return self.name
 
 
-class BaseTicket(BaseEntity):
-
+class BaseHub(BaseEntity):
+    """
+    A proxy object for things that can be at a center of devices, workitems,
+    etc.
+    """
     ticket_tags = models.ManyToManyField(Tag, db_column='cimkek',
                                          blank=True,
                                          verbose_name=u'Cimkék')
     city = models.ForeignKey(City, db_column='telepules',
                              verbose_name=u'Település')
+    created_at = models.DateTimeField(verbose_name=u'Létrehozva',
+                                      default=datetime.now)
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        abstract = True
+
+
+class BaseTicket(BaseHub):
+
     address = models.CharField(db_column='cim', max_length=120,
                                verbose_name=u'Cím')
     status = models.CharField(
@@ -428,11 +454,6 @@ class BaseTicket(BaseEntity):
     closed_at = models.DateField(verbose_name=u'Lezárva',
                                  null=True, blank=True,
                                  editable=True)
-
-    created_at = models.DateTimeField(verbose_name=u'Létrehozva',
-                                      default=datetime.now)
-    created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létr, ehozó')
 
     class Meta:
         abstract = True
@@ -487,6 +508,30 @@ class BaseTicket(BaseEntity):
         remark += u'{} >> {}'.format(old, new)
         Note.objects.create(content_object=self,
                             remark=remark, is_history=True)
+
+
+class MaterialMovement(BaseHub):
+
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=False, blank=False, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Szerelő'})
+    direction = models.IntegerField(
+        choices=((Const.ANYAGKIADAS, 'Kiadás'),
+                 (Const.ANYAGBEVETEL, 'Bevétel')),
+        null=False, blank=False,
+        default=Const.ANYAGKIADAS,
+        verbose_name=u'Irány'
+    )
+
+    class Meta:
+        db_table = 'anyagmozgas'
+        verbose_name = u'Anyagmozgás'
+        verbose_name_plural = u'Anyagmozgások'
+
+    def __unicode__(self):
+        return '{} - {}'.format(self.owner, self.created_at.strftime('%Y-%m-%d'))
 
 
 class Ticket(BaseTicket, JsonExtended):
@@ -552,6 +597,7 @@ class Ticket(BaseTicket, JsonExtended):
                 self.has_images = True
                 self.save()
 
+    @property
     def technology(self):
         if not hasattr(self, '_technology'):
             self._technology = Const.MIND
@@ -807,6 +853,32 @@ class NetworkTicketMaterial(BaseEntity):
         return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
 
 
+class MaterialMovementMaterial(BaseEntity):
+
+    materialmovement = models.ForeignKey(
+        MaterialMovement, db_column='halozat_jegy',
+        related_name='anyag_halozat_jegy', verbose_name=u'Jegy')
+    material = models.ForeignKey(Material, db_column='anyag',
+                                 verbose_name=u'Anyag')
+    amount = models.FloatField(db_column='mennyiseg',
+                               verbose_name=u'Mennyiség',
+                               default=1)
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'anyag_anyagmozgas'
+        verbose_name = u'Anyagmozgás Anyag'
+        verbose_name_plural = u'Anyagmozgás Anyagok'
+
+    def __unicode__(self):
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
+
+
 class WorkItem(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=300,
@@ -971,6 +1043,18 @@ class NTAttachment(BaseAttachment):
 
     class Meta:
         db_table = 'halo_jegy_csatolmany'
+        verbose_name = u'File'
+        verbose_name_plural = u'Fileok'
+
+
+class MMAttachment(BaseAttachment):
+
+    materialmovement = models.ForeignKey(
+        MaterialMovement, db_column='anyagkiadas',
+        verbose_name=u'Anyagkiadás')
+
+    class Meta:
+        db_table = 'anyagkiadas_csatolmany'
         verbose_name = u'File'
         verbose_name_plural = u'Fileok'
 
