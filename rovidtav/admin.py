@@ -22,7 +22,7 @@ from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
 
-from jet.filters import DateRangeFilter
+# from jet.filters import DateRangeFilter
 from inline_actions.admin import InlineActionsModelAdminMixin
 
 from rovidtav import settings
@@ -688,7 +688,8 @@ class TicketAdmin(CustomDjangoObjectActions,
                 return (
                         'city__primer', OwnerFilter, IsClosedFilter,
                         'has_images', 'ticket_tags', PayoffFilter,
-                        ('created_at', DateRangeFilter),)
+                        # ('created_at', DateRangeFilter),
+                        )
             else:
                 return (IsClosedFilter,)
 
