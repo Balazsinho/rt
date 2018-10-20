@@ -449,14 +449,15 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                             admin.ModelAdmin):
     list_per_page = 200
     list_display_links = None
-    list_display = ('direction_icon', 'mm_link', 'created', 'materials_count')
+    list_display = ('direction_icon', 'mm_link', 'created', 'materials_count',
+                    'delivery_num')
 
     inlines = (NoteInline, MMAttachmentInline, MMMaterialInline,
                MMDeviceInline)
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device',)
     add_form_template = os.path.join('rovidtav', 'select2.html')
-    fields = ['city', 'owner', 'direction', 'created_at']
+    fields = ['city', 'owner', 'direction', 'created_at', 'delivery_num']
 
     def has_delete_permission(self, request, obj=None):
         return False

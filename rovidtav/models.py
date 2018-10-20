@@ -524,6 +524,9 @@ class MaterialMovement(BaseHub):
         default=Const.ANYAGKIADAS,
         verbose_name=u'Irány'
     )
+    delivery_num = models.CharField(db_column='szallito', max_length=120,
+                                    verbose_name=u'Szállító száma',
+                                    null=True, blank=True)
 
     class Meta:
         db_table = 'anyagmozgas'
