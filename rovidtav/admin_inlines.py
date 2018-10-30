@@ -18,6 +18,7 @@ from rovidtav.models import (Attachment, Ticket, Note,
                              SystemEmail, NTAttachment, NetworkTicketMaterial,
                              NetworkTicketWorkItem, Payoff, MMAttachment,
                              MaterialMovementMaterial)
+from jet.admin import CompactInline
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -124,8 +125,7 @@ class MMAttachmentInline(BaseAttachmentInline):
 
 
 class BaseMaterialInline(RemoveInlineAction,
-                         ShowCalcFields,
-                         ReadOnlyCompactInline):
+                         ShowCalcFields):
 
     """
     Material inline for the ticket page
@@ -158,19 +158,20 @@ class BaseMaterialInline(RemoveInlineAction,
     f_material_comes_from.short_description = u'Biztosítja'
 
 
-class MaterialInline(BaseMaterialInline):
+class MaterialInline(BaseMaterialInline, ReadOnlyCompactInline):
 
     model = TicketMaterial
 
 
-class NetworkMaterialInline(BaseMaterialInline):
+class NetworkMaterialInline(BaseMaterialInline, ReadOnlyCompactInline):
 
     model = NetworkTicketMaterial
 
 
-class MMMaterialInline(BaseMaterialInline):
+class MMMaterialInline(BaseMaterialInline, CompactInline):
 
     model = MaterialMovementMaterial
+    extra = 0
 
 
 class BaseWorkItemInline(RemoveInlineAction,

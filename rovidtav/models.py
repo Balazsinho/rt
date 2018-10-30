@@ -15,6 +15,13 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from multiselectfield import MultiSelectField
 
 
+def delivery_num():
+    today_str = datetime.now().strftime('%Y%m%d')
+    prefix = 'R-{}'.format(today_str)
+    today_delivery_cnt = len(MaterialMovement.objects.filter(delivery_num__startswith=prefix))
+    return '{}-{}'.format(prefix, today_delivery_cnt+1)
+
+
 class Const(object):
 
     NO_OWNER = u'Nincs'
@@ -526,7 +533,8 @@ class MaterialMovement(BaseHub):
     )
     delivery_num = models.CharField(db_column='szallito', max_length=120,
                                     verbose_name=u'Szállító száma',
-                                    null=True, blank=True)
+                                    null=False, blank=False,
+                                    default=delivery_num)
 
     class Meta:
         db_table = 'anyagmozgas'

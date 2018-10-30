@@ -72,8 +72,11 @@ class TicketMaterialForm(forms.ModelForm):
 
 class MMMaterialForm(forms.ModelForm):
 
-    def __init__(self, *args, **kwargs):
-        super(MMMaterialForm, self).__init__(*args, **kwargs)
+    material = ModelChoiceField(
+        Material.objects.all(),
+        widget=forms.Select(attrs={'style': 'width:500px', 'size': '10'}),
+        label='Anyag',
+    )
 
     class Meta:
         model = MaterialMovementMaterial

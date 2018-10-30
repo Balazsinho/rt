@@ -446,13 +446,14 @@ class IsClosedFilter(SimpleListFilter):
 
 
 class MaterialMovementAdmin(CustomDjangoObjectActions,
+                            InlineActionsModelAdminMixin,
                             admin.ModelAdmin):
     list_per_page = 200
     list_display_links = None
     list_display = ('direction_icon', 'mm_link', 'created', 'materials_count',
                     'delivery_num')
 
-    inlines = (NoteInline, MMAttachmentInline, MMMaterialInline,
+    inlines = (MMMaterialInline, NoteInline, MMAttachmentInline,
                MMDeviceInline)
     change_actions = ('new_note', 'new_attachment', 'new_material',
                       'new_device',)
@@ -484,9 +485,9 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ['created_at', 'owner', 'city', 'direction']
+            return ['created_at', 'owner', 'city', 'direction', 'delivery_num']
         else:
-            return []
+            return ['delivery_num']
 
     def new_note(self, request, obj):
         return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='

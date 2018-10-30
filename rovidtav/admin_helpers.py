@@ -21,7 +21,8 @@ from jet.admin import CompactInline
 from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
-from rovidtav.models import DeviceOwner, Const, SystemEmail
+from rovidtav.models import DeviceOwner, Const, SystemEmail, \
+    MaterialMovementMaterial
 import settings
 
 
@@ -186,12 +187,14 @@ class CustomInlineActionsMixin(InlineActionsMixin):
 
     def get_actions(self, request, obj=None):
         if isinstance(obj, DeviceOwner):
-            ticket_ok = True
-        else:
+            obj_ok = True
+        elif isinstance(obj, MaterialMovementMaterial):
+            obj_ok = True
+        elif hasattr(obj, 'ticket'):
             ticket = obj.ticket
-            ticket_ok = ticket.status in [Const.TicketStatus.ASSIGNED,
-                                          Const.TicketStatus.IN_PROGRESS]
-        if request.user.is_superuser or ticket_ok:
+            obj_ok = ticket.status in [Const.TicketStatus.ASSIGNED,
+                                       Const.TicketStatus.IN_PROGRESS]
+        if request.user.is_superuser or obj_ok:
             return self.actions
         else:
             return []
