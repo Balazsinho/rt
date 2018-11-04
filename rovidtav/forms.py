@@ -12,7 +12,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketWorkItem, Device, DeviceOwner, Const,
                      TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
                      Payoff)
-from rovidtav.models import MaterialMovementMaterial
+from rovidtav.models import MaterialMovementMaterial, MaterialMovement
 
 
 class AttachmentForm(forms.ModelForm):
@@ -175,8 +175,9 @@ class NoteForm(forms.ModelForm):
 
 class DeviceForm(forms.ModelForm):
 
-    owner = ModelChoiceField(queryset=User.objects.all(),
-                             label=u'Tulajdonos')
+    owner = ModelChoiceField(queryset=MaterialMovement.objects.all(),
+                             label=u'Tulajdonos', )
+                             #widget=forms.HiddenInput())
 
     class Meta:
         model = Device
@@ -184,18 +185,19 @@ class DeviceForm(forms.ModelForm):
 
     def save(self, commit=True):
         owner = self.cleaned_data.get('owner', None)
-        device = super(DeviceForm, self).save(commit=True)
-        if owner:
-            user_ct = ContentType.objects.get(app_label='auth', model='user')
-            try:
-                dev_owner = DeviceOwner.objects.get(device=device)
-                dev_owner.content_type = user_ct
-                dev_owner.object_id = owner.pk
-                dev_owner.save()
-            except DeviceOwner.DoesNotExist:
-                DeviceOwner.objects.create(
-                    device=device, content_type=user_ct,
-                    object_id=owner.pk)
+        try:
+            device = Device.objects.get(sn=self.cleaned_data['sn'])
+        except Device.DoesNotExist:
+            device = super(DeviceForm, self).save(commit=True)
+        ct = ContentType.objects.get(app_label='rovidtav', model='materialmovement')
+        try:
+            dev_owner = DeviceOwner.objects.get(device=device)
+            dev_owner.content_type = ct
+            dev_owner.object_id = owner.pk
+            dev_owner.save()
+        except DeviceOwner.DoesNotExist:
+            DeviceOwner.objects.create(
+                device=device, content_type=ct, object_id=owner.pk)
         return device
 
     def save_m2m(self, commit=True):

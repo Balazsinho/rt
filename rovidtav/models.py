@@ -35,6 +35,7 @@ class Const(object):
 
     ANYAGKIADAS = 0
     ANYAGBEVETEL = 1
+    VISSZARU = 2
 
     TECH_TEXT_MAP = {
         MIND: u'Mind',
@@ -294,7 +295,10 @@ class Device(BaseEntity):
         verbose_name_plural = u'Eszközök'
 
     def __unicode__(self):
-        return u'{} - {}'.format(self.sn, self.type)
+        out = self.sn
+        if self.type:
+            out += u' - {}'.format(self.type)
+        return out
 
     @staticmethod
     def autocomplete_search_fields():
@@ -523,10 +527,12 @@ class MaterialMovement(BaseHub):
         User, related_name="%(class)s_tulajdonos",
         related_query_name="%(class)s_tulajdonos",
         null=False, blank=False, verbose_name=u'Szerelő',
-        limit_choices_to={'groups__name': u'Szerelő'})
+        limit_choices_to={'groups__name': u'Szerelő'},
+        help_text=u'Visszáru és kiadás esetén a szerelőt kell megadni')
     direction = models.IntegerField(
-        choices=((Const.ANYAGKIADAS, 'Kiadás'),
-                 (Const.ANYAGBEVETEL, 'Bevétel')),
+        choices=((Const.ANYAGKIADAS, u'Kiadás'),
+                 (Const.ANYAGBEVETEL, u'Bevétel'),
+                 (Const.VISSZARU, u'Visszáru')),
         null=False, blank=False,
         default=Const.ANYAGKIADAS,
         verbose_name=u'Irány'

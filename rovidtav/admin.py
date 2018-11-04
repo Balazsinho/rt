@@ -151,26 +151,25 @@ class TagAdmin(HideOnAdmin, admin.ModelAdmin):
 class DeviceOwnerAdmin(CustomDjangoObjectActions, HideOnAdmin,
                        ModelAdminRedirect, HideIcons):
 
-    hide_add = False
+    hide_add = True
     form = DeviceOwnerForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceOwnerAdmin, self).get_form(request, obj, **kwargs)
         self._hide_icons(form, ('device',))
-        warehouse_group = Group.objects.get(name=u'Szerelő')
-        warehouse_ids = [w.pk for w in warehouse_group.user_set.all()]
-        allowed_ids = warehouse_ids + [request.user.pk]
-        client_ct = ContentType.objects.get(
-            app_label='rovidtav', model='client').id
-        devices = Device.objects.exclude(dev_owner__content_type=client_ct)
-        devices = devices.filter(returned_at__isnull=True,
-                                 dev_owner__object_id__in=allowed_ids)
+        allowed_pks = MaterialMovement.objects.filter(owner=request.user).values_list('id', flat=True)
+        req_ct = request.GET.get('content_type')
+        ct = ContentType.objects.get(
+            app_label='rovidtav', model='materialmovement').id
+        devices = Device.objects.filter(dev_owner__content_type=ct)
+        devices = devices.filter(#dev_owner__object_id__in=allowed_pks,
+                                 returned_at__isnull=True)
         form.base_fields['device'].queryset = devices
         return form
 
 
-class DeviceAdmin(CustomDjangoObjectActions, HideOnAdmin,
+class DeviceAdmin(CustomDjangoObjectActions,
                   ModelAdminRedirect, HideIcons):
 
     list_display = ('sn', 'device_type', 'owner_link', 'returned_at')
@@ -187,6 +186,11 @@ class DeviceAdmin(CustomDjangoObjectActions, HideOnAdmin,
     def has_delete_permission(self, request, obj=None):
         return False
 
+    def get_queryset(self, request):
+        client_ct = ContentType.objects.get(
+            app_label='rovidtav', model='client').id
+        return Device.objects.exclude(dev_owner__content_type=client_ct)
+
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
         if obj and isinstance(obj.owner.owner, Client):
@@ -198,16 +202,17 @@ class DeviceAdmin(CustomDjangoObjectActions, HideOnAdmin,
         return form
 
     def device_type(self, obj):
-        return obj.type.name
+        if obj.type:
+            return obj.type.name
 
     device_type.short_description = u'Típus'
 
     def owner_link(self, obj):
         if isinstance(obj.owner.owner, Client):
             return (u'<a href="/admin/rovidtav/client/{}/change">{}</a>'
-                    u''.format(obj.owner.owner.pk, unicode(obj.owner)))
+                    u''.format(obj.owner.owner.pk, unicode(obj.owner.owner)))
         else:
-            return obj.owner
+            return obj.owner.owner
 
     owner_link.allow_tags = True
     owner_link.short_description = u'Tulajdonos'
@@ -515,10 +520,8 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     new_material.css_class = 'addlink'
 
     def new_device(self, request, obj):
-        return redirect('/admin/rovidtav/deviceowner/add/?content_type={}'
-                        '&object_id={}&next={}'
-                        ''.format(obj.get_content_type(), obj.pk,
-                                  self._returnto(obj, MMDeviceInline)))
+        return redirect('/admin/rovidtav/device/add/?owner={}&next={}'
+                        ''.format(obj.pk, self._returnto(obj, MMDeviceInline)))
 
     new_device.label = u'Eszköz'
     new_device.css_class = 'addlink'
