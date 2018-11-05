@@ -182,6 +182,7 @@ class DeviceAdmin(CustomDjangoObjectActions,
     form = DeviceForm
 
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+    change_list_template = os.path.join('rovidtav', 'change_list_noadd.html')
 
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
