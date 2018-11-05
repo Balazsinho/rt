@@ -22,7 +22,7 @@ from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner, Const, SystemEmail, \
-    MaterialMovementMaterial
+    MaterialMovementMaterial, MaterialMovement
 import settings
 
 
@@ -54,12 +54,19 @@ class DeviceOwnerListFilter(admin.SimpleListFilter):
         # to decide how to filter the queryset.
 
         if self.value():
-            user_ct = ContentType.objects.get(app_label='auth', model='user')
-            owned_device_pks = [o.device.pk for o in
-                                DeviceOwner.objects.filter(
-                                    content_type=user_ct,
-                                    object_id=self.value())]
-            return queryset.filter(pk__in=owned_device_pks)
+            mm_ct = ContentType.objects.get(app_label='rovidtav',
+                                            model='materialmovement')
+            user_ct = ContentType.objects.get(app_label='auth',
+                                              model='user')
+            mm_ids = MaterialMovement.objects.filter(
+                owner=self.value()).values_list('id', flat=True)
+            device_pks = list(DeviceOwner.objects.filter(
+                content_type=mm_ct,
+                object_id__in=mm_ids).prefetch_related('device').values_list('device__id', flat=True))
+            device_pks.extend(DeviceOwner.objects.filter(
+                content_type=user_ct,
+                object_id=self.value()).prefetch_related('device').values_list('device__id', flat=True))
+            return queryset.filter(pk__in=device_pks)
 
 
 class CustomDjangoObjectActions(DjangoObjectActions):

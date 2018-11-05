@@ -176,8 +176,8 @@ class NoteForm(forms.ModelForm):
 class DeviceForm(forms.ModelForm):
 
     owner = ModelChoiceField(queryset=MaterialMovement.objects.all(),
-                             label=u'Tulajdonos', )
-                             #widget=forms.HiddenInput())
+                             label=u'Tulajdonos',
+                             widget=forms.HiddenInput())
 
     class Meta:
         model = Device
@@ -213,6 +213,25 @@ class DeviceOwnerForm(forms.ModelForm):
             'object_id': forms.HiddenInput(),
             'content_type': forms.HiddenInput(),
         }
+
+    def __init__(self, *args, **kwargs):
+        super(DeviceOwnerForm, self).__init__(*args, **kwargs)
+        client_ct = ContentType.objects.get(
+            app_label='rovidtav', model='client').id
+
+        ticket = None
+        if self.initial['content_type'] == str(client_ct):
+            try:
+                ticket = Ticket.objects.get(id=self.initial['ticket_id'])
+            except KeyError, Ticket.DoesNotExist:
+                pass
+
+        if ticket and ticket.owner:
+            mms = MaterialMovement.objects.filter(owner=ticket.owner).values_list('id', flat=True)
+            mm_ct = ContentType.objects.get(
+                app_label='rovidtav', model='materialmovement').id
+            dev_owns = DeviceOwner.objects.filter(content_type=mm_ct, object_id__in=mms).prefetch_related('device')
+            self.fields['device'].queryset = Device.objects.filter(id__in=[own.device.id for own in dev_owns])
 
     def save(self, commit=True):
         try:

@@ -183,14 +183,6 @@ class DeviceAdmin(CustomDjangoObjectActions,
 
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-    def get_queryset(self, request):
-        client_ct = ContentType.objects.get(
-            app_label='rovidtav', model='client').id
-        return Device.objects.exclude(dev_owner__content_type=client_ct)
-
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
         if obj and isinstance(obj.owner.owner, Client):
@@ -931,8 +923,9 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     def new_device(self, request, obj):
         return redirect('/admin/rovidtav/deviceowner/add/?content_type={}'
-                        '&object_id={}&next={}'
+                        '&object_id={}&ticket_id={}&next={}'
                         ''.format(obj.client.get_content_type(), obj.client.pk,
+                                  obj.pk,
                                   self._returnto(obj, TicketDeviceInline)))
 
     new_device.label = u'Eszköz'

@@ -328,6 +328,8 @@ class SystemEmailInline(GenericReadOnlyStackedInline):
 
 class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
 
+    verbose_name = u'Eszköz'
+    verbose_name_plural = u'Eszközök'
     model = DeviceOwner
     fields = ('f_type_name', 'f_sn')
 
