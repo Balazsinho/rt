@@ -191,7 +191,7 @@ class DeviceAdmin(CustomDjangoObjectActions,
             del(form.declared_fields['owner'])
         elif obj and isinstance(obj.owner.owner, MaterialMovement):
             form.base_fields['owner'].initial = obj.owner.object_id
-        self._hide_icons(form, ('type',))
+        # self._hide_icons(form, ('type',))
         return form
 
     def device_type(self, obj):
