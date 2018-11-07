@@ -193,6 +193,7 @@ class CustomInlineActionsMixin(InlineActionsMixin):
         return super(CustomInlineActionsMixin, self).get_fieldsets(request, obj)
 
     def get_actions(self, request, obj=None):
+        obj_ok = False
         if isinstance(obj, DeviceOwner):
             obj_ok = True
         elif isinstance(obj, MaterialMovementMaterial):
@@ -201,6 +202,7 @@ class CustomInlineActionsMixin(InlineActionsMixin):
             ticket = obj.ticket
             obj_ok = ticket.status in [Const.TicketStatus.ASSIGNED,
                                        Const.TicketStatus.IN_PROGRESS]
+
         if request.user.is_superuser or obj_ok:
             return self.actions
         else:
