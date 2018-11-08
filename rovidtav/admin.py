@@ -657,7 +657,7 @@ class WarehouseAdmin(CustomDjangoObjectActions,
     list_display = ['warehouse_name', 'num_devices', 'num_materials']
     fields = ['name', 'city', 'address']
     change_actions = ['new_note']
-    ordering = ['-owner', 'name']
+    ordering = ['owner__last_name', 'owner__first_name', 'name']
 
     def __init__(self, model, admin_site):
         admin.ModelAdmin.__init__(self, model, admin_site)
