@@ -562,7 +562,8 @@ class MaterialMovement(BaseHub):
         verbose_name_plural = u'Anyagmozgások'
 
     def __unicode__(self):
-        return '{} - {}'.format(self.owner, self.created_at.strftime('%Y-%m-%d'))
+        return u'{} -> {} {}'.format(unicode(self.source), unicode(self.target),
+                                     self.created_at.strftime('%Y-%m-%d'))
 
 
 class DeviceReassignEvent(BaseEntity):
@@ -577,6 +578,9 @@ class DeviceReassignEvent(BaseEntity):
     created_by = models.ForeignKey(User, db_column='letrehozas_fh',
                                    editable=False,
                                    verbose_name=u'Létrehozó')
+
+    def __unicode__(self):
+        return self.device.sn
 
 
 class Ticket(BaseTicket, JsonExtended):

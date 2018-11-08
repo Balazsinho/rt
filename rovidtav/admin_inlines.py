@@ -397,7 +397,7 @@ class TicketDeviceInline(CustomInlineActionsMixin,
 
 
 class MMDeviceInline(CustomInlineActionsMixin, ShowCalcFields,
-                     ReadOnlyStackedInline):
+                     ReadOnlyCompactInline):
 
     verbose_name = u'Eszköz'
     verbose_name_plural = u'Eszközök'
