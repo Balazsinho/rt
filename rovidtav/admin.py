@@ -586,7 +586,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                 device_owner = DeviceOwner.objects.get(device=dre.device)
                 device_owner.content_type = ContentTypes.warehouse
                 device_owner.object_id = obj.target.id
-                device_owner.save()
+                device_owner.save(user=request.user)
             except DeviceOwner.DoesNotExist:
                 DeviceOwner.objects.create(device=dre.device,
                                            content_type=ContentTypes.warehouse,

@@ -13,6 +13,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from multiselectfield import MultiSelectField
+from django.db.utils import IntegrityError
 
 
 def delivery_num():
@@ -338,7 +339,15 @@ class DeviceOwner(BaseEntity):
                     'remark': remark,
                     'is_history': True,
                 }
-                Note.objects.create(**note_params)
+                try:
+                    Note.objects.create(**note_params)
+                except IntegrityError:
+                    try:
+                        user = kwargs.pop('user')
+                    except KeyError:
+                        user = None
+                    note_params.update({'created_by': user})
+                    Note.objects.create(**note_params)
 
         return super(DeviceOwner, self).save(*args, **kwargs)
 
