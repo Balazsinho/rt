@@ -11,6 +11,7 @@ from email.mime.text import MIMEText
 import pytz
 
 from django.contrib import admin
+from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
 from django.contrib.admin.filters import SimpleListFilter
 from django.contrib.contenttypes.models import ContentType
@@ -594,6 +595,8 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
 
         obj.finalized = True
         obj.save()
+        messages.add_message(request, messages.INFO, u'{} véglegesítve'.format(obj.delivery_num))
+        return redirect('/admin/rovidtav/materialmovement')
 
     finalize.label = u'Véglegesít'
     finalize.onclick = u"return confirm('Biztos?')"
