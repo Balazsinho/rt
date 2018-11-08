@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-
+from copy import copy
 from PIL import Image
 import StringIO
 import zipfile
@@ -60,7 +60,7 @@ from rovidtav.models import MMAttachment, DeviceReassignEvent
 from rovidtav.forms import MMAttachmentForm, MMMaterialForm,\
     MaterialMovementForm, DeviceReassignEventForm
 from rovidtav.admin_inlines import WarehouseMaterialInline,\
-    WarehouseDeviceInline
+    WarehouseDeviceInline, MMMaterialReadonlyInline
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -461,8 +461,8 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                     'devices_count', 'fin_icon')
     list_filter = ('source', 'target', 'finalized')
 
-    inlines = (MMMaterialInline, MMDeviceInline, MMAttachmentInline,
-               NoteInline)
+    inlines = [MMMaterialInline, MMDeviceInline, MMAttachmentInline,
+               NoteInline]
     change_actions = ['finalize', 'new_material', 'new_device',
                       'new_attachment', 'new_note']
     add_form_template = os.path.join('rovidtav', 'select2.html')
@@ -504,11 +504,17 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):
             return []
-        return super(MaterialMovementAdmin, self).get_inline_instances(request, obj=None)
+        orig_inlines = copy(self.inlines)
+        if obj.finalized:
+            self.inlines.remove(MMMaterialInline)
+            self.inlines.insert(0, MMMaterialReadonlyInline)
+        instances = super(MaterialMovementAdmin, self).get_inline_instances(request, obj=None)
+        self.inlines = orig_inlines
+        return instances
 
     def get_readonly_fields(self, request, obj=None):
-        if obj:
-            return ['created_at', 'owner', 'city', 'direction', 'delivery_num']
+        if obj and obj.finalized:
+            return ['created_at', 'source', 'target', 'delivery_num']
         else:
             return ['delivery_num']
 
@@ -662,6 +668,15 @@ class WarehouseAdmin(CustomDjangoObjectActions,
     def __init__(self, model, admin_site):
         admin.ModelAdmin.__init__(self, model, admin_site)
         self.deviceowner_ct = ContentTypes.deviceowner
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_actions(self, request):
+        actions = super(WarehouseAdmin, self).get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
 
     def get_readonly_fields(self, request, obj=None):
         if obj:

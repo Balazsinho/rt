@@ -172,6 +172,13 @@ class MMMaterialInline(BaseMaterialInline, CompactInline):
     extra = 0
 
 
+class MMMaterialReadonlyInline(BaseMaterialInline, ReadOnlyCompactInline):
+
+    actions = []
+    model = MaterialMovementMaterial
+    extra = 0
+
+
 class WarehouseMaterialInline(BaseMaterialInline, CompactInline):
 
     actions = []
@@ -396,7 +403,7 @@ class TicketDeviceInline(CustomInlineActionsMixin,
     f_sn.short_description = u'Vonalkód'
 
 
-class MMDeviceInline(CustomInlineActionsMixin, ShowCalcFields,
+class MMDeviceInline(ShowCalcFields,
                      ReadOnlyCompactInline):
 
     verbose_name = u'Eszköz'
@@ -404,7 +411,6 @@ class MMDeviceInline(CustomInlineActionsMixin, ShowCalcFields,
     model = DeviceReassignEvent
     # formset = TicketDeviceFormset
     fields = ['f_type_name', 'f_sn']
-    actions = ['modify']
 
     def _evt_param(self, obj):
         if obj.__class__ == DeviceOwner:
