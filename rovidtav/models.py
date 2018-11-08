@@ -336,10 +336,8 @@ class DeviceOwner(BaseEntity):
                     'content_type': self.device.get_content_type_obj(),
                     'object_id': self.device.pk,
                     'remark': remark,
-                    'is_history':True,
+                    'is_history': True,
                 }
-                if kwargs.get('user'):
-                    note_params.update({'created_by': kwargs['user']})
                 Note.objects.create(**note_params)
 
         return super(DeviceOwner, self).save(*args, **kwargs)
