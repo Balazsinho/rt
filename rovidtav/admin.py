@@ -582,15 +582,14 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                                                  created_by=request.user)
 
         for dre in DeviceReassignEvent.objects.filter(materialmovement=obj):
-            ct = ContentType.objects.get(
-                app_label='rovidtav', model='warehouse')
             try:
                 device_owner = DeviceOwner.objects.get(device=dre.device)
-                device_owner.content_type = ct
+                device_owner.content_type = ContentTypes.warehouse
                 device_owner.object_id = obj.target.id
+                device_owner.save()
             except DeviceOwner.DoesNotExist:
                 DeviceOwner.objects.create(device=dre.device,
-                                           content_type=ct,
+                                           content_type=ContentTypes.warehouse,
                                            object_id=obj.target.id)
 
         obj.finalized = True
