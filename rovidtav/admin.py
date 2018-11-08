@@ -465,7 +465,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     change_actions = ['finalize', 'new_material', 'new_device',
                       'new_attachment', 'new_note']
     add_form_template = os.path.join('rovidtav', 'select2.html')
-    fields = ['direction', 'owner', 'source', 'target', 'created_at', 'delivery_num']
+    fields = ['source', 'target', 'created_at', 'delivery_num']
 
     def __init__(self, model, admin_site):
         admin.ModelAdmin.__init__(self, model, admin_site)

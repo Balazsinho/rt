@@ -33,10 +33,6 @@ class Const(object):
     SAT = 4
     HALOZAT = 5
 
-    ANYAGKIADAS = 0
-    ANYAGBEVETEL = 1
-    VISSZARU = 2
-
     TECH_TEXT_MAP = {
         MIND: u'Mind',
         REZ: u'Réz',
@@ -548,20 +544,6 @@ class Warehouse(BaseEntity):
 
 class MaterialMovement(BaseHub):
 
-    direction = models.IntegerField(
-        choices=((Const.ANYAGKIADAS, u'Kiadás'),
-                 (Const.ANYAGBEVETEL, u'Bevétel'),
-                 (Const.VISSZARU, u'Visszáru')),
-        null=True, blank=True,
-        default=Const.ANYAGKIADAS,
-        verbose_name=u'Irány'
-    )
-    owner = models.ForeignKey(
-        User, related_name="%(class)s_tulajdonos",
-        related_query_name="%(class)s_tulajdonos",
-        null=True, blank=True, verbose_name=u'Szerelő / rögzítette',
-        help_text=u'Visszáru és kiadás esetén a szerelőt kell megadni, '
-        u'bevitelnél aki rögzítette')
     source = models.ForeignKey(Warehouse, verbose_name=u'Honnan',
                                null=True, blank=True, related_name='honnan')
     target = models.ForeignKey(Warehouse, verbose_name=u'Hova',
