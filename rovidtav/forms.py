@@ -12,7 +12,8 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketWorkItem, Device, DeviceOwner, Const,
                      TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
                      Payoff)
-from rovidtav.models import MaterialMovementMaterial, MaterialMovement
+from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
+    DeviceReassignEvent
 
 
 class AttachmentForm(forms.ModelForm):
@@ -173,37 +174,6 @@ class NoteForm(forms.ModelForm):
         fields = '__all__'
 
 
-class DeviceForm(forms.ModelForm):
-
-    owner = ModelChoiceField(queryset=MaterialMovement.objects.all(),
-                             label=u'Tulajdonos',
-                             widget=forms.HiddenInput())
-
-    class Meta:
-        model = Device
-        fields = '__all__'
-
-    def save(self, commit=True):
-        owner = self.cleaned_data.get('owner', None)
-        try:
-            device = Device.objects.get(sn=self.cleaned_data['sn'])
-        except Device.DoesNotExist:
-            device = super(DeviceForm, self).save(commit=True)
-        ct = ContentType.objects.get(app_label='rovidtav', model='materialmovement')
-        try:
-            dev_owner = DeviceOwner.objects.get(device=device)
-            dev_owner.content_type = ct
-            dev_owner.object_id = owner.pk
-            dev_owner.save()
-        except DeviceOwner.DoesNotExist:
-            DeviceOwner.objects.create(
-                device=device, content_type=ct, object_id=owner.pk)
-        return device
-
-    def save_m2m(self, commit=True):
-        pass
-
-
 class DeviceOwnerForm(forms.ModelForm):
 
     class Meta:
@@ -213,25 +183,6 @@ class DeviceOwnerForm(forms.ModelForm):
             'object_id': forms.HiddenInput(),
             'content_type': forms.HiddenInput(),
         }
-
-    def __init__(self, *args, **kwargs):
-        super(DeviceOwnerForm, self).__init__(*args, **kwargs)
-        client_ct = ContentType.objects.get(
-            app_label='rovidtav', model='client').id
-
-        ticket = None
-        if self.initial['content_type'] == str(client_ct):
-            try:
-                ticket = Ticket.objects.get(id=self.initial['ticket_id'])
-            except KeyError, Ticket.DoesNotExist:
-                pass
-
-        if ticket and ticket.owner:
-            mms = MaterialMovement.objects.filter(owner=ticket.owner).values_list('id', flat=True)
-            mm_ct = ContentType.objects.get(
-                app_label='rovidtav', model='materialmovement').id
-            dev_owns = DeviceOwner.objects.filter(content_type=mm_ct, object_id__in=mms).prefetch_related('device')
-            self.fields['device'].queryset = Device.objects.filter(id__in=[own.device.id for own in dev_owns])
 
     def save(self, commit=True):
         try:
@@ -243,10 +194,53 @@ class DeviceOwnerForm(forms.ModelForm):
         return super(DeviceOwnerForm, self).save(commit=commit)
 
 
+class DeviceReassignEventForm(forms.ModelForm):
+
+    sn = forms.CharField(label=u'Szériaszám')
+
+    class Meta:
+        model = DeviceReassignEvent
+        fields = '__all__'
+        widgets = {
+            'device': forms.HiddenInput(),
+            'materialmovement': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(DeviceReassignEventForm, self).__init__(*args, **kwargs)
+        self.fields['device'].required = False
+
+    def save(self, commit=True):
+        sn = self.cleaned_data['sn']
+        device, _ = Device.objects.get_or_create(sn=sn)
+        self.instance.device = device
+        return super(DeviceReassignEventForm, self).save(commit=commit)
+
+
 class DeviceToCustomerForm(forms.Form):
 
     owner = ModelChoiceField(queryset=User.objects.all(),
                              label=u'Tulajdonos')
+
+
+class MaterialMovementForm(forms.ModelForm):
+
+    fields = ('source', 'target', 'delivery_num',
+              'finalized')
+
+    def __init__(self, *args, **kwargs):
+        super(MaterialMovementForm, self).__init__(*args, **kwargs)
+        self.fields['delivery_num'].widget.attrs['readonly'] = True
+        self.fields['finalized'].widget.attrs['readonly'] = True
+
+    class Meta:
+        model = MaterialMovement
+        widgets = {
+          'object_id': forms.HiddenInput(),
+          'content_type': forms.HiddenInput(),
+          'is_history': forms.HiddenInput(),
+        }
+        fields = '__all__'
 
 
 class TicketForm(forms.ModelForm):

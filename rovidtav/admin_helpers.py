@@ -26,6 +26,19 @@ from rovidtav.models import DeviceOwner, Const, SystemEmail, \
 import settings
 
 
+def _get_ct(model, app_label='rovidtav'):
+    return ContentType.objects.get(
+        app_label=app_label, model=model)
+
+
+class ContentTypes(object):
+
+    deviceowner = _get_ct('deviceowner')
+    materialmovement = _get_ct('materialmovement')
+    user = _get_ct(app_label='auth', model='user')
+    warehouse = _get_ct('warehouse')
+
+
 class DeviceOwnerListFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
@@ -54,10 +67,8 @@ class DeviceOwnerListFilter(admin.SimpleListFilter):
         # to decide how to filter the queryset.
 
         if self.value():
-            mm_ct = ContentType.objects.get(app_label='rovidtav',
-                                            model='materialmovement')
-            user_ct = ContentType.objects.get(app_label='auth',
-                                              model='user')
+            mm_ct = ContentTypes.materialmovement
+            user_ct = ContentTypes.user
             mm_ids = MaterialMovement.objects.filter(
                 owner=self.value()).values_list('id', flat=True)
             device_pks = list(DeviceOwner.objects.filter(
@@ -84,7 +95,10 @@ class CustomDjangoObjectActions(DjangoObjectActions):
             'title': self._get_attr(tool, 'short_description'),
         }
         # TODO: fix custom attrs
-        custom_attrs = {}
+        custom_attrs = {
+            'onclick': self._get_attr(tool, 'onclick'),
+            'style': self._get_attr(tool, 'style'),
+        }
         return default_attrs, custom_attrs
 
     def _get_attr(self, tool, attr, default=''):

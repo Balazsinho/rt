@@ -33,7 +33,8 @@ from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
                             get_technician_choices,
                             get_network_technician_choices,
                             get_unread_messages_count,
-                            get_unread_messages, send_assign_mail)
+                            get_unread_messages, send_assign_mail,
+                            ContentTypes)
 from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
                             TicketInline, HistoryInline, MaterialInline,
                             WorkItemInline, TicketDeviceInline,
@@ -47,14 +48,18 @@ from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
                      NetworkTicket, NTAttachment, SystemEmail,
                      ApplicantAttributes, DeviceOwner, Tag, Const,
                      NetworkTicketMaterial, NetworkTicketWorkItem,
-                     MaterialMovement, MaterialMovementMaterial)
+                     MaterialMovement, MaterialMovementMaterial, Warehouse,
+                     WarehouseMaterial)
 from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
-                    TicketWorkItemForm, DeviceOwnerForm, DeviceForm,
+                    TicketWorkItemForm, DeviceOwnerForm,
                     TicketForm, TicketTypeForm, NetworkTicketWorkItemForm,
                     NetworkTicketMaterialForm, PayoffForm, WorkItemForm,
                     MaterialForm)
-from rovidtav.models import MMAttachment
-from rovidtav.forms import MMAttachmentForm, MMMaterialForm
+from rovidtav.models import MMAttachment, DeviceReassignEvent
+from rovidtav.forms import MMAttachmentForm, MMMaterialForm,\
+    MaterialMovementForm, DeviceReassignEventForm
+from rovidtav.admin_inlines import WarehouseMaterialInline,\
+    WarehouseDeviceInline
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -143,6 +148,11 @@ class CityAdmin(HideOnAdmin, admin.ModelAdmin):
     list_display = ('name', 'zip', 'primer', 'onuk')
 
 
+class WarehouseMaterialAdmin(HideOnAdmin, admin.ModelAdmin):
+
+    pass
+
+
 class TagAdmin(HideOnAdmin, admin.ModelAdmin):
 
     list_display = ('name', 'remark')
@@ -158,13 +168,15 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, HideOnAdmin,
     def get_form(self, request, obj=None, **kwargs):
         form = super(DeviceOwnerAdmin, self).get_form(request, obj, **kwargs)
         self._hide_icons(form, ('device',))
-        allowed_pks = MaterialMovement.objects.filter(owner=request.user).values_list('id', flat=True)
-        req_ct = request.GET.get('content_type')
-        ct = ContentType.objects.get(
-            app_label='rovidtav', model='materialmovement').id
-        devices = Device.objects.filter(dev_owner__content_type=ct)
-        devices = devices.filter(#dev_owner__object_id__in=allowed_pks,
-                                 returned_at__isnull=True)
+        ticket_id = request.GET.get('ticket_id')
+        user = request.user
+        if ticket_id:
+            ticket = Ticket.objects.get(id=int(ticket_id))
+            user = ticket.owner or request.user
+        warehouse = Warehouse.objects.get(owner=user)
+        allowed_pks = DeviceOwner.objects.filter(
+            content_type=ContentTypes.warehouse, object_id=warehouse.id).values_list('device__id', flat=True)
+        devices = Device.objects.filter(id__in=allowed_pks, returned_at__isnull=True)
         form.base_fields['device'].queryset = devices
         return form
 
@@ -179,20 +191,9 @@ class DeviceAdmin(CustomDjangoObjectActions,
     readonly_fields = ('returned_at',)
 
     inlines = (NoteInline, HistoryInline)
-    form = DeviceForm
 
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
     change_list_template = os.path.join('rovidtav', 'change_list_noadd.html')
-
-    def get_form(self, request, obj=None, **kwargs):
-        form = super(DeviceAdmin, self).get_form(request, obj, **kwargs)
-        if obj and isinstance(obj.owner.owner, Client):
-            del(form.base_fields['owner'])
-            del(form.declared_fields['owner'])
-        elif obj and isinstance(obj.owner.owner, MaterialMovement):
-            form.base_fields['owner'].initial = obj.owner.object_id
-        # self._hide_icons(form, ('type',))
-        return form
 
     def device_type(self, obj):
         if obj.type:
@@ -341,12 +342,19 @@ class NoteAdmin(HideOnAdmin, ModelAdminRedirect):
 
 
 class MaterialCategoryAdmin(HideOnAdmin, admin.ModelAdmin):
+
     pass
 
 
 class TicketTypeAdmin(HideOnAdmin, admin.ModelAdmin):
 
     form = TicketTypeForm
+
+
+class DeviceReassignEventAdmin(HideOnAdmin, ModelAdminRedirect,
+                               admin.ModelAdmin):
+
+    form = DeviceReassignEventForm
 
 # =============================================================================
 # FILTERS
@@ -448,15 +456,26 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                             admin.ModelAdmin):
     list_per_page = 200
     list_display_links = None
-    list_display = ('direction_icon', 'mm_link', 'created', 'materials_count',
-                    'delivery_num')
+    list_display = ('from_to', 'mm_link', 'created', 'materials_count',
+                    'devices_count', 'fin_icon')
+    list_filter = ('source', 'target', 'finalized')
 
-    inlines = (MMMaterialInline, NoteInline, MMAttachmentInline,
-               MMDeviceInline)
-    change_actions = ('new_note', 'new_attachment', 'new_material',
-                      'new_device',)
+    inlines = (MMMaterialInline, MMDeviceInline, MMAttachmentInline,
+               NoteInline)
+    change_actions = ['finalize', 'new_material', 'new_device',
+                      'new_attachment', 'new_note']
     add_form_template = os.path.join('rovidtav', 'select2.html')
-    fields = ['city', 'owner', 'direction', 'created_at', 'delivery_num']
+    fields = ['direction', 'owner', 'source', 'target', 'created_at', 'delivery_num']
+
+    def __init__(self, model, admin_site):
+        admin.ModelAdmin.__init__(self, model, admin_site)
+        for user in User.objects.filter(groups__name=u'Szerelő'):
+            try:
+                Warehouse.objects.get(owner=user)
+            except Warehouse.DoesNotExist:
+                Warehouse.objects.create(
+                    owner=user, city=City.objects.get(name='Budapest'),
+                    name=user.username)
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -469,12 +488,17 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     def get_change_actions(self, request, object_id, form_url):
         if not object_id:
             return []
-        if is_site_admin(request.user):
-            actions = ('new_note', 'new_attachment',
-                       'new_material', 'new_device')
-            return actions
+        mm = MaterialMovement.objects.get(id=object_id)
+        if not mm.finalized:
+            actions = ['finalize']
         else:
-            return ('new_note',)
+            actions = []
+        if is_site_admin(request.user) and not mm.finalized:
+            actions.extend([act for act in self.change_actions
+                            if act not in ('finalize',)])
+        else:
+            actions.append('new_note')
+        return actions
 
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):
@@ -513,11 +537,67 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     new_material.css_class = 'addlink'
 
     def new_device(self, request, obj):
-        return redirect('/admin/rovidtav/device/add/?owner={}&next={}'
+        return redirect('/admin/rovidtav/devicereassignevent/add/?materialmovement={}&next={}'
                         ''.format(obj.pk, self._returnto(obj, MMDeviceInline)))
 
     new_device.label = u'Eszköz'
     new_device.css_class = 'addlink'
+
+    def finalize(self, request, obj):
+
+        def _substract(warehouse, movement):
+            for material in WarehouseMaterial.objects.filter(
+                    material=movement.material, warehouse=warehouse):
+                if movement.amount < material.amount:
+                    material.amount -= movement.amount
+                    material.save()
+                elif material.amount < movement.amount:
+                    # add message ?
+                    material.delete()
+                else:
+                    material.delete()
+
+        for movement in MaterialMovementMaterial.objects.filter(materialmovement=obj):
+            # Substract from source
+            try:
+                _substract(obj.source, movement)
+            except WarehouseMaterial.DoesNotExist:
+                # add message
+                pass
+            except WarehouseMaterial.MultipleObjectsReturned:
+                # merge them and add message and substract
+                pass
+
+            # Add to target
+            try:
+                material = WarehouseMaterial.objects.get(
+                    material=movement.material, warehouse=obj.target)
+                material.amount += movement.amount
+                material.save()
+            except WarehouseMaterial.DoesNotExist:
+                WarehouseMaterial.objects.create(material=movement.material,
+                                                 warehouse=obj.target,
+                                                 amount=movement.amount,
+                                                 created_by=request.user)
+
+        for dre in DeviceReassignEvent.objects.filter(materialmovement=obj):
+            ct = ContentType.objects.get(
+                app_label='rovidtav', model='warehouse')
+            try:
+                device_owner = DeviceOwner.objects.get(device=dre.device)
+                device_owner.content_type = ct
+                device_owner.object_id = obj.target.id
+            except DeviceOwner.DoesNotExist:
+                DeviceOwner.objects.create(device=dre.device,
+                                           content_type=ct,
+                                           object_id=obj.target.id)
+
+        obj.finalized = True
+        obj.save()
+
+    finalize.label = u'Véglegesít'
+    finalize.onclick = u"return confirm('Biztos?')"
+    finalize.allow_tags = True
 
     def _returnto(self, obj, inline):
         returnto_tab = self.inlines.index(inline)
@@ -528,12 +608,12 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     # FIELDS
     # =========================================================================
 
-    def direction_icon(self, obj):
-        image = 'arrow_in.png' if obj.direction == 1 else 'arrow_out.png'
-        return u'<img style="width: 15px; height: 15px" src="/static/images/{}" />'.format(image)
+    def from_to(self, obj):
+        return (u'{} <img style="width: 15px; height: 10px" src="/static/images'
+                u'/arrow_in.png" /> {}'.format(obj.source, obj.target))
 
-    direction_icon.allow_tags = True
-    direction_icon.short_description = u''
+    from_to.allow_tags = True
+    from_to.short_description = u'Irány'
 
     def created(self, obj):
         return u'{} - {}'.format(obj.created_by, obj.created_at.strftime('%Y-%m-%d'))
@@ -541,16 +621,90 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     created.short_description = u'Rögzítette'
 
     def materials_count(self, obj):
-        return len(MaterialMovementMaterial.objects.filter(materialmovement=obj))
+        return MaterialMovementMaterial.objects.filter(materialmovement=obj).count()
 
-    materials_count.short_description = u'Anyagok száma'
+    materials_count.short_description = u'Anyagok'
+
+    def devices_count(self, obj):
+        return DeviceReassignEvent.objects.filter(materialmovement=obj).count()
+
+    devices_count.short_description = u'Eszközök'
 
     def mm_link(self, obj):
         return (u'<a href="/admin/rovidtav/materialmovement/{}/change#/tab/inline_0/">'
-                u'{}</a>'.format(obj.pk, obj.owner))
+                u'{}</a>'.format(obj.pk, obj.delivery_num))
 
     mm_link.allow_tags = True
-    mm_link.short_description = u'Jegy ID'
+    mm_link.short_description = u'Szállító száma'
+
+    def fin_icon(self, obj):
+        if obj.finalized:
+            return u'<span style="color: #03A101">&#10003;</span>'
+        else:
+            return u'<span style="color: #A10101">&#10007;</span>'
+
+    fin_icon.allow_tags = True
+    fin_icon.short_description = u'Véglegesítve'
+
+
+class WarehouseAdmin(CustomDjangoObjectActions,
+                     InlineActionsModelAdminMixin,
+                     admin.ModelAdmin):
+
+    inlines = [WarehouseMaterialInline, NoteInline, WarehouseDeviceInline]
+    list_display = ['warehouse_name', 'num_devices', 'num_materials']
+    fields = ['name', 'city', 'address']
+    change_actions = ['new_note']
+    ordering = ['-owner', 'name']
+
+    def __init__(self, model, admin_site):
+        admin.ModelAdmin.__init__(self, model, admin_site)
+        self.deviceowner_ct = ContentTypes.deviceowner
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            fields = ('name', 'city', 'address')
+        else:
+            fields = ()
+        fields += (self.readonly_fields or tuple())
+        return fields
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj and not request.path.strip('/').endswith('change'):
+            return []
+        return super(WarehouseAdmin, self).get_inline_instances(request, obj)
+
+    def new_note(self, request, obj):
+        return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
+                        '{}&next={}'.format(obj.get_content_type(),
+                                            obj.pk,
+                                            self._returnto(obj, NoteInline)))
+
+    new_note.label = u'Megjegyzés'
+    new_note.css_class = 'addlink'
+
+    def _returnto(self, obj, inline):
+        returnto_tab = self.inlines.index(inline)
+        return ('/admin/rovidtav/warehouse/{}/change/#/tab/inline_{}/'
+                ''.format(obj.pk, returnto_tab))
+
+    def warehouse_name(self, obj):
+        if obj.owner:
+            return (u'{} {}'.format(obj.owner.first_name, obj.owner.last_name)).strip() or obj.owner.username
+        return u'Raktár - {} ({})'.format(obj.name, obj.city.name)
+
+    warehouse_name.short_description = u''
+
+    def num_devices(self, obj):
+        return DeviceOwner.objects.filter(
+            content_type=ContentTypes.warehouse, object_id=obj.id).count()
+
+    num_devices.short_description = u'Eszközök'
+
+    def num_materials(self, obj):
+        return WarehouseMaterial.objects.filter(warehouse=obj).count()
+
+    num_materials.short_description = u'Anyagok'
 
 
 class TicketAdmin(CustomDjangoObjectActions,
@@ -1208,6 +1362,9 @@ admin.site.register(NetworkTicketWorkItem, NetworkTicketWorkItemAdmin)
 admin.site.register(MaterialMovement, MaterialMovementAdmin)
 admin.site.register(MaterialMovementMaterial, MMMaterialAdmin)
 admin.site.register(MMAttachment, MMAttachmentAdmin)
+admin.site.register(Warehouse, WarehouseAdmin)
+admin.site.register(WarehouseMaterial, WarehouseMaterialAdmin)
+admin.site.register(DeviceReassignEvent, DeviceReassignEventAdmin)
 
 admin.site.register(WorkItem, WorkItemAdmin)
 admin.site.register(TicketWorkItem, TicketWorkItemAdmin)

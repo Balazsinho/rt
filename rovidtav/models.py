@@ -437,8 +437,6 @@ class BaseHub(BaseEntity):
     ticket_tags = models.ManyToManyField(Tag, db_column='cimkek',
                                          blank=True,
                                          verbose_name=u'Cimkék')
-    city = models.ForeignKey(City, db_column='telepules',
-                             verbose_name=u'Település')
     created_at = models.DateTimeField(verbose_name=u'Létrehozva',
                                       default=datetime.now)
     created_by = models.ForeignKey(User, editable=False,
@@ -452,6 +450,8 @@ class BaseTicket(BaseHub):
 
     address = models.CharField(db_column='cim', max_length=120,
                                verbose_name=u'Cím')
+    city = models.ForeignKey(City, db_column='telepules',
+                             verbose_name=u'Település')
     status = models.CharField(
         db_column='statusz',
         null=False,
@@ -521,26 +521,57 @@ class BaseTicket(BaseHub):
                             remark=remark, is_history=True)
 
 
+class Warehouse(BaseEntity):
+
+    city = models.ForeignKey(City, db_column='telepules',
+                             verbose_name=u'Település')
+    name = models.CharField(db_column='nev', max_length=120,
+                            verbose_name=u'Név')
+    address = models.CharField(db_column='cim', max_length=200,
+                               verbose_name=u'Cím', blank=True, null=True)
+
+    # The owner only applies to employee warehouses
+    # It is not possible to add a warehouse with an owner manually
+    owner = models.ForeignKey(
+        User, null=True, blank=True, verbose_name=u'Szerelő')
+
+    def __unicode__(self):
+        return self.name if self.owner else \
+            u'Raktár - {} ({})'.format(self.name, self.city.name)
+
+    class Meta:
+        db_table = 'raktar'
+        verbose_name = u'Készlet'
+        verbose_name_plural = u'Készletek'
+
+
 class MaterialMovement(BaseHub):
 
-    owner = models.ForeignKey(
-        User, related_name="%(class)s_tulajdonos",
-        related_query_name="%(class)s_tulajdonos",
-        null=False, blank=False, verbose_name=u'Szerelő',
-        limit_choices_to={'groups__name': u'Szerelő'},
-        help_text=u'Visszáru és kiadás esetén a szerelőt kell megadni')
     direction = models.IntegerField(
         choices=((Const.ANYAGKIADAS, u'Kiadás'),
                  (Const.ANYAGBEVETEL, u'Bevétel'),
                  (Const.VISSZARU, u'Visszáru')),
-        null=False, blank=False,
+        null=True, blank=True,
         default=Const.ANYAGKIADAS,
         verbose_name=u'Irány'
     )
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=True, blank=True, verbose_name=u'Szerelő / rögzítette',
+        help_text=u'Visszáru és kiadás esetén a szerelőt kell megadni, '
+        u'bevitelnél aki rögzítette')
+    source = models.ForeignKey(Warehouse, verbose_name=u'Honnan',
+                               null=True, blank=True, related_name='honnan')
+    target = models.ForeignKey(Warehouse, verbose_name=u'Hova',
+                               null=True, blank=True, related_name='hova')
     delivery_num = models.CharField(db_column='szallito', max_length=120,
                                     verbose_name=u'Szállító száma',
                                     null=False, blank=False,
                                     default=delivery_num)
+    finalized = models.BooleanField(db_column='veglegesitve',
+                                    verbose_name=u'Véglegesítve',
+                                    default=False)
 
     class Meta:
         db_table = 'anyagmozgas'
@@ -549,6 +580,20 @@ class MaterialMovement(BaseHub):
 
     def __unicode__(self):
         return '{} - {}'.format(self.owner, self.created_at.strftime('%Y-%m-%d'))
+
+
+class DeviceReassignEvent(BaseEntity):
+
+    device = models.ForeignKey(Device, db_column='eszkoz',
+                               verbose_name=u'Eszköz',
+                               related_name='dev_reassign')
+    materialmovement = models.ForeignKey(MaterialMovement)
+    created_at = models.DateTimeField(db_column='letrehozas_datum',
+                                      auto_now_add=True,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, db_column='letrehozas_fh',
+                                   editable=False,
+                                   verbose_name=u'Létrehozó')
 
 
 class Ticket(BaseTicket, JsonExtended):
@@ -818,11 +863,8 @@ class Material(BaseEntity):
         return ('name', 'sn')
 
 
-class TicketMaterial(BaseEntity):
+class BaseMaterial(BaseEntity):
 
-    ticket = models.ForeignKey(Ticket, db_column='jegy',
-                               related_name='anyag_jegy',
-                               verbose_name=u'Jegy')
     material = models.ForeignKey(Material, db_column='anyag',
                                  verbose_name=u'Anyag')
     amount = models.FloatField(db_column='mennyiseg',
@@ -833,67 +875,57 @@ class TicketMaterial(BaseEntity):
                                       verbose_name=u'Létrehozva')
     created_by = models.ForeignKey(User, editable=False,
                                    verbose_name=u'Létrehozó')
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
+
+
+class TicketMaterial(BaseMaterial):
+
+    ticket = models.ForeignKey(Ticket, db_column='jegy',
+                               related_name='anyag_jegy',
+                               verbose_name=u'Jegy')
 
     class Meta:
         db_table = 'anyag_jegy'
         verbose_name = u'Jegy Anyag'
         verbose_name_plural = u'Jegy Anyagok'
 
-    def __unicode__(self):
-        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
-        return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
 
-
-class NetworkTicketMaterial(BaseEntity):
+class NetworkTicketMaterial(BaseMaterial):
 
     ticket = models.ForeignKey(NetworkTicket, db_column='halozat_jegy',
                                related_name='anyag_halozat_jegy',
                                verbose_name=u'Jegy')
-    material = models.ForeignKey(Material, db_column='anyag',
-                                 verbose_name=u'Anyag')
-    amount = models.FloatField(db_column='mennyiseg',
-                               verbose_name=u'Mennyiség',
-                               default=1)
-
-    created_at = models.DateTimeField(auto_now_add=True, editable=False,
-                                      verbose_name=u'Létrehozva')
-    created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létrehozó')
 
     class Meta:
         db_table = 'anyag_halozat_jegy'
         verbose_name = u'Hálózat Jegy Anyag'
         verbose_name_plural = u'Hálüzat Jegy Anyagok'
 
-    def __unicode__(self):
-        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
-        return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
 
+class MaterialMovementMaterial(BaseMaterial):
 
-class MaterialMovementMaterial(BaseEntity):
-
-    materialmovement = models.ForeignKey(
-        MaterialMovement, db_column='halozat_jegy',
-        related_name='anyag_halozat_jegy', verbose_name=u'Jegy')
-    material = models.ForeignKey(Material, db_column='anyag',
-                                 verbose_name=u'Anyag')
-    amount = models.FloatField(db_column='mennyiseg',
-                               verbose_name=u'Mennyiség',
-                               default=1)
-
-    created_at = models.DateTimeField(auto_now_add=True, editable=False,
-                                      verbose_name=u'Létrehozva')
-    created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létrehozó')
+    materialmovement = models.ForeignKey(MaterialMovement)
 
     class Meta:
         db_table = 'anyag_anyagmozgas'
         verbose_name = u'Anyagmozgás Anyag'
         verbose_name_plural = u'Anyagmozgás Anyagok'
 
-    def __unicode__(self):
-        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
-        return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
+
+class WarehouseMaterial(BaseMaterial):
+
+    warehouse = models.ForeignKey(Warehouse)
+
+    class Meta:
+        db_table = 'anyag_raktar'
+        verbose_name = u'Raktár anyag'
+        verbose_name_plural = u'Raktár anyagok'
 
 
 class WorkItem(BaseEntity):
