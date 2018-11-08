@@ -476,7 +476,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
             except Warehouse.DoesNotExist:
                 Warehouse.objects.create(
                     owner=user,
-                    name=(u'{} {}'.format(user.first_name, user.last_name)).strip() or user.username)
+                    name=(u'{} {}'.format(user.last_name, user.first_name)).strip() or user.username)
 
     def has_delete_permission(self, request, obj=None):
         return False
