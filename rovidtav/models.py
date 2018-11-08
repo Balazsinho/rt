@@ -332,10 +332,15 @@ class DeviceOwner(BaseEntity):
                 owner = Const.NO_OWNER if not self.owner else \
                     self.name
                 remark = u'Új tulajdonos: {} >> {}'.format(prev_owner, owner)
-                Note.objects.create(
-                    content_type=self.device.get_content_type_obj(),
-                    object_id=self.device.pk,
-                    remark=remark, is_history=True)
+                note_params = {
+                    'content_type': self.device.get_content_type_obj(),
+                    'object_id': self.device.pk,
+                    'remark': remark,
+                    'is_history':True,
+                }
+                if kwargs.get('user'):
+                    note_params.update({'created_by': kwargs['user']})
+                Note.objects.create(**note_params)
 
         return super(DeviceOwner, self).save(*args, **kwargs)
 
