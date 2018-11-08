@@ -692,7 +692,7 @@ class WarehouseAdmin(CustomDjangoObjectActions,
 
     def warehouse_name(self, obj):
         if obj.owner:
-            return (u'{} {}'.format(obj.owner.first_name, obj.owner.last_name)).strip() or obj.owner.username
+            return obj.name
         return u'Raktár - {} ({})'.format(obj.name, obj.city.name)
 
     warehouse_name.short_description = u''
