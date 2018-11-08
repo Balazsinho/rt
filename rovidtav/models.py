@@ -524,7 +524,8 @@ class BaseTicket(BaseHub):
 class Warehouse(BaseEntity):
 
     city = models.ForeignKey(City, db_column='telepules',
-                             verbose_name=u'Település')
+                             verbose_name=u'Település',
+                             blank=True, null=True)
     name = models.CharField(db_column='nev', max_length=120,
                             verbose_name=u'Név')
     address = models.CharField(db_column='cim', max_length=200,
