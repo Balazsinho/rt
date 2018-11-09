@@ -15,7 +15,6 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
 from django.contrib.admin.filters import SimpleListFilter
-from django.contrib.contenttypes.models import ContentType
 # from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
