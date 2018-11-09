@@ -10,6 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import pytz
 
+from unidecode import unidecode
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
@@ -826,7 +827,7 @@ class TicketAdmin(CustomDjangoObjectActions,
                     if att.is_image() and not att.name.lower().startswith('imdb'):
                         attachments.append(att)
                 for att in attachments:
-                    archive.writestr('{}/{}'.format(ticket.ext_id, att.name),
+                    archive.writestr('{}/{}'.format(ticket.ext_id, unidecode(att.name)),
                                      att.data)
 
         temp.seek(0)
