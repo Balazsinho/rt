@@ -30,7 +30,7 @@ class SummaryList(CustomReportAdmin):
         'payoffs'
     ]
 
-    list_filter = ['owner', 'payoffs', 'city__primer', 'created_at', 'closed_at']
+    list_filter = ['owner', 'payoffs', 'city__primer', 'ticket_tags', 'created_at', 'closed_at']
     list_filter_classes = {
         'city__primer': ChoiceField,
     }
