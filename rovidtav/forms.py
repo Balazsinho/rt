@@ -176,21 +176,30 @@ class NoteForm(forms.ModelForm):
 
 class DeviceOwnerForm(forms.ModelForm):
 
+    sn = forms.CharField(label=u'Szériaszám')
+
     class Meta:
         model = DeviceOwner
         fields = '__all__'
         widgets = {
             'object_id': forms.HiddenInput(),
             'content_type': forms.HiddenInput(),
+            'device': forms.HiddenInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        super(DeviceOwnerForm, self).__init__(*args, **kwargs)
+        self.fields['device'].required = False
+
     def save(self, commit=True):
+        device, _ = Device.objects.get_or_create(sn=self.cleaned_data['sn'])
         try:
-            self.instance = DeviceOwner.objects.get(device=self.instance.device)
-            self.instance.content_type = self.cleaned_data.get('content_type', None)
-            self.instance.object_id = self.cleaned_data.get('object_id', None)
+            self.instance = DeviceOwner.objects.get(device=device)
         except DeviceOwner.DoesNotExist:
-            pass
+            self.instance.device = device
+
+        self.instance.content_type = self.cleaned_data['content_type']
+        self.instance.object_id = self.cleaned_data['object_id']
         return super(DeviceOwnerForm, self).save(commit=commit)
 
 
