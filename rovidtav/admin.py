@@ -14,7 +14,6 @@ from unidecode import unidecode
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
-from django.contrib.admin.filters import SimpleListFilter
 # from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
@@ -23,44 +22,34 @@ from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
 
-# from jet.filters import DateRangeFilter
-from inline_actions.admin import InlineActionsModelAdminMixin
-
 from rovidtav import settings
 
-from .admin_helpers import (ModelAdminRedirect, SpecialOrderingChangeList,
-                            CustomDjangoObjectActions, HideIcons,
-                            is_site_admin, DeviceOwnerListFilter,
-                            get_technician_choices,
-                            get_network_technician_choices,
-                            get_unread_messages_count,
-                            get_unread_messages, send_assign_mail,
-                            ContentTypes)
-from .admin_inlines import (AttachmentInline, DeviceInline, NoteInline,
-                            TicketInline, HistoryInline, MaterialInline,
-                            WorkItemInline, TicketDeviceInline,
-                            SystemEmailInline, NTAttachmentInline,
-                            NetworkMaterialInline, NetworkWorkItemInline,
-                            PayoffTicketInline, MMMaterialInline,
-                            MMDeviceInline, MMAttachmentInline)
-from .models import (Attachment, City, Client, Device, DeviceType, Ticket,
-                     Note, TicketType, MaterialCategory, Material,
-                     TicketMaterial, WorkItem, TicketWorkItem, Payoff,
-                     NetworkTicket, NTAttachment, SystemEmail,
-                     ApplicantAttributes, DeviceOwner, Tag, Const,
-                     NetworkTicketMaterial, NetworkTicketWorkItem,
-                     MaterialMovement, MaterialMovementMaterial, Warehouse,
-                     WarehouseMaterial)
-from .forms import (AttachmentForm, NoteForm, TicketMaterialForm,
-                    TicketWorkItemForm, DeviceOwnerForm,
-                    TicketForm, TicketTypeForm, NetworkTicketWorkItemForm,
-                    NetworkTicketMaterialForm, PayoffForm, WorkItemForm,
-                    MaterialForm)
-from rovidtav.models import MMAttachment, DeviceReassignEvent
-from rovidtav.forms import MMAttachmentForm, MMMaterialForm,\
-    MaterialMovementForm, DeviceReassignEventForm
-from rovidtav.admin_inlines import WarehouseMaterialInline,\
+from inline_actions.admin import InlineActionsModelAdminMixin
+from rovidtav.admin_helpers import ModelAdminRedirect, is_site_admin,\
+    CustomDjangoObjectActions, HideIcons, SpecialOrderingChangeList,\
+    DeviceOwnerListFilter, get_unread_messages_count,\
+    get_unread_messages, send_assign_mail, ContentTypes
+from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
+    TicketInline, HistoryInline, MaterialInline, WorkItemInline,\
+    TicketDeviceInline, SystemEmailInline, NTAttachmentInline, MMDeviceInline,\
+    NetworkMaterialInline, NetworkWorkItemInline, PayoffTicketInline,\
+    MMMaterialInline, MMAttachmentInline, WarehouseMaterialInline,\
     WarehouseDeviceInline, MMMaterialReadonlyInline
+from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
+    Ticket, Note, TicketType, MaterialCategory, Material, TicketMaterial,\
+    WorkItem, TicketWorkItem, Payoff, NetworkTicket, NTAttachment,\
+    SystemEmail, ApplicantAttributes, DeviceOwner, Tag, Const,\
+    NetworkTicketMaterial, NetworkTicketWorkItem, MaterialMovement,\
+    MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
+    DeviceReassignEvent
+from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
+    TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
+    NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
+    WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
+    DeviceReassignEventForm
+from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
+    PayoffFilter
+from jet.filters import DateRangeFilter
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -187,7 +176,7 @@ class DeviceAdmin(CustomDjangoObjectActions,
 
     list_display = ('sn', 'device_type', 'owner_link', 'returned_at')
     search_fields = ('type__name', 'sn')
-    list_filter = ('type__name', DeviceOwnerListFilter)
+    list_filter = (DeviceOwnerListFilter,)
     change_actions = ('new_note',)
     readonly_fields = ('returned_at',)
 
@@ -203,11 +192,12 @@ class DeviceAdmin(CustomDjangoObjectActions,
     device_type.short_description = u'Típus'
 
     def owner_link(self, obj):
-        if isinstance(obj.owner.owner, Client):
-            return (u'<a href="/admin/rovidtav/client/{}/change">{}</a>'
-                    u''.format(obj.owner.owner.pk, unicode(obj.owner.owner)))
-        else:
-            return obj.owner.owner
+        if obj.owner:
+            if isinstance(obj.owner.owner, Client):
+                return (u'<a href="/admin/rovidtav/client/{}/change">{}</a>'
+                        u''.format(obj.owner.owner.pk, unicode(obj.owner.owner)))
+            else:
+                return obj.owner.owner
 
     owner_link.allow_tags = True
     owner_link.short_description = u'Tulajdonos'
@@ -356,96 +346,6 @@ class DeviceReassignEventAdmin(HideOnAdmin, ModelAdminRedirect,
                                admin.ModelAdmin):
 
     form = DeviceReassignEventForm
-
-# =============================================================================
-# FILTERS
-# =============================================================================
-
-
-class OwnerFilter(SimpleListFilter):
-
-    title = u'Szerelő'
-    parameter_name = 'owner'
-
-    def lookups(self, request, model_admin):
-        return get_technician_choices()
-
-    def queryset(self, request, queryset):
-        if self.value() not in (None, 'all'):
-            return queryset.filter(owner=self.value())
-        else:
-            return queryset
-
-
-class NetworkOwnerFilter(SimpleListFilter):
-
-    title = u'Szerelő'
-    parameter_name = 'owner'
-
-    def lookups(self, request, model_admin):
-        return get_network_technician_choices()
-
-    def queryset(self, request, queryset):
-        if self.value() not in (None, 'all'):
-            return queryset.filter(owner=self.value())
-        else:
-            return queryset
-
-
-class PayoffFilter(SimpleListFilter):
-
-    title = u'Elszámolás'
-    parameter_name = 'payoff'
-
-    def lookups(self, request, model_admin):
-        payoff_choices = [(p.pk, unicode(p)) for p in Payoff.objects.all()]
-        return [('empty', u'Nincs elszámolva')] + payoff_choices
-
-    def queryset(self, request, queryset):
-        if self.value() == 'empty':
-            return queryset.filter(payoffs__isnull=True)
-        elif self.value() in (None, 'all'):
-            return queryset
-        else:
-            return queryset.filter(payoffs=self.value())
-
-
-class IsClosedFilter(SimpleListFilter):
-
-    title = u'Státusz'
-    parameter_name = 'status'
-
-    def lookups(self, request, model_admin):
-        return (
-            (None, u''),
-            ('all', u'Mind'),
-            ('open', u'Nyitott'),
-            ('closed', u'Lezárt'),
-        )
-
-    def choices(self, cl):
-        for lookup, title in self.lookup_choices:
-            yield {
-                'selected': self.value() == lookup,
-                'query_string': cl.get_query_string({
-                    self.parameter_name: lookup,
-                }, []),
-                'display': title,
-            }
-
-    def queryset(self, request, queryset):
-        if self.value() is None:
-            self.used_parameters[self.parameter_name] = 'open'
-
-        if self.value() == 'open':
-            return queryset.filter(status__in=(u'Új', u'Kiadva',
-                                               u'Folyamatban'))
-        elif self.value() == 'closed':
-            return queryset.filter(status__in=(u'Lezárva - Kész',
-                                               u'Lezárva - Eredménytelen',
-                                               u'Duplikált'))
-        elif self.value() == 'all':
-            return queryset
 
 # =============================================================================
 # ADMIN PAGES
@@ -739,6 +639,7 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     list_per_page = 200
     list_display_links = None
+    list_filter = (('created_at', DateRangeFilter),)
     list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
                     # 'client_link',
                     'ticket_type', 'created_at_fmt',
@@ -766,7 +667,7 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     class Media:
         css = {
-            'all': ('css/ticket.css',)
+            #'all': ('css/ticket.css',)
         }
         js = ('js/ticket_list.js',)
 
@@ -855,9 +756,9 @@ class TicketAdmin(CustomDjangoObjectActions,
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return (
+                        ('created_at', DateRangeFilter),
                         'city__primer', OwnerFilter, IsClosedFilter,
                         'has_images', 'ticket_tags', PayoffFilter,
-                        # ('created_at', DateRangeFilter),
                         )
             else:
                 return (IsClosedFilter,)

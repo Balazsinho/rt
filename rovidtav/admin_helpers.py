@@ -11,7 +11,7 @@ from django.http.response import HttpResponseRedirect
 from django.utils.text import capfirst
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList, ORDER_VAR
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.admin import GenericTabularInline,\
     GenericStackedInline
@@ -22,7 +22,7 @@ from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
 
 from rovidtav.models import DeviceOwner, Const, SystemEmail, \
-    MaterialMovementMaterial, MaterialMovement
+    MaterialMovementMaterial, MaterialMovement, Warehouse, Device
 import settings
 
 
@@ -40,44 +40,25 @@ class ContentTypes(object):
 
 
 class DeviceOwnerListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
     title = u'Tulajdonos (szerelő)'
-
-    # Parameter for the filter that will be used in the URL query.
     parameter_name = 'owner_employee'
 
     def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples. The first element in each
-        tuple is the coded value for the option that will
-        appear in the URL query. The second element is the
-        human-readable name for the option that will appear
-        in the right sidebar.
-        """
-        return [(u.pk, u.username) for u in User.objects.all()]
+        return [(w.pk, str(w)) for w in Warehouse.objects.all()]
 
     def queryset(self, request, queryset):
-        """
-        Returns the filtered queryset based on the value
-        provided in the query string and retrievable via
-        `self.value()`.
-        """
-        # Compare the requested value (either '80s' or '90s')
-        # to decide how to filter the queryset.
-
+        if request.user.is_superuser and not self.value():
+            return Device.objects.all()
         if self.value():
-            mm_ct = ContentTypes.materialmovement
-            user_ct = ContentTypes.user
-            mm_ids = MaterialMovement.objects.filter(
-                owner=self.value()).values_list('id', flat=True)
-            device_pks = list(DeviceOwner.objects.filter(
-                content_type=mm_ct,
-                object_id__in=mm_ids).prefetch_related('device').values_list('device__id', flat=True))
-            device_pks.extend(DeviceOwner.objects.filter(
-                content_type=user_ct,
-                object_id=self.value()).prefetch_related('device').values_list('device__id', flat=True))
-            return queryset.filter(pk__in=device_pks)
+            try:
+                wh = Warehouse.objects.get(pk=self.value())
+                pks = DeviceOwner.objects.filter(
+                    content_type=wh.get_content_type(),
+                    object_id=int(self.value()))
+                return Device.objects.filter(
+                    id__in=pks.values_list('device_id', flat=True))
+            except Warehouse.DoesNotExist:
+                return Device.objects.none()
 
 
 class CustomDjangoObjectActions(DjangoObjectActions):
