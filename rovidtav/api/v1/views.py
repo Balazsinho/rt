@@ -204,13 +204,46 @@ def add_ticket_attachment(request):
     return Response({'OK': 'Done'})
 
 
+def _orient_image(attachment, thumbnail=False):
+    temp_buff = StringIO.StringIO()
+    temp_buff.write(attachment.data)
+    temp_buff.seek(0)
+
+    img = Image.open(temp_buff)
+    if thumbnail:
+        img.thumbnail((IMAGE_THUMB_PX, IMAGE_THUMB_PX), Image.ANTIALIAS)
+    temp_buff = StringIO.StringIO()
+    temp_buff.name = attachment.name
+
+    try:
+        raw_exif = img._getexif() or {}
+    except AttributeError:
+        raw_exif = {}
+    exif = {
+        ExifTags.TAGS[k]: v
+        for k, v in raw_exif.items()
+        if k in ExifTags.TAGS
+    }
+
+    orientation = exif.get('Orientation')
+    if orientation == 6:
+        img = img.rotate(-90, expand=True)
+    elif orientation == 8:
+        img = img.rotate(90, expand=True)
+    img.save(temp_buff)
+    temp_buff.seek(0)
+    return temp_buff.read()
+
+
 def _download_from_model(model, pk):
     try:
         att = model.objects.get(pk=pk)
-        return HttpResponse(
-            att.data,
+        response = HttpResponse(
+            _orient_image(att, thumbnail=False),
             content_type=att.content_type,
         )
+        response['Content-Disposition'] = att.content_disposition
+        return response
     except model.DoesNotExist:
         return _error('File not found')
 
@@ -220,33 +253,7 @@ def _thumbnail_from_model(model, pk):
         att = model.objects.get(pk=pk)
 
         if att.is_image():
-            temp_buff = StringIO.StringIO()
-            temp_buff.write(att.data)
-            temp_buff.seek(0)
-
-            img = Image.open(temp_buff)
-            img.thumbnail((IMAGE_THUMB_PX, IMAGE_THUMB_PX), Image.ANTIALIAS)
-            temp_buff = StringIO.StringIO()
-            temp_buff.name = att.name
-
-            try:
-                raw_exif = img._getexif() or {}
-            except AttributeError:
-                raw_exif = {}
-            exif = {
-                ExifTags.TAGS[k]: v
-                for k, v in raw_exif.items()
-                if k in ExifTags.TAGS
-            }
-
-            orientation = exif.get('Orientation')
-            if orientation == 6:
-                img = img.rotate(-90, expand=True)
-            elif orientation == 8:
-                img = img.rotate(90, expand=True)
-            img.save(temp_buff)
-            temp_buff.seek(0)
-            return HttpResponse(temp_buff.read(),
+            return HttpResponse(_orient_image(att, thumbnail=True),
                                 content_type=att.content_type)
 
         else:

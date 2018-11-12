@@ -68,58 +68,43 @@ class BaseAttachmentInline(RemoveInlineAction,
         return u'{} - {}'.format(obj.created_by, created_at)
 
     def f_thumbnail(self, obj):
-        raise NotImplementedError()
+        if obj.is_image():
+            clickable_txt = (u'<img src="/api/v1/{}/{}" />'
+                             u''.format(self.thumbnail_lnk, obj.pk))
+            download = u' download="{}"'.format(obj.name)
+        else:
+            clickable_txt = (u'<img src="/api/v1/{}/{}" />'
+                             u'<br />{}'.format(self.thumbnail_lnk,
+                                                obj.pk, obj.name))
+            download = u' download="{}"'.format(obj.name)
+
+        return (u'<a target="_blank" href="/api/v1/{}/{}"{}>'
+                u'{}</a>'.format(self.attachment_lnk, obj.pk,
+                                 download, clickable_txt))
+
+    f_thumbnail.allow_tags = True
+    f_thumbnail.short_description = u'Megnyitás'
 
 
 class AttachmentInline(BaseAttachmentInline):
 
     model = Attachment
-
-    def f_thumbnail(self, obj):
-        if obj.is_image():
-            clickable_txt = (u'<img src="/api/v1/thumbnail/{}" />'
-                             u''.format(obj.pk))
-            download = u' download="{}"'.format(obj.name)
-        else:
-            clickable_txt = (u'<img src="/api/v1/thumbnail/{}" />'
-                             u'<br />{}'.format(obj.pk, obj.name))
-            download = u''
-
-        return (u'<a target="_blank" href="/api/v1/attachment/{}"{}>'
-                u'{}</a>'.format(obj.pk, download, clickable_txt))
-
-    f_thumbnail.allow_tags = True
-    f_thumbnail.short_description = u'Megnyitás'
+    thumbnail_lnk = 'thumbnail'
+    attachment_lnk = 'attachment'
 
 
 class NTAttachmentInline(BaseAttachmentInline):
 
     model = NTAttachment
-
-    def f_thumbnail(self, obj):
-        clickable_txt = (u'<img src="/api/v1/ntthumbnail/{}" />'
-                         u'<br />{}'.format(obj.pk, obj.name))
-
-        return (u'<a target="_blank" href="/api/v1/ntattachment/{}">'
-                u'{}</a>'.format(obj.pk, clickable_txt))
-
-    f_thumbnail.allow_tags = True
-    f_thumbnail.short_description = u'Megnyitás'
+    thumbnail_lnk = 'ntthumbnail'
+    attachment_lnk = 'ntattachment'
 
 
 class MMAttachmentInline(BaseAttachmentInline):
 
     model = MMAttachment
-
-    def f_thumbnail(self, obj):
-        clickable_txt = (u'<img src="/api/v1/mmthumbnail/{}" />'
-                         u'<br />{}'.format(obj.pk, obj.name))
-
-        return (u'<a target="_blank" href="/api/v1/mmattachment/{}">'
-                u'{}</a>'.format(obj.pk, clickable_txt))
-
-    f_thumbnail.allow_tags = True
-    f_thumbnail.short_description = u'Megnyitás'
+    thumbnail_lnk = 'mmthumbnail'
+    attachment_lnk = 'mmattachment'
 
 
 class BaseMaterialInline(ShowCalcFields):

@@ -102,7 +102,6 @@ class Const(object):
         '.tiff': 'image/tiff',
         '.xls': 'application/vnd.ms-excel',
         '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        '.dwg': 'application/octet-stream',
     }
 
     @staticmethod
@@ -1072,7 +1071,15 @@ class BaseAttachment(BaseEntity):
     @property
     def content_type(self):
         _, ext = os.path.splitext(self.name)
-        return Const.EXT_MAP.get(ext.lower(), 'text/html')
+        return Const.EXT_MAP.get(ext.lower(), 'application/force-download')
+
+    @property
+    def content_disposition(self):
+        if self.is_image():
+            cd = 'inline'
+        else:
+            cd = 'attachment'
+        return '{}; filename="{}"'.format(cd, self.name)
 
     def is_image(self):
         return self.content_type.startswith('image')
