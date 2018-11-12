@@ -49,7 +49,6 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     DeviceReassignEventForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter
-from jet.filters import DateRangeFilter
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -648,7 +647,6 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     list_per_page = 200
     list_display_links = None
-    list_filter = (('created_at', DateRangeFilter),)
     list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
                     # 'client_link',
                     'ticket_type', 'created_at_fmt',
@@ -765,7 +763,6 @@ class TicketAdmin(CustomDjangoObjectActions,
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return (
-                        ('created_at', DateRangeFilter),
                         'city__primer', OwnerFilter, IsClosedFilter,
                         'has_images', 'ticket_tags', PayoffFilter,
                         )
