@@ -39,7 +39,9 @@ class PreserveFilters(object):
             q = unicode(request.META.get('QUERY_STRING', None))
             if admin_session and admin_session == q:
                 return
-            if admin_session:
+            elif admin_session and not q.strip():
+                return
+            elif admin_session:
                 new_url = request.path + '?' + admin_session
                 return http.HttpResponsePermanentRedirect(new_url)
 
