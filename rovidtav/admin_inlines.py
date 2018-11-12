@@ -15,7 +15,7 @@ from rovidtav.admin_helpers import (
 from rovidtav.models import (
     Attachment, Ticket, Note, TicketMaterial, TicketWorkItem, DeviceOwner,
     SystemEmail, NTAttachment, NetworkTicketMaterial, NetworkTicketWorkItem,
-    Payoff, MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
+    MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
     DeviceReassignEvent)
 
 
