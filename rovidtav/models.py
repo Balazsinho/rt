@@ -102,7 +102,7 @@ class Const(object):
         '.tiff': 'image/tiff',
         '.xls': 'application/vnd.ms-excel',
         '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        '.dwg': 'image/x-dwg',
+        '.dwg': 'application/octet-stream',
     }
 
     @staticmethod
