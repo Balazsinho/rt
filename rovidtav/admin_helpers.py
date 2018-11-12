@@ -37,6 +37,7 @@ class ContentTypes(object):
     materialmovement = _get_ct('materialmovement')
     user = _get_ct(app_label='auth', model='user')
     warehouse = _get_ct('warehouse')
+    client = _get_ct('client')
 
 
 class DeviceOwnerListFilter(admin.SimpleListFilter):

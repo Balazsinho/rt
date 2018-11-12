@@ -13,7 +13,8 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
-    DeviceReassignEvent
+    DeviceReassignEvent, Warehouse
+from rovidtav.admin_helpers import ContentTypes
 
 
 class AttachmentForm(forms.ModelForm):
@@ -176,7 +177,8 @@ class NoteForm(forms.ModelForm):
 
 class DeviceOwnerForm(forms.ModelForm):
 
-    sn = forms.CharField(label=u'Szériaszám')
+    sn = forms.CharField(label=u'Szériaszám', required=False)
+    ticket_id = forms.CharField(required=False, widget=forms.HiddenInput())
 
     class Meta:
         model = DeviceOwner
@@ -184,15 +186,39 @@ class DeviceOwnerForm(forms.ModelForm):
         widgets = {
             'object_id': forms.HiddenInput(),
             'content_type': forms.HiddenInput(),
-            'device': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
         super(DeviceOwnerForm, self).__init__(*args, **kwargs)
         self.fields['device'].required = False
+        ticket = None
+
+        data = self.initial or self.data
+        if data['content_type'] == str(ContentTypes.client.id):
+            try:
+                ticket = Ticket.objects.get(id=data['ticket_id'])
+            except KeyError, Ticket.DoesNotExist:
+                pass
+
+        if ticket and ticket.owner:
+            warehouse = Warehouse.objects.get(owner=ticket.owner)
+            allowed_pks = DeviceOwner.objects.filter(
+                content_type=ContentTypes.warehouse, object_id=warehouse.id).values_list('device__id', flat=True)
+            self.fields['device'].queryset = Device.objects.filter(id__in=allowed_pks, returned_at__isnull=True)
+        else:
+            self.fields['device'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super(DeviceOwnerForm, self).clean()
+        if not cleaned_data['sn'] and not cleaned_data['device']:
+            raise forms.ValidationError(u'Nem maradhat minden mező üresen')
+        return cleaned_data
 
     def save(self, commit=True):
-        device, _ = Device.objects.get_or_create(sn=self.cleaned_data['sn'])
+        if self.cleaned_data['device']:
+            device = self.cleaned_data['device']
+        else:
+            device, _ = Device.objects.get_or_create(sn=self.cleaned_data['sn'])
         try:
             self.instance = DeviceOwner.objects.get(device=device)
         except DeviceOwner.DoesNotExist:
