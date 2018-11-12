@@ -555,6 +555,23 @@ class Warehouse(BaseEntity):
         verbose_name_plural = u'Készletek'
 
 
+class WarehouseLocation(BaseEntity):
+
+    warehouse = models.ForeignKey(Warehouse, verbose_name=u'Raktár',
+                                  null=False, blank=False,
+                                  limit_choices_to={'owner__isnull': True})
+    name = models.CharField(db_column='hely_neve', max_length=120,
+                            verbose_name=u'Hely neve')
+
+    class Meta:
+        db_table = 'raktar_hely'
+        verbose_name = u'Raktár hely'
+        verbose_name_plural = u'Raktár helyek'
+
+    def __unicode__(self):
+        return self.name
+
+
 class MaterialMovement(BaseHub):
 
     source = models.ForeignKey(Warehouse, verbose_name=u'Honnan',
@@ -911,6 +928,8 @@ class NetworkTicketMaterial(BaseMaterial):
 class MaterialMovementMaterial(BaseMaterial):
 
     materialmovement = models.ForeignKey(MaterialMovement)
+    location_to = models.ForeignKey(WarehouseLocation, null=True, blank=True,
+                                    verbose_name=u'Raktár hely')
 
     class Meta:
         db_table = 'anyag_anyagmozgas'
@@ -921,6 +940,7 @@ class MaterialMovementMaterial(BaseMaterial):
 class WarehouseMaterial(BaseMaterial):
 
     warehouse = models.ForeignKey(Warehouse)
+    location = models.ForeignKey(WarehouseLocation, null=True, blank=True)
 
     class Meta:
         db_table = 'anyag_raktar'

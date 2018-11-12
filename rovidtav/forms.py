@@ -13,7 +13,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
-    DeviceReassignEvent, Warehouse
+    DeviceReassignEvent, Warehouse, WarehouseLocation
 from rovidtav.admin_helpers import ContentTypes
 
 
@@ -86,6 +86,18 @@ class MMMaterialForm(forms.ModelForm):
           'materialmovement': forms.HiddenInput(),
         }
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super(MMMaterialForm, self).__init__(*args, **kwargs)
+        data = self.initial or self.data
+        materialmovement = MaterialMovement.objects.get(
+            id=int(data['materialmovement']))
+        locations = materialmovement.target.warehouselocation_set.all()
+        if locations:
+            self.fields['location_to'].queryset = locations
+        else:
+            self.fields['location_to'].widget = forms.HiddenInput()
+        pass
 
 
 class TicketWorkItemForm(forms.ModelForm):
@@ -323,3 +335,13 @@ class MaterialForm(forms.ModelForm):
     technologies = forms.MultipleChoiceField(choices=Const.get_tech_choices(),
                                              required=False,
                                              label=u'Technológia')
+
+
+class WarehouseLocationForm(forms.ModelForm):
+
+    class Meta:
+        model = WarehouseLocation
+        fields = '__all__'
+        widgets = {
+            'warehouse': forms.HiddenInput(),
+        }

@@ -16,7 +16,7 @@ from rovidtav.models import (
     Attachment, Ticket, Note, TicketMaterial, TicketWorkItem, DeviceOwner,
     SystemEmail, NTAttachment, NetworkTicketMaterial, NetworkTicketWorkItem,
     MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
-    DeviceReassignEvent)
+    DeviceReassignEvent, WarehouseLocation)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -122,8 +122,7 @@ class MMAttachmentInline(BaseAttachmentInline):
     f_thumbnail.short_description = u'Megnyitás'
 
 
-class BaseMaterialInline(RemoveInlineAction,
-                         ShowCalcFields):
+class BaseMaterialInline(ShowCalcFields):
 
     """
     Material inline for the ticket page
@@ -156,17 +155,20 @@ class BaseMaterialInline(RemoveInlineAction,
     f_material_comes_from.short_description = u'Biztosítja'
 
 
-class MaterialInline(BaseMaterialInline, ReadOnlyCompactInline):
+class MaterialInline(BaseMaterialInline, ReadOnlyCompactInline,
+                     RemoveInlineAction):
 
     model = TicketMaterial
 
 
-class NetworkMaterialInline(BaseMaterialInline, ReadOnlyCompactInline):
+class NetworkMaterialInline(BaseMaterialInline, ReadOnlyCompactInline,
+                            RemoveInlineAction):
 
     model = NetworkTicketMaterial
 
 
-class MMMaterialInline(BaseMaterialInline, CompactInline):
+class MMMaterialInline(BaseMaterialInline, CompactInline,
+                       RemoveInlineAction):
 
     model = MaterialMovementMaterial
     extra = 0
@@ -174,18 +176,22 @@ class MMMaterialInline(BaseMaterialInline, CompactInline):
 
 class MMMaterialReadonlyInline(BaseMaterialInline, ReadOnlyCompactInline):
 
-    actions = []
     model = MaterialMovementMaterial
     extra = 0
 
 
 class WarehouseMaterialInline(BaseMaterialInline, CompactInline):
 
-    actions = []
-    readonly_fields = ['amount']
-
     model = WarehouseMaterial
     extra = 0
+    readonly_fields = ['amount']
+    fields = ('f_material_name', 'f_location',
+              'f_material_category', 'amount', 'f_material_unit', )
+
+    def f_location(self, obj):
+        return obj.location.name
+
+    f_location.short_description = u'Anyag helye'
 
 
 class BaseWorkItemInline(RemoveInlineAction,
@@ -477,3 +483,8 @@ class WarehouseDeviceInline(CustomInlineActionsMixin, ShowCalcFields,
         return obj.device.sn
 
     f_sn.short_description = u'Vonalkód'
+
+
+class WarehouseLocationInline(ReadOnlyCompactInline):
+
+    model = WarehouseLocation

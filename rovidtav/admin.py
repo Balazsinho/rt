@@ -34,19 +34,19 @@ from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     TicketDeviceInline, SystemEmailInline, NTAttachmentInline, MMDeviceInline,\
     NetworkMaterialInline, NetworkWorkItemInline, PayoffTicketInline,\
     MMMaterialInline, MMAttachmentInline, WarehouseMaterialInline,\
-    WarehouseDeviceInline, MMMaterialReadonlyInline
+    WarehouseDeviceInline, MMMaterialReadonlyInline, WarehouseLocationInline
 from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     Ticket, Note, TicketType, MaterialCategory, Material, TicketMaterial,\
     WorkItem, TicketWorkItem, Payoff, NetworkTicket, NTAttachment,\
     SystemEmail, ApplicantAttributes, DeviceOwner, Tag, Const,\
     NetworkTicketMaterial, NetworkTicketWorkItem, MaterialMovement,\
     MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
-    DeviceReassignEvent
+    DeviceReassignEvent, WarehouseLocation
 from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
     WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
-    DeviceReassignEventForm
+    DeviceReassignEventForm, WarehouseLocationForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter
 
@@ -140,6 +140,11 @@ class CityAdmin(HideOnAdmin, admin.ModelAdmin):
 class WarehouseMaterialAdmin(HideOnAdmin, admin.ModelAdmin):
 
     pass
+
+
+class WarehouseLocationAdmin(HideOnAdmin, ModelAdminRedirect):
+
+    form = WarehouseLocationForm
 
 
 class TagAdmin(HideOnAdmin, admin.ModelAdmin):
@@ -488,12 +493,15 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                 material = WarehouseMaterial.objects.get(
                     material=movement.material, warehouse=obj.target)
                 material.amount += movement.amount
+                if movement.location_to:
+                    material.location = movement.location_to
                 material.save()
             except WarehouseMaterial.DoesNotExist:
                 WarehouseMaterial.objects.create(material=movement.material,
                                                  warehouse=obj.target,
                                                  amount=movement.amount,
-                                                 created_by=request.user)
+                                                 created_by=request.user,
+                                                 location=movement.location_to)
 
         for dre in DeviceReassignEvent.objects.filter(materialmovement=obj):
             try:
@@ -567,10 +575,11 @@ class WarehouseAdmin(CustomDjangoObjectActions,
                      InlineActionsModelAdminMixin,
                      admin.ModelAdmin):
 
-    inlines = [WarehouseMaterialInline, NoteInline, WarehouseDeviceInline]
+    inlines = [WarehouseMaterialInline, NoteInline, WarehouseDeviceInline,
+               WarehouseLocationInline]
     list_display = ['warehouse_name', 'num_devices', 'num_materials']
     fields = ['name', 'city', 'address']
-    change_actions = ['new_note']
+    change_actions = ['new_note', 'new_location']
     ordering = ['owner__last_name', 'owner__first_name', 'name']
 
     def __init__(self, model, admin_site):
@@ -607,6 +616,15 @@ class WarehouseAdmin(CustomDjangoObjectActions,
 
     new_note.label = u'Megjegyzés'
     new_note.css_class = 'addlink'
+
+    def new_location(self, request, obj):
+        return redirect('/admin/rovidtav/warehouselocation/add/?warehouse='
+                        '{}&next={}'.format(
+                            obj.pk,
+                            self._returnto(obj, WarehouseLocationInline)))
+
+    new_location.label = u'Raktár hely'
+    new_location.css_class = 'addlink'
 
     def _returnto(self, obj, inline):
         returnto_tab = self.inlines.index(inline)
@@ -1287,6 +1305,7 @@ admin.site.register(MaterialMovement, MaterialMovementAdmin)
 admin.site.register(MaterialMovementMaterial, MMMaterialAdmin)
 admin.site.register(MMAttachment, MMAttachmentAdmin)
 admin.site.register(Warehouse, WarehouseAdmin)
+admin.site.register(WarehouseLocation, WarehouseLocationAdmin)
 admin.site.register(WarehouseMaterial, WarehouseMaterialAdmin)
 admin.site.register(DeviceReassignEvent, DeviceReassignEventAdmin)
 
