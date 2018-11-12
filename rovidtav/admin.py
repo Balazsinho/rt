@@ -872,6 +872,8 @@ class TicketAdmin(CustomDjangoObjectActions,
     def display_technology(self, obj):
         return Const.TECH_TEXT_MAP.get(obj.technology)
 
+    display_technology.short_description = u'Tech'
+
     def payoff_link(self, obj):
         payoffs = []
         if obj.payoffs:
