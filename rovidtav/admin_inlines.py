@@ -185,13 +185,8 @@ class WarehouseMaterialInline(BaseMaterialInline, CompactInline):
     model = WarehouseMaterial
     extra = 0
     readonly_fields = ['amount']
-    fields = ('f_material_name', 'f_location',
+    fields = ('f_material_name', 'location',
               'f_material_category', 'amount', 'f_material_unit', )
-
-    def f_location(self, obj):
-        return obj.location.name
-
-    f_location.short_description = u'Anyag helye'
 
 
 class BaseWorkItemInline(RemoveInlineAction,
