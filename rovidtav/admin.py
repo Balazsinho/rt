@@ -185,6 +185,15 @@ class DeviceAdmin(CustomDjangoObjectActions,
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
     change_list_template = os.path.join('rovidtav', 'change_list_noadd.html')
 
+    def get_queryset(self, request):
+        if request.user.is_superuser:
+            return ModelAdminRedirect.get_queryset(self, request)
+        wh = Warehouse.objects.get(owner=request.user.id)
+        pks = DeviceOwner.objects.filter(
+            content_type=ContentTypes.warehouse,
+            object_id=wh.id).values_list('id', flat=True)
+        return Device.objects.filter(id__in=pks)
+
     def device_type(self, obj):
         if obj.type:
             return obj.type.name
