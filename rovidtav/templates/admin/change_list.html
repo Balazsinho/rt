@@ -76,4 +76,13 @@
       </form>
     </div>
   </div>
+  
+  <script>
+  	jQuery(".helper th").each(function(index) {
+  		var t = jQuery(this);
+  		t.css("min-width", t.css("width"));
+  	});
+  	alert(123);
+  </script>
+  
 {% endblock %}
