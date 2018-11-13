@@ -1075,7 +1075,7 @@ class BaseAttachment(BaseEntity):
 
     @property
     def content_disposition(self):
-        if self.is_image():
+        if self.is_image() or self.content_type in ('text/html',):
             cd = 'inline'
         else:
             cd = 'attachment'
