@@ -238,10 +238,8 @@ def _orient_image(attachment, thumbnail=False):
 def _download_from_model(model, pk):
     try:
         att = model.objects.get(pk=pk)
-        response = HttpResponse(
-            _orient_image(att, thumbnail=False),
-            content_type=att.content_type,
-        )
+        data = _orient_image(att, thumbnail=False) if att.is_image() else att.data
+        response = HttpResponse(data, content_type=att.content_type)
         response['Content-Disposition'] = att.content_disposition
         return response
     except model.DoesNotExist:
