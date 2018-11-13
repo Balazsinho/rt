@@ -21,7 +21,6 @@ from django.contrib.auth.models import Group
 from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
-from jet.filters import DateRangeFilter
 
 from rovidtav import settings
 
@@ -665,7 +664,6 @@ class TicketAdmin(CustomDjangoObjectActions,
     #                                    'two_column_change_form.html')
 
     list_per_page = 200
-    list_filters = [('created_at', DateRangeFilter), ]
     list_display_links = None
     list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
                     # 'client_link',
@@ -782,7 +780,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
-                return (('created_at', DateRangeFilter),
+                return (
                         'city__primer', OwnerFilter, IsClosedFilter,
                         'has_images', 'ticket_tags', PayoffFilter,
                         )
