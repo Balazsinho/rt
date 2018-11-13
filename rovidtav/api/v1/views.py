@@ -17,7 +17,12 @@ from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes
 from rest_framework.decorators import permission_classes
 
-from rovidtav.settings import IMAGE_THUMB_PX, STATIC_ROOT
+try:
+    from rovidtav.settings import IMAGE_THUMB_PX, STATIC_ROOT
+except ImportError:
+    from rovidtav.settings import IMAGE_THUMB_PX, STATICFILES_DIRS
+    STATIC_ROOT = STATICFILES_DIRS[0]
+
 from rovidtav.api.field_const import Fields
 from rovidtav.models import (
     Client, City, Ticket, TicketType, Note, DeviceType, Device, Attachment,
