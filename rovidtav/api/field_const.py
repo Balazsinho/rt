@@ -38,6 +38,10 @@ class Fields(object):
     DEV_OWNERSHIP = 'device_ownership'
     DEV_CARD_SN = 'device_card_sn'
 
+    EXTRA_DEVICES = 'extra_devices'
+    EXTRA_DEV_TYPE = 'extra_dev_type'
+    EXTRA_DEV_CODE = 'extra_dev_code'
+
     # ======================================================================
     # MUNKALAP - RÉGI FORMÁTUM
     # ======================================================================

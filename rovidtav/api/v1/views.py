@@ -26,7 +26,7 @@ except ImportError:
 from rovidtav.api.field_const import Fields
 from rovidtav.models import (
     Client, City, Ticket, TicketType, Note, DeviceType, Device, Attachment,
-    DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment)
+    DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment, Tag)
 from django.http.response import HttpResponse
 
 
@@ -126,6 +126,13 @@ def create_ticket(request):
     )
 
     ticket.ticket_types.add(*ticket_types)
+
+    if Fields.EXTRA_DEVICES in data and data[Fields.EXTRA_DEVICES]:
+        tag, _ = Tag.objects.get_or_create(name='Extra eszköz')
+        ticket.ticket_tags.add(tag)
+        for device in data[Fields.EXTRA_DEVICES]:
+            tag, _ = Tag.objects.get_or_create(name=device[Fields.EXTRA_DEV_CODE])
+            ticket.ticket_tags.add(tag)
 
     if Fields.REMARKS in data and data[Fields.REMARKS]:
         Note.objects.create(
