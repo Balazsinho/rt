@@ -869,7 +869,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     def collectable(self, obj):
         return obj[Ticket.Keys.COLLECTABLE_MONEY] or '-'
 
-    collectable.short_description = u'Beszedés'
+    collectable.short_description = u'Beszed.'
 
     def payoff_link(self, obj):
         payoffs = []
@@ -883,7 +883,7 @@ class TicketAdmin(CustomDjangoObjectActions,
             return None
 
     payoff_link.allow_tags = True
-    payoff_link.short_description = u'Elszámolás'
+    payoff_link.short_description = u'Elszám.'
 
     def ext_id_link(self, obj):
         return (u'<a href="/admin/rovidtav/ticket/{}/change#/tab/inline_0/">'
@@ -937,7 +937,7 @@ class TicketAdmin(CustomDjangoObjectActions,
         # return obj.created_at.strftime('%Y.%m.%d %H:%M')
         return obj.created_at.strftime('%Y.%m.%d')
 
-    created_at_fmt.short_description = u'Felvéve'
+    created_at_fmt.short_description = u'Rögz.'
     created_at_fmt.admin_order_field = ('created_at')
 
     def agreed_time_fmt(self, obj):
@@ -949,7 +949,7 @@ class TicketAdmin(CustomDjangoObjectActions,
             result += '-' + obj.agreed_time_to.astimezone(pytz.timezone("Europe/Budapest")).strftime('%H')
         return result
 
-    agreed_time_fmt.short_description = u'Egy. idő'
+    agreed_time_fmt.short_description = u'Egyzt. idő'
     agreed_time_fmt.admin_order_field = ('agreed_time_from')
 
     def closed_at_fmt(self, obj):
