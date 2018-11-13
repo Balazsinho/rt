@@ -9,5 +9,16 @@
 
 {% block body_class %}django_messages{% endblock %}
 
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a style="margin-right:15px; color:#6f7e95" href="/admin/rovidtav/ticket/">Jegyek</a>
+        
+        <a style="margin-right:15px; color:#6f7e95" href="/reports/">Riportok</a>
+        <a style="margin-right:15px; color:#6f7e95" href="/messages/" {% if unread_messages %} unread{% endif %}">
+			Üzenetek {% if unread_messages %} ({{unread_messages}}) {% endif %}
+		</a>
+    </div>
+{% endblock %}
+
 {% block content %}
 {% endblock %}
