@@ -21,6 +21,7 @@ from django.contrib.auth.models import Group
 from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
+from jet.filters import DateRangeFilter
 
 from rovidtav import settings
 
@@ -664,12 +665,13 @@ class TicketAdmin(CustomDjangoObjectActions,
     #                                    'two_column_change_form.html')
 
     list_per_page = 200
+    list_filters = [('created_at', DateRangeFilter), ]
     list_display_links = None
     list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
                     # 'client_link',
                     'ticket_type', 'created_at_fmt',
                     'closed_at_fmt', 'owner', 'status', 'agreed_time_fmt',
-                    'primer', 'has_images_nice', 'display_technology', 'collectable', 'remark',
+                    'primer', 'has_images_nice', 'collectable', 'remark',
                     'payoff_link', 'ticket_tags_nice')
     # TODO: check if this is useful
     # list_editable = ('owner', )
@@ -692,7 +694,7 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     class Media:
         css = {
-            #'all': ('css/ticket.css',)
+            'all': ('css/ticket.css',)
         }
         js = ('js/ticket_list.js',)
 
@@ -780,7 +782,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
-                return (
+                return (('created_at', DateRangeFilter),
                         'city__primer', OwnerFilter, IsClosedFilter,
                         'has_images', 'ticket_tags', PayoffFilter,
                         )
@@ -868,11 +870,6 @@ class TicketAdmin(CustomDjangoObjectActions,
         return obj[Ticket.Keys.COLLECTABLE_MONEY] or '-'
 
     collectable.short_description = u'Beszedés'
-
-    def display_technology(self, obj):
-        return Const.TECH_TEXT_MAP.get(obj.technology)
-
-    display_technology.short_description = u'Tech'
 
     def payoff_link(self, obj):
         payoffs = []
