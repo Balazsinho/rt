@@ -1,0 +1,25 @@
+{% extends "admin/base.html" %}
+{% load static i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block extrahead %}
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a style="margin-right:15px; color:#6f7e95" href="/admin/rovidtav/ticket/">Jegyek</a>
+        
+        <a style="margin-right:15px; color:#6f7e95" href="/reports/">Riportok</a>
+        <a style="margin-right:15px; color:#6f7e95" href="/messages/" {% if unread_messages %} unread{% endif %}">
+			Üzenetek {% if unread_messages %} ({{unread_messages}}) {% endif %}
+		</a>
+    </div>
+{% endblock %}
+
+{% block nav-global %}
+{% endblock %}
