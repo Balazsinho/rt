@@ -167,11 +167,14 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, HideOnAdmin,
         if ticket_id:
             ticket = Ticket.objects.get(id=int(ticket_id))
             user = ticket.owner or request.user
-        warehouse = Warehouse.objects.get(owner=user)
-        allowed_pks = DeviceOwner.objects.filter(
-            content_type=ContentTypes.warehouse, object_id=warehouse.id).values_list('device__id', flat=True)
-        devices = Device.objects.filter(id__in=allowed_pks, returned_at__isnull=True)
-        form.base_fields['device'].queryset = devices
+        try:
+            warehouse = Warehouse.objects.get(owner=user)
+            allowed_pks = DeviceOwner.objects.filter(
+                content_type=ContentTypes.warehouse, object_id=warehouse.id).values_list('device__id', flat=True)
+            devices = Device.objects.filter(id__in=allowed_pks, returned_at__isnull=True)
+            form.base_fields['device'].queryset = devices
+        except Warehouse.DoesNotExist:
+            pass
         return form
 
 
