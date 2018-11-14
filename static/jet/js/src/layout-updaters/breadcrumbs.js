@@ -32,6 +32,10 @@ BreadcrumbsUpdater.prototype = {
 $(document).ready(function() {
     var $breadcrumbs = $('.breadcrumbs');
 
+    if ($breadcrumbs.length == 0) {
+        return;
+    }
+
     $breadcrumbs.each(function() {
         new BreadcrumbsUpdater($(this)).run();
     });
