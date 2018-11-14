@@ -20,6 +20,7 @@ from django_object_actions.utils import DjangoObjectActions
 from jet.admin import CompactInline
 from inline_actions.admin import InlineActionsMixin
 from django_messages.models import Message
+from django.db.utils import OperationalError
 
 from rovidtav.models import DeviceOwner, Const, SystemEmail, \
     MaterialMovementMaterial, MaterialMovement, Warehouse, Device
@@ -27,8 +28,11 @@ import settings
 
 
 def _get_ct(model, app_label='rovidtav'):
-    return ContentType.objects.get(
-        app_label=app_label, model=model)
+    try:
+        return ContentType.objects.get(
+            app_label=app_label, model=model)
+    except OperationalError:
+        return None
 
 
 class ContentTypes(object):
@@ -330,13 +334,17 @@ def get_recipient_choices():
         """
         return name[0].upper() + name[1:]
 
-    groups = Group.objects.filter(name__in=(u'Szerelő', u'admin'))
     users = []
-    for group in groups:
-        grp_users = list(group.user_set.all())
-        users.append((_cap(group.name),
-                      sorted([(u.pk, _cap(u.username))
-                              for u in grp_users], key=lambda x: x[1])))
+    try:
+        groups = Group.objects.filter(name__in=(u'Szerelő', u'admin'))
+        for group in groups:
+            grp_users = list(group.user_set.all())
+            users.append((_cap(group.name),
+                          sorted([(u.pk, _cap(u.username))
+                                  for u in grp_users], key=lambda x: x[1])))
+    except OperationalError:
+        pass
+
     return users
 
 

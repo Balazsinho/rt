@@ -49,6 +49,7 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     DeviceReassignEventForm, WarehouseLocationForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter
+from django.db.utils import OperationalError
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -386,13 +387,17 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
 
     def __init__(self, model, admin_site):
         admin.ModelAdmin.__init__(self, model, admin_site)
-        for user in User.objects.filter(groups__name=u'Szerelő'):
-            try:
-                Warehouse.objects.get(owner=user)
-            except Warehouse.DoesNotExist:
-                Warehouse.objects.create(
-                    owner=user,
-                    name=(u'{} {}'.format(user.last_name, user.first_name)).strip() or user.username)
+        try:
+            for user in User.objects.filter(groups__name=u'Szerelő'):
+                try:
+                    Warehouse.objects.get(owner=user)
+                except Warehouse.DoesNotExist:
+                    Warehouse.objects.create(
+                        owner=user,
+                        name=(u'{} {}'.format(user.last_name, user.first_name)).strip() or user.username)
+        except OperationalError:
+            # We are most likely before initial migration
+            pass
 
     def has_delete_permission(self, request, obj=None):
         return False

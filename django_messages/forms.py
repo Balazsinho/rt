@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django_messages.models import Message
 
 from rovidtav.admin_helpers import get_recipient_choices
+from django.db.utils import OperationalError
 
 if "notification" in settings.INSTALLED_APPS and getattr(settings, 'DJANGO_MESSAGES_NOTIFY', True):
     from notification import models as notification
@@ -18,7 +19,10 @@ class ComposeForm(forms.Form):
     """
     A simple default form for private messages.
     """
-    user_choices = [(u.pk, u.username) for u in User.objects.all()]
+    try:
+        user_choices = [(u.pk, u.username) for u in User.objects.all()]
+    except OperationalError:
+        user_choices = []
     recipient = MultipleChoiceField(
         label=_(u"Recipient"), choices=get_recipient_choices())
     subject = forms.CharField(label=_(u"Subject"), max_length=140)
@@ -70,7 +74,11 @@ class ComposeForm(forms.Form):
         return message_list
 
 
-class ComposeFormAllUsers(ComposeForm):
-    recipient = MultipleChoiceField(
-        label=_(u"Recipient"),
-        choices=[(u.pk, u.username) for u in User.objects.all()])
+try:
+    class ComposeFormAllUsers(ComposeForm):
+        recipient = MultipleChoiceField(
+            label=_(u"Recipient"),
+            choices=[(u.pk, u.username) for u in User.objects.all()])
+except OperationalError:
+    class ComposeFormAllUsers(ComposeForm):
+        pass
