@@ -133,6 +133,13 @@ def create_ticket(request):
         for device in data[Fields.EXTRA_DEVICES]:
             tag, _ = Tag.objects.get_or_create(name=device[Fields.EXTRA_DEV_CODE])
             ticket.ticket_tags.add(tag)
+            tag, _ = Tag.objects.get_or_create(name=device[Fields.EXTRA_DEV_TYPE])
+            ticket.ticket_tags.add(tag)
+            dt, _ = DeviceType.objects.get_or_create(name=device[Fields.EXTRA_DEV_CODE])
+            dev = Device.objects.create(type=dt, sn=u'NINCS KITÖLTVE')
+            DeviceOwner.objects.create(device=dev,
+                                       content_type=client.get_content_type_obj(),
+                                       object_id=client.pk)
 
     if Fields.REMARKS in data and data[Fields.REMARKS]:
         Note.objects.create(
