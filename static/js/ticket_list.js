@@ -1,4 +1,3 @@
 jQuery(document).ready(function() {
-	jQuery('#changelist-search input[type=text]').after(jQuery('#changelist-search input[type=submit]'));
-	jQuery('#changelist-search input[type=submit]').after(jQuery('<div></div>'));
+	jQuery('#changelist-search #searchbar').after(jQuery('<div></div>')).after(jQuery('#changelist-search input[type=submit]'));
 })
