@@ -140,20 +140,20 @@ class BaseMaterialInline(ShowCalcFields):
     f_material_comes_from.short_description = u'Biztosítja'
 
 
-class MaterialInline(BaseMaterialInline, ReadOnlyCompactInline,
-                     RemoveInlineAction):
+class MaterialInline(RemoveInlineAction, BaseMaterialInline,
+                     ReadOnlyCompactInline):
 
     model = TicketMaterial
 
 
-class NetworkMaterialInline(BaseMaterialInline, ReadOnlyCompactInline,
-                            RemoveInlineAction):
+class NetworkMaterialInline(RemoveInlineAction, BaseMaterialInline,
+                            ReadOnlyCompactInline):
 
     model = NetworkTicketMaterial
 
 
-class MMMaterialInline(BaseMaterialInline, CompactInline,
-                       RemoveInlineAction):
+class MMMaterialInline(RemoveInlineAction, BaseMaterialInline,
+                       CompactInline):
 
     model = MaterialMovementMaterial
     extra = 0
