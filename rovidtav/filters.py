@@ -29,8 +29,8 @@ class ActiveUserFilter(SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return (
-            ('active', u'Csak aktív'),
-            ('inactive', u'Csak nem aktív'),
+            ('active', u'Aktív szerelők'),
+            ('inactive', u'Nem aktív szerelők'),
         )
 
     def queryset(self, request, queryset):
