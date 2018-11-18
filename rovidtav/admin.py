@@ -48,7 +48,7 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
     DeviceReassignEventForm, WarehouseLocationForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
-    PayoffFilter
+    PayoffFilter, ActiveUserFilter
 from django.db.utils import OperationalError
 
 # ============================================================================
@@ -576,6 +576,7 @@ class WarehouseAdmin(CustomDjangoObjectActions,
     inlines = [WarehouseMaterialInline, NoteInline, WarehouseDeviceInline,
                WarehouseLocationInline]
     list_display = ['warehouse_name', 'num_devices', 'num_materials']
+    list_filter = [ActiveUserFilter]
     fields = ['name', 'city', 'address']
     change_actions = ['new_note', 'new_location']
     ordering = ['owner__last_name', 'owner__first_name', 'name']

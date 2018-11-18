@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from django.contrib.auth.models import User
 from django.contrib.admin.filters import SimpleListFilter
 from rovidtav.admin_helpers import get_technician_choices,\
     get_network_technician_choices
@@ -19,6 +20,26 @@ class OwnerFilter(SimpleListFilter):
             return queryset.filter(owner=self.value())
         else:
             return queryset
+
+
+class ActiveUserFilter(SimpleListFilter):
+
+    title = u'Felhasználó státusz'
+    parameter_name = 'active'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('active', u'Csak aktív'),
+            ('inactive', u'Csak nem aktív'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'inactive':
+            inactive_users = User.objects.filter(is_active=False)
+            return queryset.filter(owner__in=inactive_users)
+        else:
+            active_users = User.objects.filter(is_active=True)
+            return queryset.filter(owner__in=active_users)
 
 
 class NetworkOwnerFilter(SimpleListFilter):
