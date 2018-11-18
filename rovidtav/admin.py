@@ -10,6 +10,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import pytz
 
+from jet.filters import DateRangeFilter
+
 from unidecode import unidecode
 from django.contrib import admin
 from django.contrib import messages
@@ -28,7 +30,7 @@ from inline_actions.admin import InlineActionsModelAdminMixin
 from rovidtav.admin_helpers import ModelAdminRedirect, is_site_admin,\
     CustomDjangoObjectActions, HideIcons, SpecialOrderingChangeList,\
     DeviceOwnerListFilter, get_unread_messages_count,\
-    get_unread_messages, send_assign_mail, ContentTypes
+    get_unread_messages, send_assign_mail, ContentTypes, create_warehouses
 from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     TicketInline, HistoryInline, MaterialInline, WorkItemInline,\
     TicketDeviceInline, SystemEmailInline, NTAttachmentInline, MMDeviceInline,\
@@ -385,22 +387,12 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     add_form_template = os.path.join('rovidtav', 'select2.html')
     fields = ['source', 'target', 'created_at', 'delivery_num']
 
-    def __init__(self, model, admin_site):
-        admin.ModelAdmin.__init__(self, model, admin_site)
-        try:
-            for user in User.objects.filter(groups__name=u'Szerelő'):
-                try:
-                    Warehouse.objects.get(owner=user)
-                except Warehouse.DoesNotExist:
-                    Warehouse.objects.create(
-                        owner=user,
-                        name=(u'{} {}'.format(user.last_name, user.first_name)).strip() or user.username)
-        except OperationalError:
-            # We are most likely before initial migration
-            pass
-
     def has_delete_permission(self, request, obj=None):
         return False
+
+    def get_changelist(self, request, **kwargs):
+        create_warehouses()
+        return admin.ModelAdmin.get_changelist(self, request, **kwargs)
 
     def get_actions(self, request):
         actions = super(MaterialMovementAdmin, self).get_actions(request)
@@ -593,6 +585,10 @@ class WarehouseAdmin(CustomDjangoObjectActions,
     def __init__(self, model, admin_site):
         admin.ModelAdmin.__init__(self, model, admin_site)
         self.deviceowner_ct = ContentTypes.deviceowner
+
+    def get_changelist(self, request, **kwargs):
+        create_warehouses()
+        return admin.ModelAdmin.get_changelist(self, request, **kwargs)
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -788,7 +784,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
-                return (
+                return (('created_at', DateRangeFilter),
                         'city__primer', OwnerFilter, IsClosedFilter,
                         'has_images', 'ticket_tags', PayoffFilter,
                         )

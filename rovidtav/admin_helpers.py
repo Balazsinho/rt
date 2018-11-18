@@ -10,6 +10,7 @@ from unidecode import unidecode
 from django.http.response import HttpResponseRedirect
 from django.utils.text import capfirst
 from django.contrib import admin
+from django.contrib.auth.models import User
 from django.contrib.admin.views.main import ChangeList, ORDER_VAR
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
@@ -33,6 +34,16 @@ def _get_ct(model, app_label='rovidtav'):
             app_label=app_label, model=model)
     except OperationalError:
         return None
+
+
+def create_warehouses():
+    for user in User.objects.filter(groups__name=u'Szerelő'):
+        try:
+            Warehouse.objects.get(owner=user)
+        except Warehouse.DoesNotExist:
+            Warehouse.objects.create(
+                owner=user,
+                name=(u'{} {}'.format(user.last_name, user.first_name)).strip() or user.username)
 
 
 class ContentTypes(object):
