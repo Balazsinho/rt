@@ -38,6 +38,8 @@ class ActiveUserFilter(SimpleListFilter):
             inactive_users = User.objects.filter(is_active=False)
             return queryset.filter(owner__in=inactive_users)
         else:
+            if self.value() is None:
+                self.used_parameters[self.parameter_name] = 'active'
             active_users = User.objects.filter(is_active=True)
             return queryset.filter(owner__in=active_users)
 
