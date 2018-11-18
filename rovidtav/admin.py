@@ -10,8 +10,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import pytz
 
-from jet.filters import DateRangeFilter
-
 from unidecode import unidecode
 from django.contrib import admin
 from django.contrib import messages
@@ -784,7 +782,7 @@ class TicketAdmin(CustomDjangoObjectActions,
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
-                return (('created_at', DateRangeFilter),
+                return (
                         'city__primer', OwnerFilter, IsClosedFilter,
                         'has_images', 'ticket_tags', PayoffFilter,
                         )
