@@ -318,19 +318,19 @@ def is_site_admin(user):
     return 'admin' in groups or user.is_superuser
 
 
-def get_technicians():
+def get_technicians(active=True):
     group = Group.objects.get(name=u'Szerelő')
-    return group.user_set.all()
+    return group.user_set.filter(is_active=active)
 
 
-def get_technician_choices():
-    users = get_technicians()
+def get_technician_choices(active=True):
+    users = get_technicians(active)
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
 
 
-def get_network_technicians():
+def get_network_technicians(active=True):
     group = Group.objects.get(name=u'Hálózat szerelő')
-    return group.user_set.all()
+    return group.user_set.filter(is_active=active)
 
 
 def get_network_technician_choices():
