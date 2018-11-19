@@ -406,7 +406,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     change_actions = ['finalize', 'new_material', 'new_device',
                       'new_attachment', 'new_note']
     add_form_template = os.path.join('rovidtav', 'select2.html')
-    # fields = ['source', 'target', 'created_at', 'delivery_num']
+    readonly_fields = ['delivery_num', 'created_at']
     form = MaterialMovementForm
 
     def has_delete_permission(self, request, obj=None):
@@ -446,12 +446,6 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
         instances = super(MaterialMovementAdmin, self).get_inline_instances(request, obj=None)
         self.inlines = orig_inlines
         return instances
-
-    def get_readonly_fields(self, request, obj=None):
-        if obj and obj.finalized:
-            return ['created_at', 'source', 'target', 'delivery_num']
-        else:
-            return ['delivery_num']
 
     def new_note(self, request, obj):
         return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='

@@ -278,21 +278,21 @@ class MaterialMovementForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(MaterialMovementForm, self).__init__(*args, **kwargs)
-        self.fields['finalized'].widget.attrs['readonly'] = True
-        self.fields['devices_num'].widget.attrs['readonly'] = True
-        if 'created_at' in self.fields:
-            self.fields['created_at'].widget.attrs['readonly'] = True
-        if self.instance:
+        self.fields['devices_num'].disabled = True
+        self.fields['source'].required = True
+        self.fields['target'].required = True
+        if self.instance and self.instance.id:
             devices = self.instance.devicereassignevent_set.all().count()
             self.initial['devices_num'] = devices
+        else:
+            self.fields['devices_num'].widget = forms.HiddenInput()
 
     class Meta:
         model = MaterialMovement
-        fields = '__all__'
+        fields = ('source', 'target', 'delivery_num', 'created_at')
         widgets = {
             'finalized': forms.HiddenInput(),
             'ticket_tags': forms.HiddenInput(),
-            'created_at': forms.HiddenInput(),
         }
 
 
