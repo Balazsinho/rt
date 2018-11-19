@@ -240,7 +240,7 @@ class DeviceType(BaseEntity):
 
     name = models.CharField(db_column='nev', max_length=50,
                             verbose_name=u'Típus')
-    sn_pattern = models.CharField(db_column='vonalkod_minta', max_length=50,
+    sn_pattern = models.CharField(db_column='vonalkod_minta', max_length=150,
                                   null=True, blank=True,
                                   verbose_name=u'Vonalkód minta')
     technology = models.IntegerField(
