@@ -29,7 +29,7 @@ from rovidtav.admin_helpers import ModelAdminRedirect, is_site_admin,\
     CustomDjangoObjectActions, HideIcons, SpecialOrderingChangeList,\
     DeviceOwnerListFilter, get_unread_messages_count,\
     get_unread_messages, send_assign_mail, ContentTypes, create_warehouses,\
-    find_pattern
+    find_pattern, find_device_type
 from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     TicketInline, HistoryInline, MaterialInline, WorkItemInline,\
     TicketDeviceInline, SystemEmailInline, NTAttachmentInline, MMDeviceInline,\
@@ -330,7 +330,7 @@ class DeviceTypeAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'technology', 'sn_pattern')
     ordering = ('name',)
-    actions = ('refresh_pattern',)
+    actions = ('refresh_pattern','apply_on_devices')
 
     def refresh_pattern(self, request, queryset):
         for device_type in queryset:
@@ -340,6 +340,19 @@ class DeviceTypeAdmin(admin.ModelAdmin):
                 device_type.save()
 
     refresh_pattern.short_description = u'SN minta felismerése'
+
+    def apply_on_devices(self, request, queryset):
+        found_types = 0
+        for device_type in queryset:
+            if device_type.sn_pattern:
+                for device in Device.objects.filter(type__isnull=True):
+                    if find_device_type(device) == device_type:
+                        device.type = device_type
+                        device.save()
+                        found_types += 1
+        messages.add_message(request, messages.INFO, u'{} eszköz típus hozzárendelve'.format(found_types))
+
+    apply_on_devices.short_description = u'Futtatás típus nélküli eszközökre'
 
 
 class TicketWorkItemAdmin(HideOnAdmin, ModelAdminRedirect):

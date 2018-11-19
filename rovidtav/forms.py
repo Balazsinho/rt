@@ -14,7 +14,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
     DeviceReassignEvent, Warehouse, WarehouseLocation
-from rovidtav.admin_helpers import ContentTypes
+from rovidtav.admin_helpers import ContentTypes, find_device_type
 
 
 class AttachmentForm(forms.ModelForm):
@@ -231,6 +231,8 @@ class DeviceOwnerForm(forms.ModelForm):
             device = self.cleaned_data['device']
         else:
             device, _ = Device.objects.get_or_create(sn=self.cleaned_data['sn'])
+        if not device.type:
+            find_device_type(device, save=True)
         try:
             self.instance = DeviceOwner.objects.get(device=device)
         except DeviceOwner.DoesNotExist:

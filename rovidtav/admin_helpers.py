@@ -4,6 +4,7 @@ import os
 import thread
 import smtplib
 import time
+import re
 from collections import defaultdict
 
 from unidecode import unidecode
@@ -25,7 +26,7 @@ from django_messages.models import Message
 from django.db.utils import OperationalError
 
 from rovidtav.models import DeviceOwner, Const, SystemEmail, \
-    MaterialMovementMaterial, MaterialMovement, Warehouse, Device
+    MaterialMovementMaterial, MaterialMovement, Warehouse, Device, DeviceType
 import settings
 
 
@@ -61,6 +62,15 @@ def find_pattern(device_type):
             patt = dev.sn[:idx]
     regex = sorted(re_counts.items(), key=lambda x: x[1])[-1][0]
     return patt + ''.join(regex[len(patt):])
+
+
+def find_device_type(device, save=False):
+    for dt in DeviceType.objects.filter(sn_pattern__isnull=False):
+        if re.match(dt.sn_pattern, device.sn):
+            if save:
+                device.type = dt
+                device.save()
+            return dt
 
 
 def create_warehouses():
