@@ -47,7 +47,7 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
     WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
-    DeviceReassignEventForm, WarehouseLocationForm
+    DeviceReassignEventForm, WarehouseLocationForm, MaterialMovementForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter
 
@@ -406,7 +406,8 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     change_actions = ['finalize', 'new_material', 'new_device',
                       'new_attachment', 'new_note']
     add_form_template = os.path.join('rovidtav', 'select2.html')
-    fields = ['source', 'target', 'created_at', 'delivery_num']
+    # fields = ['source', 'target', 'created_at', 'delivery_num']
+    form = MaterialMovementForm
 
     def has_delete_permission(self, request, obj=None):
         return False

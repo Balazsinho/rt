@@ -274,22 +274,22 @@ class DeviceToCustomerForm(forms.Form):
 
 class MaterialMovementForm(forms.ModelForm):
 
-    fields = ('source', 'target', 'delivery_num',
-              'finalized')
+    devices_num = forms.CharField(label=u'Eszközök száma', required=False)
 
     def __init__(self, *args, **kwargs):
         super(MaterialMovementForm, self).__init__(*args, **kwargs)
-        self.fields['delivery_num'].widget.attrs['readonly'] = True
         self.fields['finalized'].widget.attrs['readonly'] = True
+        self.fields['devices_num'].widget.attrs['readonly'] = True
+        if self.instance:
+            devices = self.instance.devicereassignevent_set.all().count()
+            self.initial['devices_num'] = devices
 
     class Meta:
         model = MaterialMovement
-        widgets = {
-          'object_id': forms.HiddenInput(),
-          'content_type': forms.HiddenInput(),
-          'is_history': forms.HiddenInput(),
-        }
         fields = '__all__'
+        widgets = {
+            'finalized': forms.HiddenInput(),
+        }
 
 
 class TicketForm(forms.ModelForm):
