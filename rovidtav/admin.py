@@ -28,7 +28,8 @@ from inline_actions.admin import InlineActionsModelAdminMixin
 from rovidtav.admin_helpers import ModelAdminRedirect, is_site_admin,\
     CustomDjangoObjectActions, HideIcons, SpecialOrderingChangeList,\
     DeviceOwnerListFilter, get_unread_messages_count,\
-    get_unread_messages, send_assign_mail, ContentTypes, create_warehouses
+    get_unread_messages, send_assign_mail, ContentTypes, create_warehouses,\
+    find_pattern
 from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     TicketInline, HistoryInline, MaterialInline, WorkItemInline,\
     TicketDeviceInline, SystemEmailInline, NTAttachmentInline, MMDeviceInline,\
@@ -49,7 +50,6 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     DeviceReassignEventForm, WarehouseLocationForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter
-from django.db.utils import OperationalError
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -326,10 +326,20 @@ class WorkItemAdmin(admin.ModelAdmin):
     tech_display.short_description = u'Technológia'
 
 
-class DeviceTypeAdmin(HideOnAdmin, admin.ModelAdmin):
+class DeviceTypeAdmin(admin.ModelAdmin):
 
     list_display = ('name', 'technology', 'sn_pattern')
     ordering = ('name',)
+    actions = ('refresh_pattern',)
+
+    def refresh_pattern(self, request, queryset):
+        for device_type in queryset:
+            patt = find_pattern(device_type)
+            if patt:
+                device_type.sn_pattern = patt
+                device_type.save()
+
+    refresh_pattern.short_description = u'SN minta felismerése'
 
 
 class TicketWorkItemAdmin(HideOnAdmin, ModelAdminRedirect):

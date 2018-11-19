@@ -4,6 +4,7 @@ import os
 import thread
 import smtplib
 import time
+from collections import defaultdict
 
 from unidecode import unidecode
 
@@ -34,6 +35,32 @@ def _get_ct(model, app_label='rovidtav'):
             app_label=app_label, model=model)
     except OperationalError:
         return None
+
+
+def find_pattern(device_type):
+    # Find the start rule
+    patt = u''
+    re_counts = defaultdict(int)
+    for dev in Device.objects.filter(type=device_type):
+        regex = []
+        patt = patt or dev.sn
+        for char in dev.sn:
+            if char.isalpha():
+                regex.append('\\w')
+            elif char.isdigit():
+                regex.append('\\d')
+            else:
+                regex.append('.')
+        re_counts[tuple(regex)] += 1
+        for idx, patt_digit in enumerate(patt):
+            try:
+                if patt_digit == dev.sn[idx]:
+                    continue
+            except IndexError:
+                break
+            patt = dev.sn[:idx]
+    regex = sorted(re_counts.items(), key=lambda x: x[1])[-1][0]
+    return patt + ''.join(regex[len(patt):])
 
 
 def create_warehouses():
