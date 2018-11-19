@@ -280,6 +280,7 @@ class MaterialMovementForm(forms.ModelForm):
         super(MaterialMovementForm, self).__init__(*args, **kwargs)
         self.fields['finalized'].widget.attrs['readonly'] = True
         self.fields['devices_num'].widget.attrs['readonly'] = True
+        self.fields['created_at'].widget.attrs['readonly'] = True
         if self.instance:
             devices = self.instance.devicereassignevent_set.all().count()
             self.initial['devices_num'] = devices
@@ -289,6 +290,8 @@ class MaterialMovementForm(forms.ModelForm):
         fields = '__all__'
         widgets = {
             'finalized': forms.HiddenInput(),
+            'ticket_tags': forms.HiddenInput(),
+            'created_at': forms.HiddenInput(),
         }
 
 
