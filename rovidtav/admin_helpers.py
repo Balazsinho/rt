@@ -92,12 +92,15 @@ class PatternBuilder(object):
         pattern_lengths = defaultdict(int)
         for value in values_list:
             pattern_lengths[len(value)] += 1
+        pattern_len = sorted(pattern_lengths.items(), key=lambda x: x[1])[-1][0]
+        for value in values_list:
+            if len(value) != pattern_len:
+                continue
             for ch_index, ch in enumerate(value):
                 if len(digit_variations) == ch_index:
                     digit_variations.append(set())
                 digit_variations[ch_index].add(ch)
 
-        pattern_len = sorted(pattern_lengths.items(), key=lambda x: x[1])[-1][0]
         digit_patterns = []
         for idx, ch_variation in enumerate(digit_variations):
             if idx < pattern_len:
