@@ -76,16 +76,15 @@ class PatternBuilder(object):
                 next_ch = regexs[curr_idx+1]
             except IndexError:
                 next_ch = None
+            curr_idx += 1
             if curr_ch == next_ch:
                 group_len += 1
-                curr_idx += 1
                 continue
             if group_len > 1:
                 final_regex += '{regex}{{{count}}}'.format(regex=curr_ch, count=group_len)
                 group_len = 1
             else:
                 final_regex += curr_ch
-            curr_idx += 1
         return final_regex
 
     def find_pattern(self, values_list):
@@ -105,8 +104,7 @@ class PatternBuilder(object):
                 digit_patterns.append(self._re_from_digits(ch_variation))
             else:
                 break
-        final_re = self._group_regexs(digit_patterns)
-        print final_re
+        return self._group_regexs(digit_patterns)
 
 
 def find_pattern(device_type):
