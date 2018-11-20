@@ -16,7 +16,7 @@ from rovidtav.models import (
     Attachment, Ticket, Note, TicketMaterial, TicketWorkItem, DeviceOwner,
     SystemEmail, NTAttachment, NetworkTicketMaterial, NetworkTicketWorkItem,
     MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
-    DeviceReassignEvent, WarehouseLocation)
+    DeviceReassignEvent, WarehouseLocation, Device)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -328,6 +328,13 @@ class SystemEmailInline(GenericReadOnlyStackedInline):
     model = SystemEmail
     fields = ('status', 'remark', 'created_by', 'created_at')
     ordering = ('-created_at',)
+
+
+class DeviceTypeDeviceInline(ReadOnlyCompactInline):
+
+    verbose_name = u'Eszköz'
+    verbose_name_plural = u'Eszközök'
+    model = Device
 
 
 class DeviceInline(ShowCalcFields, GenericReadOnlyInline):

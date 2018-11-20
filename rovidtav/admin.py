@@ -35,7 +35,8 @@ from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     TicketDeviceInline, SystemEmailInline, NTAttachmentInline, MMDeviceInline,\
     NetworkMaterialInline, NetworkWorkItemInline, PayoffTicketInline,\
     MMMaterialInline, MMAttachmentInline, WarehouseMaterialInline,\
-    WarehouseDeviceInline, MMMaterialReadonlyInline, WarehouseLocationInline
+    WarehouseDeviceInline, MMMaterialReadonlyInline, WarehouseLocationInline,\
+    DeviceTypeDeviceInline
 from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     Ticket, Note, TicketType, MaterialCategory, Material, TicketMaterial,\
     WorkItem, TicketWorkItem, Payoff, NetworkTicket, NTAttachment,\
@@ -326,11 +327,14 @@ class WorkItemAdmin(admin.ModelAdmin):
     tech_display.short_description = u'Technológia'
 
 
-class DeviceTypeAdmin(admin.ModelAdmin):
+class DeviceTypeAdmin(CustomDjangoObjectActions,
+                      InlineActionsModelAdminMixin,
+                      admin.ModelAdmin):
 
     list_display = ('name', 'technology', 'sn_pattern')
     ordering = ('name',)
     actions = ('refresh_pattern','apply_on_devices')
+    inlines = [DeviceTypeDeviceInline]
 
     def refresh_pattern(self, request, queryset):
         for device_type in queryset:
