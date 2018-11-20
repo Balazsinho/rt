@@ -71,14 +71,18 @@ class BaseAttachmentInline(RemoveInlineAction,
         if obj.is_image():
             clickable_txt = (u'<img src="/api/v1/{}/{}" />'
                              u''.format(self.thumbnail_lnk, obj.pk))
-            download = u' download="{}"'.format(obj.name)
         else:
             clickable_txt = (u'<img src="/api/v1/{}/{}" />'
                              u'<br />{}'.format(self.thumbnail_lnk,
                                                 obj.pk, obj.name))
+
+        if obj.content_disposition.startswith(u'inline'):
+            download = u''
+        else:
             download = u' download="{}"'.format(obj.name)
 
-        return (u'<a target="_blank" href="/api/v1/{}/{}"{}>'
+        return (u'<a target="_blank" rel="noopener noreferrer" '
+                u'href="/api/v1/{}/{}"{}>'
                 u'{}</a>'.format(self.attachment_lnk, obj.pk,
                                  download, clickable_txt))
 
