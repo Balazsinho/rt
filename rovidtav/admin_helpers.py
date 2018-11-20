@@ -50,13 +50,14 @@ class PatternBuilder(object):
         (unicode.isspace, '\\s'),
     ))
 
-    def _re_from_digits(self, digits_set):
+    def _re_from_digits(self, digits_set, accurate):
         """
         Builds a regex for a specific character set
         """
+        or_threshold = 4 if accurate else 3
         if len(digits_set) == 1:
             return digits_set.pop()
-        if len(digits_set) < 3:
+        if len(digits_set) < or_threshold:
             return '[{}]'.format('|'.join(digits_set))
         for func, patt in self.DIGIT_CONV.items():
             if all(map(func, digits_set)):
@@ -89,7 +90,10 @@ class PatternBuilder(object):
 
     def find_pattern(self, values_list):
         digit_variations = []
+        accurate = False
         pattern_lengths = defaultdict(int)
+        if len(values_list) > 400:
+            accurate = True
         for value in values_list:
             pattern_lengths[len(value)] += 1
         pattern_len = sorted(pattern_lengths.items(), key=lambda x: x[1])[-1][0]
@@ -104,7 +108,7 @@ class PatternBuilder(object):
         digit_patterns = []
         for idx, ch_variation in enumerate(digit_variations):
             if idx < pattern_len:
-                digit_patterns.append(self._re_from_digits(ch_variation))
+                digit_patterns.append(self._re_from_digits(ch_variation, accurate))
             else:
                 break
         return self._group_regexs(digit_patterns)
