@@ -56,7 +56,7 @@ class PatternBuilder(object):
         """
         if len(digits_set) == 1:
             return digits_set.pop()
-        if len(digits_set) < 4:
+        if len(digits_set) < 3:
             return '[{}]'.format('|'.join(digits_set))
         for func, patt in self.DIGIT_CONV.items():
             if all(map(func, digits_set)):
