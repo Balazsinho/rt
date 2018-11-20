@@ -5,7 +5,7 @@ import thread
 import smtplib
 import time
 import re
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 from unidecode import unidecode
 
@@ -38,30 +38,81 @@ def _get_ct(model, app_label='rovidtav'):
         return None
 
 
-def find_pattern(device_type):
-    # Find the start rule
-    patt = u''
-    re_counts = defaultdict(int)
-    for dev in Device.objects.filter(type=device_type):
-        regex = []
-        patt = patt or dev.sn
-        for char in dev.sn:
-            if char.isalpha():
-                regex.append('\\w')
-            elif char.isdigit():
-                regex.append('\\d')
-            else:
-                regex.append('.')
-        re_counts[tuple(regex)] += 1
-        for idx, patt_digit in enumerate(patt):
+class PatternBuilder(object):
+
+    # digit conversions.
+    # if all elements extracted from a digit are true for the given clause,
+    # the substitution pattern will be the value
+    DIGIT_CONV = OrderedDict((
+        (unicode.isdigit, '\\d'),
+        (unicode.isalpha, '\\w'),
+        (unicode.isalnum, '[\\w\\d]'),
+        (unicode.isspace, '\\s'),
+    ))
+
+    def _re_from_digits(self, digits_set):
+        """
+        Builds a regex for a specific character set
+        """
+        if len(digits_set) == 1:
+            return digits_set.pop()
+        if len(digits_set) < 4:
+            return '[{}]'.format('|'.join(digits_set))
+        for func, patt in self.DIGIT_CONV.items():
+            if all(map(func, digits_set)):
+                return patt
+        return '.'
+
+    def _group_regexs(self, regexs):
+        """
+        Groups regexs. E.g. \d\d\d will become \d{3}
+        """
+        group_len = 1
+        final_regex = ''
+        curr_idx = 0
+        while len(regexs) > curr_idx:
+            curr_ch = regexs[curr_idx]
             try:
-                if patt_digit == dev.sn[idx]:
-                    continue
+                next_ch = regexs[curr_idx+1]
             except IndexError:
+                next_ch = None
+            if curr_ch == next_ch:
+                group_len += 1
+                curr_idx += 1
+                continue
+            if group_len > 1:
+                final_regex += '{regex}{{{count}}}'.format(regex=curr_ch, count=group_len)
+                group_len = 1
+            else:
+                final_regex += curr_ch
+            curr_idx += 1
+        return final_regex
+
+    def find_pattern(self, values_list):
+        digit_variations = []
+        pattern_lengths = defaultdict(int)
+        for value in values_list:
+            pattern_lengths[len(value)] += 1
+            for ch_index, ch in enumerate(value):
+                if len(digit_variations) == ch_index:
+                    digit_variations.append(set())
+                digit_variations[ch_index].add(ch)
+
+        pattern_len = sorted(pattern_lengths.items(), key=lambda x: x[1])[-1][0]
+        digit_patterns = []
+        for idx, ch_variation in enumerate(digit_variations):
+            if idx < pattern_len:
+                digit_patterns.append(self._re_from_digits(ch_variation))
+            else:
                 break
-            patt = dev.sn[:idx]
-    regex = sorted(re_counts.items(), key=lambda x: x[1])[-1][0]
-    return patt + ''.join(regex[len(patt):])
+        final_re = self._group_regexs(digit_patterns)
+        print final_re
+
+
+def find_pattern(device_type):
+    builder = PatternBuilder()
+    sn_list = [dev.sn for dev in Device.objects.filter(type=device_type)]
+    return builder.find_pattern(sn_list)
 
 
 def find_device_type(device, save=False):
