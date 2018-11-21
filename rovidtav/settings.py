@@ -54,7 +54,6 @@ JET_CHANGE_FORM_SIBLING_LINKS = False
 
 INSTALLED_APPS = (
     'rovidtav',
-    'daterange_filter',
     'jet',
     'django_messages',
     'django.contrib.admin',
