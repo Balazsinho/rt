@@ -444,7 +444,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
         if not obj and not request.path.strip('/').endswith('change'):
             return []
         orig_inlines = copy(self.inlines)
-        if obj.finalized:
+        if obj and obj.finalized:
             self.inlines.remove(MMMaterialInline)
             self.inlines.insert(0, MMMaterialReadonlyInline)
         instances = super(MaterialMovementAdmin, self).get_inline_instances(request, obj=None)

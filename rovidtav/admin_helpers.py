@@ -296,6 +296,27 @@ class CustomInlineActionsMixin(InlineActionsMixin):
         self._request = request
         return super(CustomInlineActionsMixin, self).get_fieldsets(request, obj)
 
+    def get_fields(self, request, obj=None):
+        # store `request` for `get_actions`
+        self.__request = request
+
+        fields = super(CustomInlineActionsMixin, self).get_fields(request, obj)
+        fields = list(fields)
+        if 'render_actions' not in fields:
+            fields.append('render_actions')
+        if not self.get_actions(request, obj):
+            fields.remove('render_actions')
+        return fields
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = super(CustomInlineActionsMixin, self).get_readonly_fields(request, obj)
+        fields = list(fields)
+        if 'render_actions' not in fields and self.get_actions(request, obj):
+            fields.append('render_actions')
+        if not self.get_actions(request, obj):
+            fields.remove('render_actions')
+        return fields
+
     def get_actions(self, request, obj=None):
         obj_ok = False
         if isinstance(obj, DeviceOwner):
@@ -313,11 +334,12 @@ class CustomInlineActionsMixin(InlineActionsMixin):
             return []
 
     def render_actions(self, obj=None):
-        if not hasattr(self, 'actions') or not obj:
+        actions = self.get_actions(self._request, obj)
+        if not hasattr(self, 'actions') or not obj or not actions:
             return ''
 
         buttons = []
-        for action_name in self.get_actions(self._request, obj):
+        for action_name in actions:
             action_func = getattr(self, action_name, None)
             if not action_func:
                 raise RuntimeError("Could not find action `{}`".format(action_name))

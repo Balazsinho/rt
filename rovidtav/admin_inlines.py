@@ -16,7 +16,7 @@ from rovidtav.models import (
     Attachment, Ticket, Note, TicketMaterial, TicketWorkItem, DeviceOwner,
     SystemEmail, NTAttachment, NetworkTicketMaterial, NetworkTicketWorkItem,
     MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
-    DeviceReassignEvent, WarehouseLocation, Device)
+    DeviceReassignEvent, WarehouseLocation, Device, MaterialMovement)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -400,7 +400,8 @@ class TicketDeviceInline(CustomInlineActionsMixin,
     f_sn.short_description = u'Vonalkód'
 
 
-class MMDeviceInline(ShowCalcFields,
+class MMDeviceInline(CustomInlineActionsMixin,
+                     ShowCalcFields,
                      ReadOnlyCompactInline):
 
     verbose_name = u'Eszköz'
@@ -408,9 +409,30 @@ class MMDeviceInline(ShowCalcFields,
     model = DeviceReassignEvent
     # formset = TicketDeviceFormset
     fields = ['f_type_name', 'f_sn']
+    actions = ['delete']
+
+    def get_actions(self, request, obj=None):
+        if obj:
+            if obj.__class__ == DeviceReassignEvent and obj.materialmovement_id \
+                    and obj.materialmovement.finalized:
+                return []
+            elif obj.__class__ == MaterialMovement and obj.finalized:
+                return []
+        return super(MMDeviceInline, self).get_actions(request, obj)
+
+    def delete(self, request, materialmovement, reassign_evt):
+        device = reassign_evt.device
+        try:
+            DeviceOwner.objects.get(device=device)
+            reassign_evt.delete()
+        except DeviceOwner.DoesNotExist:
+            device.delete()
+
+    delete.short_description = u'T&ouml;r&ouml;l'
+    delete.onclick = u'return confirm(\'SN {sn} Biztosan t&ouml;r&ouml;l?\')'
 
     def _evt_param(self, obj):
-        if obj.__class__ == DeviceOwner:
+        if obj.__class__ == DeviceReassignEvent:
             return obj.device
         return obj
 
