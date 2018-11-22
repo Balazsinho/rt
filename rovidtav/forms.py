@@ -232,7 +232,7 @@ class DeviceOwnerForm(forms.ModelForm):
         else:
             device, _ = Device.objects.get_or_create(sn=self.cleaned_data['sn'])
         if not device.type:
-            find_device_type(device, save=True)
+            find_device_type(device)
         try:
             self.instance = DeviceOwner.objects.get(device=device)
         except DeviceOwner.DoesNotExist:

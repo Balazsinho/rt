@@ -350,10 +350,7 @@ class DeviceTypeAdmin(CustomDjangoObjectActions,
         for device_type in queryset:
             if device_type.sn_pattern:
                 for device in Device.objects.filter(type__isnull=True):
-                    if find_device_type(device) == device_type:
-                        device.type = device_type
-                        device.save()
-                        found_types += 1
+                    found_types += find_device_type(device, device_type)
         messages.add_message(request, messages.INFO, u'{} eszköz típus hozzárendelve'.format(found_types))
 
     apply_on_devices.short_description = u'Futtatás típus nélküli eszközökre'

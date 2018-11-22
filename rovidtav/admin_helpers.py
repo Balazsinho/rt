@@ -120,13 +120,19 @@ def find_pattern(device_type):
     return builder.find_pattern(sn_list)
 
 
-def find_device_type(device, save=False):
-    for dt in DeviceType.objects.filter(sn_pattern__isnull=False):
-        if re.match(dt.sn_pattern, device.sn):
-            if save:
-                device.type = dt
-                device.save()
-            return dt
+def find_device_type(device, device_type=None):
+    if not device_type:
+        types = DeviceType.objects.filter(sn_pattern__isnull=False)
+    else:
+        types = [device_type]
+    matched = 0
+    for dt in types:
+        if re.search(dt.sn_pattern, device.sn, re.I):
+            device.type = dt
+            device.save()
+            matched = 1
+            break
+    return matched
 
 
 def create_warehouses():
