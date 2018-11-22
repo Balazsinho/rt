@@ -334,7 +334,7 @@ class DeviceTypeAdmin(CustomDjangoObjectActions,
     list_display = ('name', 'technology', 'sn_pattern')
     ordering = ('name',)
     actions = ('refresh_pattern','apply_on_devices')
-    inlines = [DeviceTypeDeviceInline]
+    # inlines = [DeviceTypeDeviceInline]
 
     def refresh_pattern(self, request, queryset):
         for device_type in queryset:
