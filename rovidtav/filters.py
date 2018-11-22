@@ -30,6 +30,7 @@ class ActiveUserFilter(SimpleListFilter):
     def lookups(self, request, model_admin):
         return (
             ('active', u'Aktív szerelők'),
+            ('warehouse', u'Raktárak'),
             ('inactive', u'Nem aktív szerelők'),
         )
 
@@ -37,6 +38,8 @@ class ActiveUserFilter(SimpleListFilter):
         if self.value() == 'inactive':
             inactive_users = User.objects.filter(is_active=False)
             return queryset.filter(owner__in=inactive_users)
+        elif self.value() == 'warehouse':
+            return queryset.filter(owner__isnull=True)
         else:
             if self.value() is None:
                 self.used_parameters[self.parameter_name] = 'active'
