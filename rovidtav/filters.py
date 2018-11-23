@@ -13,7 +13,7 @@ class OwnerFilter(SimpleListFilter):
     parameter_name = 'owner'
 
     def lookups(self, request, model_admin):
-        return get_technician_choices()
+        return get_technician_choices(only_active=False)
 
     def queryset(self, request, queryset):
         if self.value() not in (None, 'all'):

@@ -439,13 +439,16 @@ def is_site_admin(user):
     return 'admin' in groups or user.is_superuser
 
 
-def get_technicians(active=True):
+def get_technicians(only_active=True):
     group = Group.objects.get(name=u'Szerelő')
-    return group.user_set.filter(is_active=active)
+    if only_active:
+        return group.user_set.filter(is_active=True)
+    else:
+        return group.user_set.all()
 
 
-def get_technician_choices(active=True):
-    users = get_technicians(active)
+def get_technician_choices(only_active=True):
+    users = get_technicians(only_active)
     return sorted([(u.pk, u.username) for u in users], key=lambda x: x[1])
 
 
