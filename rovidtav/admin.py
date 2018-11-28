@@ -8,6 +8,8 @@ import zipfile
 import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.header import Header
+from email.utils import formataddr
 import pytz
 
 from unidecode import unidecode
@@ -868,7 +870,8 @@ class TicketAdmin(CustomDjangoObjectActions,
             msg = MIMEMultipart('alternative')
             msg['Subject'] = u'Új jegy - {} {} - Task Nr: {}'.format(
                 obj.city.name, obj.address, obj.ext_id)
-            msg['From'] = settings.EMAIL_SENDER
+            msg_from = formataddr((str(Header(u'Rövidtáv rendszer', 'utf-8')), settings.EMAIL_SENDER))
+            msg['From'] = msg_from
             msg['To'] = obj.owner.email
             plain_template = render_to_string('assign_notification.txt',
                                               context={'ticket': obj})
