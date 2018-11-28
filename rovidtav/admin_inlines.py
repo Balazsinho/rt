@@ -306,7 +306,7 @@ class HistoryInline(GenericReadOnlyInline):
         return qs.filter(is_history=True)
 
 
-class NoteInline(GenericReadOnlyCompactInline):
+class NoteInline(RemoveInlineAction, GenericReadOnlyCompactInline):
 
     # consider jet CompactInline
     verbose_name = u'Megjegyzés'
