@@ -349,7 +349,10 @@ class DeviceOwner(BaseEntity):
                     note_params.update({'created_by': user})
                     Note.objects.create(**note_params)
 
-        kwargs.pop('user')
+        try:
+            kwargs.pop('user')
+        except:
+            pass
         return super(DeviceOwner, self).save(*args, **kwargs)
 
     def __unicode__(self):
