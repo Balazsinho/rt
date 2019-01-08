@@ -513,6 +513,7 @@ def send_assign_mail(msg, obj):
         for retry in range(6):
             try:
                 smtp = smtplib.SMTP_SSL(settings.SMTP_SERVER)
+                smtp.set_debuglevel(True)
                 smtp.login(settings.SMTP_USER, settings.SMTP_PASS)
                 smtp.sendmail(settings.EMAIL_SENDER, obj.owner.email,
                               msg.as_string())

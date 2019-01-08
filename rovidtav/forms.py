@@ -13,7 +13,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
-    DeviceReassignEvent, Warehouse, WarehouseLocation
+    DeviceReassignEvent, Warehouse, WarehouseLocation, DeviceType
 from rovidtav.admin_helpers import ContentTypes, find_device_type
 
 
@@ -245,7 +245,17 @@ class DeviceOwnerForm(forms.ModelForm):
 
 class DeviceReassignEventForm(forms.ModelForm):
 
-    sn = forms.CharField(label=u'Szériaszám')
+    sn = forms.CharField(
+        label=u'Szériaszám',
+        widget=forms.Textarea(
+            attrs={'onpaste': "this.value=this.value + ','"}),
+        help_text=u'Bármennyi szériaszém lehet, vesszővel elválasztva. '
+                  u'Csipogásnál a vesszőt automatikusan teszi bele')
+    type = ModelChoiceField(
+        required=False, queryset=DeviceType.objects.all(),
+        label=u'Típus',
+        help_text=u'Csak akkor kell megadni ha nem akarjuk az automatikus '
+        u'felismerést használni')
 
     class Meta:
         model = DeviceReassignEvent
@@ -260,10 +270,26 @@ class DeviceReassignEventForm(forms.ModelForm):
         self.fields['device'].required = False
 
     def save(self, commit=True):
-        sn = self.cleaned_data['sn']
-        device, _ = Device.objects.get_or_create(sn=sn)
-        self.instance.device = device
-        return super(DeviceReassignEventForm, self).save(commit=commit)
+        mm = self.cleaned_data['materialmovement']
+        dev_type = self.cleaned_data['type']
+        for sn in self.cleaned_data['sn'].split(','):
+            if not sn:
+                continue
+            device, _ = Device.objects.get_or_create(sn=sn)
+            if not dev_type:
+                find_device_type(device)
+            else:
+                device.type = dev_type
+                device.save()
+            if not self.instance.device_id:
+                self.instance.device = device
+                continue
+            DeviceReassignEvent.objects.get_or_create(materialmovement=mm,
+                                                      device=device)
+        return super(DeviceReassignEventForm, self).save(commit=True)
+
+    def save_m2m(self):
+        pass
 
 
 class DeviceToCustomerForm(forms.Form):

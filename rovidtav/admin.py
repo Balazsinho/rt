@@ -389,6 +389,7 @@ class DeviceReassignEventAdmin(HideOnAdmin, ModelAdminRedirect,
                                admin.ModelAdmin):
 
     form = DeviceReassignEventForm
+    add_form_template = os.path.join('rovidtav', 'device_quickadd.html')
 
 # =============================================================================
 # ADMIN PAGES
