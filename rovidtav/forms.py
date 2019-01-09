@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import re
 import datetime
 
 from django.forms.models import ModelChoiceField
 from django.contrib.auth.models import User
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django import forms
 
@@ -15,6 +15,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
     DeviceReassignEvent, Warehouse, WarehouseLocation, DeviceType
 from rovidtav.admin_helpers import ContentTypes, find_device_type
+from django.core.exceptions import ValidationError
 
 
 class AttachmentForm(forms.ModelForm):
@@ -269,6 +270,11 @@ class DeviceReassignEventForm(forms.ModelForm):
         super(DeviceReassignEventForm, self).__init__(*args, **kwargs)
         self.fields['device'].required = False
 
+    def clean_sn(self):
+        if re.match('[,\s]', self.cleaned_data['sn']):
+            raise ValidationError(u'A mezőben nincs használható adat')
+        return self.cleaned_data['sn']
+
     def save(self, commit=True):
         mm = self.cleaned_data['materialmovement']
         dev_type = self.cleaned_data['type']
@@ -286,7 +292,7 @@ class DeviceReassignEventForm(forms.ModelForm):
                 continue
             DeviceReassignEvent.objects.get_or_create(materialmovement=mm,
                                                       device=device)
-        return super(DeviceReassignEventForm, self).save(commit=True)
+        return super(DeviceReassignEventForm, self).save(commit=commit)
 
     def save_m2m(self):
         pass
