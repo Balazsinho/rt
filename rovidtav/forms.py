@@ -250,8 +250,7 @@ class DeviceReassignEventForm(forms.ModelForm):
         label=u'Szériaszám',
         widget=forms.Textarea(
             attrs={'onpaste': "this.value=this.value + ','"}),
-        help_text=u'Bármennyi szériaszém lehet, vesszővel elválasztva. '
-                  u'Csipogásnál a vesszőt automatikusan teszi bele')
+        help_text=u'Írj be egy szériaszámot vagy csipogj be bármennyit')
     type = ModelChoiceField(
         required=False, queryset=DeviceType.objects.all(),
         label=u'Típus',
@@ -271,14 +270,15 @@ class DeviceReassignEventForm(forms.ModelForm):
         self.fields['device'].required = False
 
     def clean_sn(self):
-        if re.match('[,\s]', self.cleaned_data['sn']):
+        if not self.cleaned_data['sn'].strip():
             raise ValidationError(u'A mezőben nincs használható adat')
         return self.cleaned_data['sn']
 
     def save(self, commit=True):
         mm = self.cleaned_data['materialmovement']
         dev_type = self.cleaned_data['type']
-        for sn in self.cleaned_data['sn'].split(','):
+        for sn in self.cleaned_data['sn'].split():
+            sn = sn.strip()
             if not sn:
                 continue
             device, _ = Device.objects.get_or_create(sn=sn)
