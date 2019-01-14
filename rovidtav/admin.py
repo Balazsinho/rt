@@ -50,6 +50,7 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter
 from django.db.utils import OperationalError
+from jet.filters import DateRangeFilter
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -789,9 +790,10 @@ class TicketAdmin(CustomDjangoObjectActions,
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return (
-                        'city__primer', OwnerFilter, IsClosedFilter,
-                        'has_images', 'ticket_tags', PayoffFilter,
-                        )
+                    ('created_at', DateRangeFilter),
+                    'city__primer', OwnerFilter, IsClosedFilter,
+                    'has_images', 'ticket_tags', PayoffFilter,
+                    )
             else:
                 return (IsClosedFilter,)
 
