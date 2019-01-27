@@ -631,7 +631,7 @@ class WarehouseAdmin(CustomDjangoObjectActions,
                 dev_counts[dev.device.type] += 1
             for cnt_key, cnt in dev_counts.items():
                 cnt_key = cnt_key or u'Egyéb eszköz'
-                self.form.declared_fields[cnt_key] = forms.CharField(
+                self.form.declared_fields[unicode(cnt_key)] = forms.CharField(
                     required=False, disabled=True, initial=cnt)
 
         if obj:
