@@ -12,6 +12,7 @@ from email.header import Header
 from email.utils import formataddr
 import pytz
 
+from django import forms
 from unidecode import unidecode
 from django.contrib import admin
 from django.contrib import messages
@@ -50,9 +51,11 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
     WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
-    DeviceReassignEventForm, WarehouseLocationForm, MaterialMovementForm
+    DeviceReassignEventForm, WarehouseLocationForm, MaterialMovementForm,\
+    WarehouseForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter
+from _collections import defaultdict
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -597,9 +600,9 @@ class WarehouseAdmin(CustomDjangoObjectActions,
 
     inlines = [WarehouseMaterialInline, NoteInline, WarehouseDeviceInline,
                WarehouseLocationInline]
+    form = WarehouseForm
     list_display = ['warehouse_name', 'num_devices', 'num_materials']
     list_filter = [ActiveUserFilter]
-    fields = ['name', 'city', 'address']
     change_actions = ['new_note', 'new_location']
     ordering = ['owner__last_name', 'owner__first_name', 'name']
 
@@ -622,9 +625,20 @@ class WarehouseAdmin(CustomDjangoObjectActions,
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            fields = ('name', 'city', 'address')
+            dev_counts = defaultdict(int)
+            for dev in DeviceOwner.objects.filter(
+                    content_type=ContentTypes.warehouse, object_id=obj.id):
+                dev_counts[dev.device.type] += 1
+            for cnt_key, cnt in dev_counts.items():
+                cnt_key = cnt_key or u'Egyéb eszköz'
+                self.form.declared_fields[cnt_key] = forms.CharField(
+                    required=False, disabled=True, initial=cnt)
+
+        if obj:
+            fields = ['name', 'city', 'address']
         else:
-            fields = ()
+            fields = []
+
         fields += (self.readonly_fields or tuple())
         return fields
 

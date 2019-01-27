@@ -47,6 +47,16 @@ class MMAttachmentForm(AttachmentForm):
         }
 
 
+class WarehouseForm(forms.ModelForm):
+
+    class Meta:
+        model = Warehouse
+        widgets = {
+          'owner': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
 class TicketMaterialForm(forms.ModelForm):
 
     material = ModelChoiceField(
