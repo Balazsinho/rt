@@ -623,24 +623,43 @@ class WarehouseAdmin(CustomDjangoObjectActions,
             del actions['delete_selected']
         return actions
 
-    def get_readonly_fields(self, request, obj=None):
-        if obj:
-            dev_counts = defaultdict(int)
-            for dev in DeviceOwner.objects.filter(
-                    content_type=ContentTypes.warehouse, object_id=obj.id):
-                dev_counts[dev.device.type] += 1
-            for cnt_key, cnt in dev_counts.items():
-                cnt_key = cnt_key or u'Egyéb eszköz'
-                self.form.declared_fields[unicode(cnt_key)] = forms.CharField(
-                    required=False, disabled=True, initial=cnt)
+    def _add_device_summary(self, obj):
+        """
+        Adds a summary of the device type counts to the general tab as
+        readonly fields
+        """
+        dev_counts = defaultdict(int)
+        for dev in DeviceOwner.objects.filter(
+                content_type=ContentTypes.warehouse, object_id=obj.id):
+            dev_counts[dev.device.type] += 1
+        for cnt_key, cnt in dev_counts.items():
+            cnt_key = cnt_key or u'Egyéb eszköz'
+            self.form.declared_fields[unicode(cnt_key)] = forms.CharField(
+                required=False, disabled=True, initial=cnt,
+                widget=forms.TextInput(attrs={'style': 'color: #A44'}))
 
+        return sorted(map(unicode, dev_counts.keys()))
+
+    def get_readonly_fields(self, request, obj=None):
         if obj:
             fields = ['name', 'city', 'address']
         else:
             fields = []
 
-        fields += (self.readonly_fields or tuple())
+        fields += (list(self.readonly_fields) or [])
         return fields
+
+    def get_fields(self, request, obj=None):
+        if obj:
+            extra_fields = self._add_device_summary(obj)
+        else:
+            extra_fields = []
+        fields = ['owner', 'name', 'city', 'address']
+        if obj:
+            fields.remove('owner')
+            fields.remove('city')
+            fields.remove('address')
+        return fields + extra_fields
 
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):

@@ -49,6 +49,11 @@ class MMAttachmentForm(AttachmentForm):
 
 class WarehouseForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super(WarehouseForm, self).__init__(*args, **kwargs)
+        if 'city' in self.fields:
+            self.fields['city'].required = True
+
     class Meta:
         model = Warehouse
         widgets = {
