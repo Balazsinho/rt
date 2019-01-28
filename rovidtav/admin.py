@@ -631,9 +631,8 @@ class WarehouseAdmin(CustomDjangoObjectActions,
         dev_counts = defaultdict(int)
         for dev in DeviceOwner.objects.filter(
                 content_type=ContentTypes.warehouse, object_id=obj.id):
-            dev_counts[dev.device.type] += 1
+            dev_counts[dev.device.type or u'Egyéb eszköz'] += 1
         for cnt_key, cnt in dev_counts.items():
-            cnt_key = cnt_key or u'Egyéb eszköz'
             self.form.declared_fields[unicode(cnt_key)] = forms.CharField(
                 required=False, disabled=True, initial=cnt,
                 widget=forms.TextInput(attrs={'style': 'color: #A44'}))
