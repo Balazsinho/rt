@@ -194,7 +194,7 @@ class DeviceAdmin(CustomDjangoObjectActions,
     change_actions = ('new_note',)
     readonly_fields = ('returned_at',)
 
-    inlines = (NoteInline, HistoryInline)
+    inlines = (HistoryInline,)
 
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
     change_list_template = os.path.join('rovidtav', 'change_list_noadd.html')
