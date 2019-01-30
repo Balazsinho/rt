@@ -364,21 +364,12 @@ class TicketDeviceInline(CustomInlineActionsMixin,
     model = DeviceOwner
     formset = TicketDeviceFormset
     fields = ['f_type_name', 'f_sn']
-    actions = ['remove', 'modify']
-
-    def remove(self, request, ticket, dev_owner):
-        dev_owner.owner = request.user
-        dev_owner.device.returned_at = datetime.now()
-        dev_owner.device.save()
-        dev_owner.save()
+    actions = ['modify']
 
     def _evt_param(self, obj):
         if obj.__class__ == DeviceOwner:
             return obj.device
         return obj
-
-    remove.short_description = u'Leszerel'
-    remove.onclick = u'return confirm(\'{sn} - Leszerel?\')'
 
     def modify(self, request, ticket, dev_owner):
         dev = dev_owner.device
