@@ -349,7 +349,7 @@ class DeviceTypeAdmin(CustomDjangoObjectActions,
                       InlineActionsModelAdminMixin,
                       admin.ModelAdmin):
 
-    list_display = ('name', 'technology', 'sn_pattern')
+    list_display = ('name', 'technology', 'function', 'sn_pattern')
     ordering = ('name',)
     actions = ('refresh_pattern','apply_on_devices')
     # inlines = [DeviceTypeDeviceInline]
