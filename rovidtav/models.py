@@ -12,6 +12,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes import fields
 from multiselectfield import MultiSelectField
 from django.db.utils import IntegrityError
 
@@ -43,10 +44,47 @@ class Const(object):
         HALOZAT: u'Hálózat',
     }
 
+    class DeviceFunction:
+        BOX_SAT = 1
+        BOX_IPTV = 2
+        MODEM = 3
+
+        @staticmethod
+        def choices():
+            return (
+                (Const.DeviceFunction.BOX_IPTV, u'IPTV Set top box'),
+                (Const.DeviceFunction.BOX_SAT, u'SAT Set top box'),
+                (Const.DeviceFunction.MODEM, u'Modem'),
+            )
+
+    class DeviceStatus:
+        ACTIVE = 3
+        RETURNED = 4
+        TO_UNINSTALL = 5
+        UNINSTALLED = 6
+
+        @staticmethod
+        def choices():
+            return (
+                (Const.DeviceStatus.ACTIVE, u'Aktív'),
+                (Const.DeviceStatus.RETURNED, u'Visszahozott (hiba/mód.)'),
+                (Const.DeviceStatus.TO_UNINSTALL, u'Leszerelésre vár'),
+                (Const.DeviceStatus.UNINSTALLED, u'Leszerelt'),
+            )
+
+        @staticmethod
+        def _next_state(device):
+            if device.status == Const.DeviceStatus.TO_UNINSTALL:
+                return Const.DeviceStatus.UNINSTALLED
+            if device.status == Const.DeviceStatus.ACTIVE:
+                return Const.DeviceStatus.RETURNED
+
     class TicketStatus:
         NEW = u'Új'
         ASSIGNED = u'Kiadva'
         IN_PROGRESS = u'Folyamatban'
+        AWAITING_CALL = u'Időpontegyeztetésre vár'
+        CALLED = u'Időpont egyeztetve'
         DONE_SUCC = u'Lezárva - Kész'
         DONE_UNSUCC = u'Lezárva - Eredménytelen'
         DUPLICATE = u'Duplikált'
@@ -57,6 +95,17 @@ class Const(object):
                 (Const.TicketStatus.NEW,) * 2,
                 (Const.TicketStatus.ASSIGNED,) * 2,
                 (Const.TicketStatus.IN_PROGRESS,) * 2,
+                (Const.TicketStatus.DONE_SUCC,) * 2,
+                (Const.TicketStatus.DONE_UNSUCC,) * 2,
+                (Const.TicketStatus.DUPLICATE,) * 2,
+            )
+
+        @staticmethod
+        def uninstall_choices():
+            return (
+                (Const.TicketStatus.NEW,) * 2,
+                (Const.TicketStatus.AWAITING_CALL,) * 2,
+                (Const.TicketStatus.CALLED,) * 2,
                 (Const.TicketStatus.DONE_SUCC,) * 2,
                 (Const.TicketStatus.DONE_UNSUCC,) * 2,
                 (Const.TicketStatus.DUPLICATE,) * 2,
@@ -249,6 +298,12 @@ class DeviceType(BaseEntity):
         null=True, blank=True,
         verbose_name=u'Technológia',
     )
+    function = models.IntegerField(
+        db_column='funkcio',
+        choices=Const.DeviceFunction.choices(),
+        null=True, blank=True,
+        verbose_name=u'Funkció',
+    )
 
     class Meta:
         db_table = 'eszkoz_tipus'
@@ -262,107 +317,6 @@ class DeviceType(BaseEntity):
     def autocomplete_search_fields():
         return ('name',)
 
-
-class Device(BaseEntity):
-
-    """
-    Device statuses:
-    1. Owner is a mechanic, returned_at empty - The device is at the given
-       employee
-    2. Owner is a client - The device is installed at the client
-    3. Owner is a mechanic, returned_at NOT empty - The device has been taken
-       back from the client for whatever reason
-    """
-
-    sn = models.CharField(db_column='vonalkod', max_length=50,
-                          verbose_name=u'Vonalkód')
-    type = models.ForeignKey(DeviceType, db_column='tipus',
-                             verbose_name=u'Típus',
-                             null=True, blank=True)
-    card_sn = models.CharField(db_column='kartya', max_length=50,
-                               verbose_name=u'Kártya',
-                               null=True, blank=True)
-    returned_at = models.DateTimeField(verbose_name=u'Visszavéve',
-                                       null=True, blank=True,
-                                       editable=False)
-
-    class Meta:
-        db_table = 'eszkoz'
-        verbose_name = u'Eszköz'
-        verbose_name_plural = u'Eszközök'
-
-    def __unicode__(self):
-        out = self.sn
-        if self.type:
-            out += u' - {}'.format(self.type)
-        return out
-
-    @staticmethod
-    def autocomplete_search_fields():
-        return ('sn',)
-
-    @property
-    def owner(self):
-        try:
-            return DeviceOwner.objects.get(device=self)
-        except DeviceOwner.DoesNotExist:
-            return None
-
-
-class DeviceOwner(BaseEntity):
-
-    device = models.ForeignKey(Device, db_column='eszkoz',
-                               verbose_name=u'Eszköz',
-                               related_name='dev_owner')
-
-    content_type = models.ForeignKey(ContentType, null=True, blank=True)
-    object_id = models.PositiveIntegerField(null=True, blank=True)
-    owner = GenericForeignKey()
-
-    class Meta:
-        db_table = 'eszkoz_tulajdon'
-        verbose_name = u'Eszköz tulajdonos'
-        verbose_name_plural = u'Eszköz tulajdonosok'
-
-    def save(self, *args, **kwargs):
-        if self.pk:
-            prev = DeviceOwner.objects.get(pk=self.pk)
-            if self.owner != prev.owner:
-                prev_owner = Const.NO_OWNER if not prev.owner else \
-                    prev.name
-                owner = Const.NO_OWNER if not self.owner else \
-                    self.name
-                remark = u'Új tulajdonos: {} >> {}'.format(prev_owner, owner)
-                note_params = {
-                    'content_type': self.device.get_content_type_obj(),
-                    'object_id': self.device.pk,
-                    'remark': remark,
-                    'is_history': True,
-                }
-                try:
-                    Note.objects.create(**note_params)
-                except IntegrityError:
-                    try:
-                        user = kwargs.pop('user')
-                    except KeyError:
-                        user = None
-                    note_params.update({'created_by': user})
-                    Note.objects.create(**note_params)
-
-        try:
-            kwargs.pop('user')
-        except:
-            pass
-        return super(DeviceOwner, self).save(*args, **kwargs)
-
-    def __unicode__(self):
-        return unicode(self.device)
-
-    @property
-    def name(self):
-        if hasattr(self.owner, 'username'):
-            return self.owner.username
-        return unicode(self.owner)
 
 
 class Payoff(BaseEntity):
@@ -464,16 +418,6 @@ class BaseTicket(BaseHub):
                                verbose_name=u'Cím')
     city = models.ForeignKey(City, db_column='telepules',
                              verbose_name=u'Település')
-    status = models.CharField(
-        db_column='statusz',
-        null=False,
-        blank=False,
-        default=Const.TicketStatus.NEW,
-        choices=Const.TicketStatus.choices(),
-        max_length=100,
-        verbose_name=u'Státusz',
-    )
-    has_images = models.BooleanField(default=False, verbose_name=u'Kép')
     closed_at = models.DateField(verbose_name=u'Lezárva',
                                  null=True, blank=True,
                                  editable=True)
@@ -500,7 +444,8 @@ class BaseTicket(BaseHub):
                     notify_owner = True
 
             if self.status != prev_inst.status:
-                self._status_trans(prev_inst.status, self.status)
+                self._status_trans(prev_inst.status, self.status,
+                                   user=kwargs.get('user'))
 
                 if self.status in (Const.TicketStatus.DONE_SUCC,
                                    Const.TicketStatus.DONE_UNSUCC,
@@ -514,23 +459,239 @@ class BaseTicket(BaseHub):
         else:
             notify_owner = True
 
+        try:
+            kwargs.pop('user')
+        except KeyError:
+            pass
         super(BaseTicket, self).save(*args, **kwargs)
         return notify_owner
 
-    def _status_trans(self, old_status, new_status):
+    def _status_trans(self, old_status, new_status, user=None):
         """
         Does a status transition from old to new
         """
-        self._trans(u'Státusz változás', old_status, new_status)
+        self._trans(u'Státusz változás', old_status, new_status, user)
 
-    def _trans(self, event, old, new):
+    def _trans(self, event, old, new, user=None):
         """
         Creates the ticketevent object for a change
         """
         remark = u'{}: '.format(event) if event else u''
         remark += u'{} >> {}'.format(old, new)
-        Note.objects.create(content_object=self,
-                            remark=remark, is_history=True)
+        if user:
+            Note.objects.create(content_object=self,
+                                remark=remark, is_history=True,
+                                created_by=user)
+        else:
+            Note.objects.create(content_object=self,
+                                remark=remark, is_history=True)
+
+
+class WorkItemTicket(BaseTicket):
+
+    ext_id = models.CharField(db_column='kulso_id', max_length=20,
+                              verbose_name=u'Jegy ID')
+    client = models.ForeignKey(Client, db_column='ugyfel',
+                               verbose_name=u'Ügyfél')
+    agreed_time_from = models.DateTimeField(
+        verbose_name=u'Egyeztetett időpont (-tól)',
+        null=True, blank=True, editable=True)
+    agreed_time_to = models.DateTimeField(
+        verbose_name=u'Egyeztetett időpont (-ig)',
+        null=True, blank=True, editable=True)
+
+    class Meta:
+        abstract = True
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('ext_id', 'address')
+
+    def devices(self):
+        return Device.objects.get(client=self.client)
+
+    def _owner_trans(self, prev_inst):
+        """
+        Creates the ticketevent for an owner change and returns the owners
+        """
+        prev_owner = Const.NO_OWNER if not prev_inst.owner else \
+            prev_inst.owner.username
+        owner = Const.NO_OWNER if not self.owner else self.owner.username
+        self._trans(u'Új tulajdonos', prev_owner, owner)
+
+
+class UninstallTicket(WorkItemTicket):
+
+    ticket_type = models.ForeignKey(
+        TicketType, db_column='tipus', verbose_name=u'Jegy típus',
+        null=True)
+    status = models.CharField(
+        db_column='statusz',
+        null=False,
+        blank=False,
+        default=Const.TicketStatus.NEW,
+        choices=Const.TicketStatus.uninstall_choices(),
+        max_length=100,
+        verbose_name=u'Státusz',
+    )
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=True, blank=True, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Leszerelő'})
+
+    date_collected = models.DateField(null=True, blank=True,
+                                      verbose_name=u'Begyűjtve')
+
+    class Meta:
+        db_table = 'leszereles_jegy'
+        verbose_name = u'Leszerelés jegy'
+        verbose_name_plural = u'Leszerelés jegyek'
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('cliemt__mt_id', 'client__address', 'client__name', 'ext_id')
+
+    def __unicode__(self):
+        return unicode(u'{} - WFMS {}'.format(self.client, self.ext_id))
+
+    def save(self, *args, **kwargs):
+        if self.date_collected and self.status not in (
+                Const.TicketStatus.DONE_SUCC, Const.TicketStatus.DONE_UNSUCC):
+            self.status = Const.TicketStatus.DONE_SUCC
+        super(UninstallTicket, self).save(*args, **kwargs)
+
+
+class Device(BaseEntity):
+
+    """
+    Device statuses:
+    1. Owner is a mechanic, returned_at empty - The device is at the given
+       employee
+    2. Owner is a client - The device is installed at the client
+    3. Owner is a mechanic, returned_at NOT empty - The device has been taken
+       back from the client for whatever reason
+    """
+
+    sn = models.CharField(db_column='vonalkod', max_length=50,
+                          verbose_name=u'Vonalkód')
+    type = models.ForeignKey(DeviceType, db_column='tipus',
+                             verbose_name=u'Típus',
+                             null=True, blank=True)
+    returned_at = models.DateTimeField(verbose_name=u'Leszerelve',
+                                       null=True, blank=True,
+                                       editable=False)
+    uninstall_ticket = models.ForeignKey(UninstallTicket,
+                                         verbose_name=u'Leszerelés jegy',
+                                         null=True, blank=True)
+    status = models.IntegerField(choices=Const.DeviceStatus.choices(),
+                                 default=Const.DeviceStatus.ACTIVE,
+                                 verbose_name=u'Állapot')
+
+    class Meta:
+        db_table = 'eszkoz'
+        verbose_name = u'Eszköz'
+        verbose_name_plural = u'Eszközök'
+
+    def __unicode__(self):
+        out = self.sn
+        if self.type:
+            out += u' - {}'.format(self.type)
+        return out
+
+    @staticmethod
+    def autocomplete_search_fields():
+        return ('sn',)
+
+    @property
+    def owner(self):
+        try:
+            return DeviceOwner.objects.get(device=self)
+        except DeviceOwner.DoesNotExist:
+            return None
+
+    def end_life(self):
+        state = Const.DeviceStatus._next_state(self)
+        if not state:
+            return
+        self.status = state
+        return self.save()
+
+    def start_clean(self):
+        if self.status != Const.DeviceStatus.ACTIVE:
+            self.status = Const.DeviceStatus.ACTIVE
+            return self.save()
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.status in (Const.DeviceStatus.RETURNED,
+                           Const.DeviceStatus.UNINSTALLED) and \
+                self.returned_at is None:
+            self.returned_at = datetime.now()
+        elif self.status in (Const.DeviceStatus.ACTIVE,
+                             Const.DeviceStatus.TO_UNINSTALL) and \
+                self.returned_at is not None:
+            self.returned_at = None
+
+        return BaseEntity.save(
+            self, force_insert=force_insert, force_update=force_update,
+            using=using, update_fields=update_fields)
+
+
+class DeviceOwner(BaseEntity):
+
+    device = models.ForeignKey(Device, db_column='eszkoz',
+                               verbose_name=u'Eszköz',
+                               related_name='dev_owner')
+
+    content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    owner = GenericForeignKey()
+
+    class Meta:
+        db_table = 'eszkoz_tulajdon'
+        verbose_name = u'Eszköz tulajdonos'
+        verbose_name_plural = u'Eszköz tulajdonosok'
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            prev = DeviceOwner.objects.get(pk=self.pk)
+            if self.owner != prev.owner:
+                prev_owner = Const.NO_OWNER if not prev.owner else \
+                    prev.name
+                owner = Const.NO_OWNER if not self.owner else \
+                    self.name
+                remark = u'Új tulajdonos: {} >> {}'.format(prev_owner, owner)
+                note_params = {
+                    'content_type': self.device.get_content_type_obj(),
+                    'object_id': self.device.pk,
+                    'remark': remark,
+                    'is_history': True,
+                }
+                try:
+                    Note.objects.create(**note_params)
+                except IntegrityError:
+                    try:
+                        user = kwargs.pop('user')
+                    except KeyError:
+                        user = None
+                    note_params.update({'created_by': user})
+                    Note.objects.create(**note_params)
+
+        try:
+            kwargs.pop('user')
+        except:
+            pass
+        return super(DeviceOwner, self).save(*args, **kwargs)
+
+    def __unicode__(self):
+        return unicode(self.device)
+
+    @property
+    def name(self):
+        if hasattr(self.owner, 'username'):
+            return self.owner.username
+        return unicode(self.owner)
 
 
 class Warehouse(BaseEntity):
@@ -613,21 +774,20 @@ class DeviceReassignEvent(BaseEntity):
                                    verbose_name=u'Létrehozó')
 
     def __unicode__(self):
-        return self.device.sn
+        uninst_ticket = self.device.uninstall_ticket
+        if uninst_ticket:
+            client = uninst_ticket.client
+            return u'{} (WFMS: {}, MT: {} )'.format(
+                self.device.sn, uninst_ticket.ext_id, client.mt_id)
+        else:
+            return self.device.sn
 
 
-class Ticket(BaseTicket, JsonExtended):
+class Ticket(WorkItemTicket, JsonExtended):
 
     ticket_types = models.ManyToManyField(
         TicketType, db_column='tipus', verbose_name=u'Jegy típus',
         limit_choices_to={'network_ticket': False})
-    ext_id = models.CharField(db_column='kulso_id', max_length=20,
-                              verbose_name=u'Jegy ID')
-    client = models.ForeignKey(Client, db_column='ugyfel',
-                               verbose_name=u'Ügyfél')
-    #payoff = models.ForeignKey(Payoff, db_column='elszamolas',
-    #                           null=True, blank=True,
-    #                           verbose_name=u'Elszámolás')
     payoffs = models.ManyToManyField(
         Payoff, db_column='elszamolasok',
         verbose_name=u'Elszámolás',
@@ -646,12 +806,16 @@ class Ticket(BaseTicket, JsonExtended):
                               null=True, blank=True,
                               verbose_name=u'Szerelő',
                               limit_choices_to={'groups__name': u'Szerelő'})
-    agreed_time_from = models.DateTimeField(
-        verbose_name=u'Egyeztetett időpont (-tól)',
-        null=True, blank=True, editable=True)
-    agreed_time_to = models.DateTimeField(
-        verbose_name=u'Egyeztetett időpont (-ig)',
-        null=True, blank=True, editable=True)
+    status = models.CharField(
+        db_column='statusz',
+        null=False,
+        blank=False,
+        default=Const.TicketStatus.NEW,
+        choices=Const.TicketStatus.choices(),
+        max_length=100,
+        verbose_name=u'Státusz',
+    )
+    has_images = models.BooleanField(default=False, verbose_name=u'Kép')
 
     class Meta:
         db_table = 'jegy'
@@ -664,13 +828,6 @@ class Ticket(BaseTicket, JsonExtended):
         the database
         """
         COLLECTABLE_MONEY = u'Beszedés'
-
-    @staticmethod
-    def autocomplete_search_fields():
-        return ('ext_id', 'address')
-
-    def devices(self):
-        return Device.objects.get(client=self.client)
 
     def refresh_has_images(self):
         atts = Attachment.objects.filter(ticket=self)
@@ -701,19 +858,11 @@ class Ticket(BaseTicket, JsonExtended):
                     break
         return self._technology
 
-    def __unicode__(self):
-        return unicode(u'{} - {}'.format(self.client,
-                                         self.ticket_type_short()))
-
     def remark_short(self):
         return self.remark[:15] + u'...' \
             if self.remark and len(self.remark) > 15 else self.remark
 
     remark_short.short_description = u'Megjegyzés'
-
-    def ticket_type_short(self):
-        ttype = u' '.join(t.name for t in self.ticket_types.all())
-        return ttype[:25] + u'...' if len(ttype) > 25 else ttype
 
     def is_install_ticket(self):
         is_install = False
@@ -723,14 +872,13 @@ class Ticket(BaseTicket, JsonExtended):
                 break
         return is_install
 
-    def _owner_trans(self, prev_inst):
-        """
-        Creates the ticketevent for an owner change and returns the owners
-        """
-        prev_owner = Const.NO_OWNER if not prev_inst.owner else \
-            prev_inst.owner.username
-        owner = Const.NO_OWNER if not self.owner else self.owner.username
-        self._trans(u'Új tulajdonos', prev_owner, owner)
+    def __unicode__(self):
+        return unicode(u'{} - {}'.format(self.client,
+                                         self.ticket_type_short()))
+
+    def ticket_type_short(self):
+        ttype = u' '.join(t.name for t in self.ticket_types.all())
+        return ttype[:25] + u'...' if len(ttype) > 25 else ttype
 
 
 class NetworkTicket(BaseTicket):
@@ -757,6 +905,16 @@ class NetworkTicket(BaseTicket):
         related_name='halozati_szerelo',
         blank=True,
         limit_choices_to={'groups__name': u'Hálózat szerelő'})
+    status = models.CharField(
+        db_column='statusz',
+        null=False,
+        blank=False,
+        default=Const.TicketStatus.NEW,
+        choices=Const.TicketStatus.choices(),
+        max_length=100,
+        verbose_name=u'Státusz',
+    )
+    has_images = models.BooleanField(default=False, verbose_name=u'Kép')
 
     class Meta:
         db_table = 'halozat_jegy'
@@ -1135,6 +1293,21 @@ class MMAttachment(BaseAttachment):
 
     class Meta:
         db_table = 'anyagkiadas_csatolmany'
+        verbose_name = u'File'
+        verbose_name_plural = u'Fileok'
+
+
+class UninstAttachment(BaseAttachment):
+
+    """
+    Uninstall ticket attachment
+    """
+
+    ticket = models.ForeignKey(UninstallTicket, db_column='jegy',
+                               verbose_name=u'Jegy')
+
+    class Meta:
+        db_table = 'leszereles_jegy_csatolmany'
         verbose_name = u'File'
         verbose_name_plural = u'Fileok'
 

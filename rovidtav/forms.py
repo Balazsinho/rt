@@ -263,8 +263,7 @@ class DeviceReassignEventForm(forms.ModelForm):
 
     sn = forms.CharField(
         label=u'Szériaszám',
-        widget=forms.Textarea(
-            attrs={'onpaste': "this.value=this.value + ','"}),
+        widget=forms.Textarea(),
         help_text=u'Írj be egy szériaszámot vagy csipogj be bármennyit')
     type = ModelChoiceField(
         required=False, queryset=DeviceType.objects.all(),

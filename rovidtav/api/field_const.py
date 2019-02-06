@@ -36,6 +36,7 @@ class Fields(object):
     DEV_TYPE = 'device_type'
     DEV_SN = 'device_sn'
     DEV_OWNERSHIP = 'device_ownership'
+    DEV_ACTION = 'device_action'
     DEV_CARD_SN = 'device_card_sn'
 
     EXTRA_DEVICES = 'extra_devices'

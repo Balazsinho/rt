@@ -16,7 +16,8 @@ from rovidtav.models import (
     Attachment, Ticket, Note, TicketMaterial, TicketWorkItem, DeviceOwner,
     SystemEmail, NTAttachment, NetworkTicketMaterial, NetworkTicketWorkItem,
     MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
-    DeviceReassignEvent, WarehouseLocation, Device, MaterialMovement)
+    DeviceReassignEvent, WarehouseLocation, Device, MaterialMovement,
+    UninstAttachment, UninstallTicket)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -102,6 +103,13 @@ class NTAttachmentInline(BaseAttachmentInline):
     model = NTAttachment
     thumbnail_lnk = 'ntthumbnail'
     attachment_lnk = 'ntattachment'
+
+
+class UninstAttachmentInline(BaseAttachmentInline):
+
+    model = UninstAttachment
+    thumbnail_lnk = 'uninstthumbnail'
+    attachment_lnk = 'uninstattachment'
 
 
 class MMAttachmentInline(BaseAttachmentInline):
@@ -256,6 +264,18 @@ class TicketInline(ShowCalcFields, ReadOnlyTabularInline):
     f_created_at_fmt.short_description = u'Létrehozva'
 
 
+class UninstallTicketInline(TicketInline):
+
+    model = UninstallTicket
+
+    def f_ticket_link(self, obj):
+        return (u'<a href="/admin/rovidtav/uninstallticket/{}/change">{}</a>'
+                u''.format(obj.pk, unicode(obj)))
+
+    f_ticket_link.allow_tags = True
+    f_ticket_link.short_description = u'Jegy'
+
+
 class PayoffTicketInline(ShowCalcFields, ReadOnlyTabularInline):
 
     model = Ticket.payoffs.through
@@ -342,12 +362,17 @@ class DeviceInline(ShowCalcFields, GenericReadOnlyInline):
     verbose_name = u'Eszköz'
     verbose_name_plural = u'Eszközök'
     model = DeviceOwner
-    fields = ('f_type_name', 'f_sn')
+    fields = ('f_type_name', 'f_sn', 'f_status')
 
     def f_type_name(self, obj):
         return obj.device.type.name
 
     f_type_name.short_description = u'Típus'
+
+    def f_status(self, obj):
+        return obj.device.get_status_display()
+
+    f_status.short_description = u'Állapot'
 
     def f_sn(self, obj):
         return obj.device.sn
@@ -363,7 +388,7 @@ class TicketDeviceInline(CustomInlineActionsMixin,
     verbose_name_plural = u'Eszközök'
     model = DeviceOwner
     formset = TicketDeviceFormset
-    fields = ['f_type_name', 'f_sn']
+    fields = ['f_type_name', 'f_sn', 'f_status']
     actions = ['modify']
 
     def _evt_param(self, obj):
@@ -390,6 +415,11 @@ class TicketDeviceInline(CustomInlineActionsMixin,
 
     f_sn.short_description = u'Vonalkód'
 
+    def f_status(self, obj):
+        return obj.device.get_status_display()
+
+    f_status.short_description = u'Státusz'
+
 
 class MMDeviceInline(CustomInlineActionsMixin,
                      ShowCalcFields,
@@ -399,8 +429,8 @@ class MMDeviceInline(CustomInlineActionsMixin,
     verbose_name_plural = u'Eszközök'
     model = DeviceReassignEvent
     # formset = TicketDeviceFormset
-    fields = ['f_type_name', 'f_sn']
-    actions = ['delete']
+    fields = ['f_type_name', 'f_sn', 'f_status', 'f_returned']
+    actions = ['delete', 'modify']
 
     def get_actions(self, request, obj=None):
         if obj:
@@ -422,24 +452,34 @@ class MMDeviceInline(CustomInlineActionsMixin,
     delete.short_description = u'T&ouml;r&ouml;l'
     delete.onclick = u'return confirm(\'SN {sn} Biztosan t&ouml;r&ouml;l?\')'
 
+    def modify(self, request, _, dev_owner):
+        dev = dev_owner.device
+        info = (dev._meta.app_label, dev._meta.model_name)
+        url = reverse('admin:%s_%s_change' % info, args=(dev.pk,))
+        url = '{}?next={}%23/tab/inline_1/#/tab/module_0/'.format(url, request.path)
+        return redirect(url, anchor='')
+
+    modify.short_description = u'M&oacute;dos&iacute;t'
+
     def _evt_param(self, obj):
         if obj.__class__ == DeviceReassignEvent:
             return obj.device
         return obj
 
-    def modify(self, request, _, dev_owner):
-        dev = dev_owner.device
-        info = (dev._meta.app_label, dev._meta.model_name)
-        url = reverse('admin:%s_%s_change' % info, args=(dev.pk,))
-        url = '{}?next={}%23/tab/inline_3/#/tab/module_0/'.format(url, request.path)
-        return redirect(url, anchor='')
-
-    modify.short_description = u'M&oacute;dos&iacute;t'
-
     def f_type_name(self, obj):
         return obj.device.type.name
 
     f_type_name.short_description = u'Típus'
+
+    def f_status(self, obj):
+        return obj.device.get_status_display()
+
+    f_status.short_description = u'Státusz'
+
+    def f_returned(self, obj):
+        return obj.device.returned_at or '-'
+
+    f_returned.short_description = u'Viszavéve'
 
     def f_sn(self, obj):
         return obj.device.sn

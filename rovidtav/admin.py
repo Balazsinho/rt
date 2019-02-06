@@ -39,14 +39,14 @@ from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     NetworkMaterialInline, NetworkWorkItemInline, PayoffTicketInline,\
     MMMaterialInline, MMAttachmentInline, WarehouseMaterialInline,\
     WarehouseDeviceInline, MMMaterialReadonlyInline, WarehouseLocationInline,\
-    DeviceTypeDeviceInline
+    DeviceTypeDeviceInline, UninstAttachmentInline, UninstallTicketInline
 from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     Ticket, Note, TicketType, MaterialCategory, Material, TicketMaterial,\
     WorkItem, TicketWorkItem, Payoff, NetworkTicket, NTAttachment,\
     SystemEmail, ApplicantAttributes, DeviceOwner, Tag, Const,\
     NetworkTicketMaterial, NetworkTicketWorkItem, MaterialMovement,\
     MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
-    DeviceReassignEvent, WarehouseLocation
+    DeviceReassignEvent, WarehouseLocation, UninstallTicket, UninstAttachment
 from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
@@ -56,6 +56,8 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter
 from _collections import defaultdict
+from openpyxl.reader.excel import load_workbook
+from openpyxl.writer.excel import save_virtual_workbook
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -188,7 +190,8 @@ class DeviceOwnerAdmin(CustomDjangoObjectActions, HideOnAdmin,
 class DeviceAdmin(CustomDjangoObjectActions,
                   ModelAdminRedirect, HideIcons):
 
-    list_display = ('sn', 'device_type', 'owner_link', 'returned_at')
+    list_display = ('sn', 'device_type', 'owner_link',
+                    'uninstall_ticket_short', 'returned_at')
     search_fields = ('type__name', 'sn')
     list_filter = (DeviceOwnerListFilter,)
     change_actions = ('new_note',)
@@ -196,7 +199,7 @@ class DeviceAdmin(CustomDjangoObjectActions,
 
     inlines = (HistoryInline,)
 
-    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+    # change_form_template = os.path.join('rovidtav', 'select2_wide.html')
     change_list_template = os.path.join('rovidtav', 'change_list_noadd.html')
 
     def get_queryset(self, request):
@@ -206,7 +209,7 @@ class DeviceAdmin(CustomDjangoObjectActions,
         pks = DeviceOwner.objects.filter(
             content_type=ContentTypes.warehouse,
             object_id=wh.id).values_list('id', flat=True)
-        return Device.objects.filter(id__in=pks)
+        return Device.objects.filter(id__in=pks).prefetch_related('uninstall_ticket')
 
     def device_type(self, obj):
         if obj.type:
@@ -219,11 +222,21 @@ class DeviceAdmin(CustomDjangoObjectActions,
             if isinstance(obj.owner.owner, Client):
                 return (u'<a href="/admin/rovidtav/client/{}/change">{}</a>'
                         u''.format(obj.owner.owner.pk, unicode(obj.owner.owner)))
+            elif isinstance(obj.owner.owner, Warehouse):
+                return (u'<a href="/admin/rovidtav/warehouse/{}/change">{}</a>'
+                        u''.format(obj.owner.owner.pk, unicode(obj.owner.owner)))
             else:
                 return obj.owner.owner
 
     owner_link.allow_tags = True
     owner_link.short_description = u'Tulajdonos'
+
+    def uninstall_ticket_short(self, obj):
+        if obj.uninstall_ticket:
+            return u'{} (jegy {})'.format(
+                obj.uninstall_ticket.client, obj.uninstall_ticket.ext_id)
+
+    uninstall_ticket_short.short_description = u'Leszerelés jegy'
 
     def new_note(self, request, obj):
         returnto_tab = self.inlines.index(NoteInline)
@@ -243,9 +256,9 @@ class DeviceAdmin(CustomDjangoObjectActions,
 
 class ClientAdmin(admin.ModelAdmin):
 
-    readonly_fields = ('created_by', )
+    readonly_fields = ('name', 'city', 'address', 'mt_id', 'created_by')
     list_display = ('name', 'mt_id', 'city_name', 'address', 'created_at_fmt')
-    inlines = (TicketInline, DeviceInline)
+    inlines = (TicketInline, UninstallTicketInline, DeviceInline)
 
     def city_name(self, obj):
         return u'{} ({})'.format(obj.city.name, obj.city.zip)
@@ -411,7 +424,8 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     inlines = [MMMaterialInline, MMDeviceInline, MMAttachmentInline,
                NoteInline]
     change_actions = ['finalize', 'new_material', 'new_device',
-                      'new_attachment', 'new_note']
+                      'new_attachment', 'new_note', 'uninstall_report_telekom',
+                      'uninstall_report_rovidtav']
     add_form_template = os.path.join('rovidtav', 'select2.html')
     readonly_fields = ['delivery_num', 'created_at']
     form = MaterialMovementForm
@@ -435,7 +449,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
         if not mm.finalized:
             actions = ['finalize']
         else:
-            actions = []
+            actions = ['uninstall_report']
         if is_site_admin(request.user) and not mm.finalized:
             actions.extend([act for act in self.change_actions
                             if act not in ('finalize',)])
@@ -453,6 +467,145 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
         instances = super(MaterialMovementAdmin, self).get_inline_instances(request, obj=None)
         self.inlines = orig_inlines
         return instances
+
+    def _exp_act_devices(self, obj, ticket, reassign_evts):
+
+        def is_card(dev):
+            return dev.type and 'SMART CARD' in dev.type.name
+
+        def sort(devices):
+            return sorted(devices, key=lambda dev: dev.sn)
+
+        exp_devices = Device.objects.filter(
+            uninstall_ticket=ticket,
+            status__in=(Const.DeviceStatus.TO_UNINSTALL,
+                        Const.DeviceStatus.UNINSTALLED))
+        exp_cards = [dev for dev in exp_devices if is_card(dev)]
+        exp_devices = [dev for dev in exp_devices if not is_card(dev)]
+        act_devices = [evt.device for evt in reassign_evts.filter(
+            device__uninstall_ticket=ticket)]
+        act_cards = [dev for dev in act_devices if is_card(dev)]
+        act_devices = [dev for dev in act_devices if not is_card(dev)]
+        return sort(exp_cards), sort(exp_devices), \
+            sort(act_cards), sort(act_devices)
+
+    def _write_row(self, row_idx, worksheet, ticket,
+                   exp_cards, exp_devices, act_cards, act_devices,
+                   startcol, exp_remote):
+        worksheet.row_dimensions[row_idx].height = 12
+        worksheet.cell(column=startcol, row=row_idx,
+                       value=ticket.created_at.strftime('%Y-%m-%d'))
+        worksheet.cell(column=startcol+1, row=row_idx, value=ticket.client.mt_id)
+        worksheet.cell(column=startcol+2, row=row_idx, value=ticket.ext_id)
+        worksheet.cell(column=startcol+3, row=row_idx, value=ticket.client.name)
+        worksheet.cell(column=startcol+4, row=row_idx, value=ticket.client.address)
+        exp_cards_copy = copy(exp_cards)
+        act_cards_copy = copy(act_cards)
+        remote_devices = (Const.DeviceFunction.BOX_IPTV,
+                          Const.DeviceFunction.BOX_SAT)
+
+        exp_idx_multi = 3 if exp_remote else 2
+
+        for idx, dev in enumerate(exp_devices):
+            worksheet.cell(column=startcol+6+idx*exp_idx_multi, row=row_idx,
+                           value=dev.sn)
+            if exp_remote and dev.type.function in remote_devices:
+                worksheet.cell(column=startcol+8+idx*exp_idx_multi, row=row_idx,
+                               value='Igen')
+            try:
+                if dev.type and dev.type.technology == Const.SAT:
+                    card = exp_cards_copy.pop()
+                    worksheet.cell(column=startcol+7+idx*exp_idx_multi, row=row_idx,
+                                   value=card.sn)
+            except IndexError:
+                continue
+
+        date_collected_col = 29 if exp_remote else 15
+        worksheet.cell(column=date_collected_col, row=row_idx,
+                       value=ticket.date_collected)
+        act_devices_startcol = 30 if exp_remote else 16
+        for idx, dev in enumerate(act_devices):
+            worksheet.cell(column=act_devices_startcol+idx*4, row=row_idx,
+                           value=dev.sn)
+            worksheet.cell(column=act_devices_startcol+3+idx*4, row=row_idx,
+                           value='Igen')
+            if dev.type.function in remote_devices:
+                worksheet.cell(column=act_devices_startcol+2+idx*4, row=row_idx,
+                               value='Igen')
+            try:
+                if dev.type and dev.type.technology == Const.SAT:
+                    card = act_cards_copy.pop()
+                    worksheet.cell(column=act_devices_startcol+1+idx*4, row=row_idx,
+                                   value=card.sn)
+            except IndexError:
+                continue
+
+    def _write_rovidtav_row(self, row_idx, worksheet, ticket,
+                            exp_cards, exp_devices, act_cards, act_devices):
+        self._write_row(row_idx, worksheet, ticket, exp_cards, exp_devices,
+                        act_cards, act_devices, 11, True)
+
+    def _write_telekom_row(self, row_idx, worksheet, ticket,
+                           exp_cards, exp_devices, act_cards, act_devices):
+        self._write_row(row_idx, worksheet, ticket, exp_cards, exp_devices,
+                        act_cards, act_devices, 1, False)
+
+    def _uninstall_report(self, request, template, writerow_func, obj, row_idx):
+        workbook = load_workbook(template)
+        worksheet = workbook.get_sheet_by_name('sikeresek')
+        devices_processed = set()
+        reassign_evts = obj.devicereassignevent_set.all() \
+            .prefetch_related('device') \
+            .prefetch_related('device__uninstall_ticket') \
+            .prefetch_related('device__uninstall_ticket__client')
+        for dre in reassign_evts:
+            if dre.device.id in devices_processed:
+                continue
+            if not dre.device.uninstall_ticket:
+                continue
+            ticket = dre.device.uninstall_ticket
+            if ticket.status not in (
+                    Const.TicketStatus.DONE_SUCC,
+                    Const.TicketStatus.DONE_UNSUCC):
+                ticket.status = Const.TicketStatus.DONE_SUCC
+                ticket.save(user=request.user)
+            exp_cards, exp_devices, act_cards, act_devices = \
+                self._exp_act_devices(obj, ticket, reassign_evts)
+            writerow_func(
+                row_idx, worksheet, ticket, exp_cards,
+                exp_devices, act_cards, act_devices)
+            devices_processed = devices_processed.union(
+                set([dev.id for dev in act_cards + act_devices +
+                     exp_cards + exp_devices]))
+            row_idx += 1
+
+        # ws.row_dimensions[row_idx].height = 12
+        data = save_virtual_workbook(workbook)
+
+        response = HttpResponse(
+            content=data,
+            content_type='application/vnd.ms-excel', status=200)
+        response['Content-Disposition'] = ('attachment; filename=leszereles_{}'
+                                           '.xlsx'.format(obj.delivery_num))
+        return response
+
+    def uninstall_report_rovidtav(self, request, obj):
+        template = os.path.join(settings.BASE_DIR, 'rovidtav', 'templates',
+                                'leszereles_rovidtav.xlsx')
+        return self._uninstall_report(request, template,
+                                      self._write_rovidtav_row,
+                                      obj, row_idx=6)
+
+    uninstall_report_rovidtav.label = u'Leszerelés xls (rövidtáv)'
+
+    def uninstall_report_telekom(self, request, obj):
+        template = os.path.join(settings.BASE_DIR, 'rovidtav', 'templates',
+                                'leszereles.xlsx')
+        return self._uninstall_report(request, template,
+                                      self._write_telekom_row,
+                                      obj, row_idx=3)
+
+    uninstall_report_telekom.label = u'Leszerelés xls (Telekom)'
 
     def new_note(self, request, obj):
         return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
@@ -526,20 +679,27 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                                                  created_by=request.user,
                                                  location=movement.location_to)
 
+        to_warehouse = obj.target.owner is None
         for dre in DeviceReassignEvent.objects.filter(materialmovement=obj):
+            if to_warehouse:
+                dre.device.end_life()
+            else:
+                dre.device.start_clean()
+
             try:
                 device_owner = DeviceOwner.objects.get(device=dre.device)
                 device_owner.content_type = ContentTypes.warehouse
                 device_owner.object_id = obj.target.id
                 device_owner.save(user=request.user)
             except DeviceOwner.DoesNotExist:
-                DeviceOwner.objects.create(device=dre.device,
-                                           content_type=ContentTypes.warehouse,
-                                           object_id=obj.target.id)
+                device_owner = DeviceOwner.objects.create(
+                    device=dre.device, content_type=ContentTypes.warehouse,
+                    object_id=obj.target.id)
 
         obj.finalized = True
         obj.save()
-        messages.add_message(request, messages.INFO, u'{} véglegesítve'.format(obj.delivery_num))
+        messages.add_message(request, messages.INFO,
+                             u'{} véglegesítve'.format(obj.delivery_num))
         return redirect('/admin/rovidtav/materialmovement')
 
     finalize.label = u'Véglegesít'
@@ -707,10 +867,80 @@ class WarehouseAdmin(CustomDjangoObjectActions,
     num_materials.short_description = u'Anyagok'
 
 
+class _TicketFields(object):
+
+    def client_link(self, obj):
+        return ('<a href="/admin/rovidtav/client/{}/change">{}</a>'
+                ''.format(obj.client.pk, obj.client.mt_id))
+
+    client_link.allow_tags = True
+    client_link.short_description = u'Ügyfél'
+
+    def client_mt_id(self, obj):
+        return obj.client.mt_id
+
+    client_mt_id.short_description = u'MT ID'
+
+    def full_address(self, obj):
+        return u'{} {}, {}'.format(obj.city.zip, obj.city.name,
+                                   obj.address)
+
+    full_address.short_description = u'Cím'
+
+    def client_name(self, obj):
+        return obj.client.name
+
+    client_name.short_description = u'Ügyfél neve'
+    client_name.admin_order_field = 'client__name'
+
+    def client_phone(self, obj):
+        return obj.client.phone
+
+    client_phone.short_description = u'Telefonszám'
+
+    def primer(self, obj):
+        return obj.city.primer
+
+    primer.short_description = u'Primer'
+    primer.admin_order_field = 'city__primer'
+
+    def city_name(self, obj):
+        return u'{} {}'.format(obj.city.name, obj.city.zip)
+
+    city_name.short_description = u'Település'
+    city_name.admin_order_field = 'city__name'
+
+    def created_at_fmt(self, obj):
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return obj.created_at.strftime('%Y.%m.%d')
+
+    created_at_fmt.short_description = u'Rögz.'
+    created_at_fmt.admin_order_field = ('created_at')
+
+    def agreed_time_fmt(self, obj):
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        result = None
+        if obj.agreed_time_from:
+            result = obj.agreed_time_from.astimezone(pytz.timezone("Europe/Budapest")).strftime('%m.%d %H')
+        if obj.agreed_time_to:
+            result += '-' + obj.agreed_time_to.astimezone(pytz.timezone("Europe/Budapest")).strftime('%H')
+        return result
+
+    agreed_time_fmt.short_description = u'Egyzt. idő'
+    agreed_time_fmt.admin_order_field = ('agreed_time_from')
+
+    def closed_at_fmt(self, obj):
+        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return obj.closed_at.strftime('%Y.%m.%d') if obj.closed_at else None
+
+    closed_at_fmt.short_description = u'Lezárva'
+    closed_at_fmt.admin_order_field = ('closed_at')
+
+
 class TicketAdmin(CustomDjangoObjectActions,
                   InlineActionsModelAdminMixin,
                   admin.ModelAdmin,
-                  HideIcons):
+                  HideIcons, _TicketFields):
 
     # =========================================================================
     # PARAMETERS
@@ -922,6 +1152,13 @@ class TicketAdmin(CustomDjangoObjectActions,
     # FIELDS
     # =========================================================================
 
+    def ext_id_link(self, obj):
+        return (u'<a href="/admin/rovidtav/ticket/{}/change#/tab/inline_0/">'
+                u'{}</a>'.format(obj.pk, obj.ext_id))
+
+    ext_id_link.allow_tags = True
+    ext_id_link.short_description = u'Jegy ID'
+
     def collectable(self, obj):
         return obj[Ticket.Keys.COLLECTABLE_MONEY] or '-'
 
@@ -940,80 +1177,6 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     payoff_link.allow_tags = True
     payoff_link.short_description = u'Elszám.'
-
-    def ext_id_link(self, obj):
-        return (u'<a href="/admin/rovidtav/ticket/{}/change#/tab/inline_0/">'
-                u'{}</a>'.format(obj.pk, obj.ext_id))
-
-    ext_id_link.allow_tags = True
-    ext_id_link.short_description = u'Jegy ID'
-
-    def client_link(self, obj):
-        return ('<a href="/admin/rovidtav/client/{}/change">{}</a>'
-                ''.format(obj.client.pk, obj.client.mt_id))
-
-    client_link.allow_tags = True
-    client_link.short_description = u'Ügyfél'
-
-    def client_mt_id(self, obj):
-        return obj.client.mt_id
-
-    client_mt_id.short_description = u'MT ID'
-
-    def full_address(self, obj):
-        return u'{} {}, {}'.format(obj.city.zip, obj.city.name,
-                                   obj.address)
-
-    full_address.short_description = u'Cím'
-
-    def client_name(self, obj):
-        return obj.client.name
-
-    client_name.short_description = u'Ügyfél neve'
-    client_name.admin_order_field = 'client__name'
-
-    def client_phone(self, obj):
-        return obj.client.phone
-
-    client_phone.short_description = u'Telefonszám'
-
-    def primer(self, obj):
-        return obj.city.primer
-
-    primer.short_description = u'Primer'
-    primer.admin_order_field = 'city__primer'
-
-    def city_name(self, obj):
-        return u'{} {}'.format(obj.city.name, obj.city.zip)
-
-    city_name.short_description = u'Település'
-    city_name.admin_order_field = 'city__name'
-
-    def created_at_fmt(self, obj):
-        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
-        return obj.created_at.strftime('%Y.%m.%d')
-
-    created_at_fmt.short_description = u'Rögz.'
-    created_at_fmt.admin_order_field = ('created_at')
-
-    def agreed_time_fmt(self, obj):
-        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
-        result = None
-        if obj.agreed_time_from:
-            result = obj.agreed_time_from.astimezone(pytz.timezone("Europe/Budapest")).strftime('%m.%d %H')
-        if obj.agreed_time_to:
-            result += '-' + obj.agreed_time_to.astimezone(pytz.timezone("Europe/Budapest")).strftime('%H')
-        return result
-
-    agreed_time_fmt.short_description = u'Egyzt. idő'
-    agreed_time_fmt.admin_order_field = ('agreed_time_from')
-
-    def closed_at_fmt(self, obj):
-        # return obj.created_at.strftime('%Y.%m.%d %H:%M')
-        return obj.closed_at.strftime('%Y.%m.%d') if obj.closed_at else None
-
-    closed_at_fmt.short_description = u'Lezárva'
-    closed_at_fmt.admin_order_field = ('closed_at')
 
     def ticket_type(self, obj):
         types = ' / '.join([t.name for t in obj.ticket_types.all()])
@@ -1133,6 +1296,128 @@ class TicketAdmin(CustomDjangoObjectActions,
 
     download_html.label = u'Leltár adatlap'
     download_html.css_class = 'downloadlink'
+
+
+class UninstallTicketAdmin(
+        CustomDjangoObjectActions, InlineActionsModelAdminMixin,
+        admin.ModelAdmin, HideIcons, _TicketFields):
+
+    # =========================================================================
+    # PARAMETERS
+    # =========================================================================
+    add_form_template = os.path.join('rovidtav', 'select2.html')
+
+    list_per_page = 200
+    list_display_links = None
+    list_display = ('ext_id_link', 'address', 'city_name', 'client_name',
+                    # 'client_link',
+                    'ticket_type_short', 'created_at_fmt', 'closed_at_fmt',
+                    'owner', 'status', 'primer')
+    # TODO: check if this is useful
+    # list_editable = ('owner', )
+    search_fields = ('client__name', 'client__mt_id', 'city__name',
+                     'city__zip', 'ext_id', 'address')
+    change_actions = ('new_note',)
+    inlines = (NoteInline, UninstAttachmentInline, TicketDeviceInline,
+               SystemEmailInline)
+    ordering = ('-created_at',)
+    fields = ['ext_id', 'client', 'ticket_type', 'city', 'address',
+              'client_phone', 'owner', 'date_collected', 'status', 'closed_at',
+              'ticket_tags', 'created_at', ]
+    readonly_fields = ('client_phone', 'full_address', 'ticket_type',
+                       'address', 'city', 'ext_id', 'client', 'created_at',
+                       'closed_at')
+    exclude = ['additional', 'created_by']
+
+    #def has_delete_permission(self, request, obj=None):
+    #    return False
+
+    def get_fields(self, request, obj=None):
+        if obj:
+            return self.fields
+        else:
+            return [
+                'ext_id', 'client', 'ticket_type', 'city', 'address',
+                'owner', 'date_collected', 'status', 'created_at', 'closed_at',
+                'ticket_tags']
+
+    def get_list_filter(self, request):
+        if hasattr(request, 'user'):
+            if is_site_admin(request.user):
+                return (OwnerFilter, IsClosedFilter,
+                        'ticket_tags',)
+            else:
+                return (IsClosedFilter,)
+
+    def get_actions(self, request):
+        actions = super(UninstallTicketAdmin, self).get_actions(request)
+
+        def _assign(technician, instance, request, queryset):
+            queryset.update(owner=technician)
+
+        for technician in User.objects.filter(groups__name=u'Leszerelő'):
+            action_label = u'Szerelőnek kiad: {}'.format(technician.username)
+            action_name = 'assign_to_{}'.format(technician.id)
+            _assign.short_description = action_label
+            setattr(self, action_name,
+                    lambda instance, request, queryset:
+                        _assign(technician, instance, request, queryset))
+            actions[action_name] = (getattr(self, action_name),
+                                    action_name, action_label)
+        return actions
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj and not request.path.strip('/').endswith('change'):
+            return []
+        orig_inlines = self.inlines
+        if not is_site_admin(request.user):
+            # Remove the email inline if not an admin
+            self.inlines = [i for i in self.inlines
+                            if i not in (SystemEmailInline, )]
+        inline_inst = super(UninstallTicketAdmin, self) \
+            .get_inline_instances(request, obj=None)
+        self.inlines = orig_inlines
+        return inline_inst
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            fields = self.readonly_fields
+        else:
+            fields = ()
+        if not is_site_admin(request.user):
+            fields += ('owner', 'ticket_tags')
+            if obj.status not in (u'Kiadva', u'Folyamatban'):
+                fields += ('status', 'closed_at')
+        return fields
+
+    def ext_id_link(self, obj):
+        return (u'<a href="/admin/rovidtav/uninstallticket/{}/change#/tab/inline_0/">'
+                u'{}</a>'.format(obj.pk, obj.ext_id))
+
+    ext_id_link.allow_tags = True
+    ext_id_link.short_description = u'Jegy ID'
+
+    def new_note(self, request, obj):
+        return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
+                        '{}&next={}'.format(obj.get_content_type(),
+                                            obj.pk,
+                                            self._returnto(obj, NoteInline)))
+
+    new_note.label = u'Megjegyzés'
+    new_note.css_class = 'addlink'
+
+    def _returnto(self, obj, inline):
+        returnto_tab = self.inlines.index(inline)
+        return ('/admin/rovidtav/uninstallticket/{}/change/#/tab/inline_{}/'
+                ''.format(obj.pk, returnto_tab))
+
+    def ticket_type_short(self, obj):
+        ttype = unicode(obj.ticket_type)
+        if len(ttype) > 46:
+            return ttype[:43] + u'...'
+        return ttype
+
+    ticket_type_short.short_description = u'Jegy típus'
 
 
 class NetworkTicketAdmin(CustomDjangoObjectActions,
@@ -1349,10 +1634,12 @@ admin.site.register(TicketType, TicketTypeAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Ticket, TicketAdmin)
 admin.site.register(NetworkTicket, NetworkTicketAdmin)
+admin.site.register(UninstallTicket, UninstallTicketAdmin)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(NTAttachment, AttachmentAdmin)
+admin.site.register(UninstAttachment, AttachmentAdmin)
 admin.site.register(NetworkTicketMaterial, NetworkTicketMaterialAdmin)
 admin.site.register(NetworkTicketWorkItem, NetworkTicketWorkItemAdmin)
 

@@ -26,7 +26,7 @@ from django_messages.models import Message
 from django.db.utils import OperationalError
 
 from rovidtav.models import DeviceOwner, Const, SystemEmail, \
-    MaterialMovementMaterial, MaterialMovement, Warehouse, Device, DeviceType
+    MaterialMovementMaterial, Warehouse, Device, DeviceType
 import settings
 
 

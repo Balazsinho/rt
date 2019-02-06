@@ -26,7 +26,8 @@ except ImportError:
 from rovidtav.api.field_const import Fields
 from rovidtav.models import (
     Client, City, Ticket, TicketType, Note, DeviceType, Device, Attachment,
-    DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment, Tag)
+    DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment, Tag,
+    UninstallTicket, UninstAttachment)
 from django.http.response import HttpResponse
 
 
@@ -34,10 +35,7 @@ def _error(data):
     return Response({'error': data})
 
 
-@api_view(['POST'])
-@authentication_classes((SessionAuthentication, BasicAuthentication))
-@permission_classes((IsAuthenticated,))
-def create_ticket(request):
+def _create_ticket(ticket_cls, attachment_cls, request):
     req_keys = (Fields.CITY, Fields.ZIP, Fields.STREET, Fields.HOUSE_NUM,
                 Fields.NAME1, Fields.MT_ID, Fields.TASK_TYPE, Fields.TICKET_ID,
                 )  # Fields.PHONE1)
@@ -50,11 +48,11 @@ def create_ticket(request):
         return _error({'missing_keys': missing_keys})
 
     try:
-        Ticket.objects.get(ext_id=data[Fields.TICKET_ID])
+        ticket_cls.objects.get(ext_id=data[Fields.TICKET_ID])
         return _error('duplicate ticket: {}'.format(data[Fields.TICKET_ID]))
-    except Ticket.DoesNotExist:
+    except ticket_cls.DoesNotExist:
         pass
-    except Ticket.MultipleObjectsReturned:
+    except ticket_cls.MultipleObjectsReturned:
         return _error('duplicate ticket;'
                       ' multiple tickets with id {}'
                       ''.format(data[Fields.TICKET_ID]))
@@ -74,12 +72,17 @@ def create_ticket(request):
                                     name__startswith=data[Fields.NAME1][0])
     except Client.DoesNotExist:
         phone1 = data.get(Fields.PHONE1, u'')
+        phone2 = data.get(Fields.PHONE2, u'')
+        if phone1 and phone2:
+            phone = '{}, {}'.format(phone1, phone2)
+        else:
+            phone = phone1 or phone2
         client = Client.objects.create(
             mt_id=mt_id,
             name=data[Fields.NAME1],
             city=city,
             address=addr,
-            phone=phone1,
+            phone=phone,
             created_by=request.user,
         )
     except Client.MultipleObjectsReturned:
@@ -114,7 +117,7 @@ def create_ticket(request):
         time_from = None
         time_to = None
 
-    ticket = Ticket.objects.create(
+    ticket = ticket_cls.objects.create(
         ext_id=data[Fields.TICKET_ID],
         client=client,
         city=city,
@@ -125,7 +128,11 @@ def create_ticket(request):
         agreed_time_to=time_to,
     )
 
-    ticket.ticket_types.add(*ticket_types)
+    try:
+        ticket.ticket_types.add(*ticket_types)
+    except AttributeError:
+        ticket.ticket_type = ticket_types[0]
+        ticket.save()
 
     if Fields.EXTRA_DEVICES in data and data[Fields.EXTRA_DEVICES]:
         tag, _ = Tag.objects.get_or_create(name='Extra eszköz')
@@ -160,36 +167,47 @@ def create_ticket(request):
 
     if Fields.DEVICES in data:
         for device in data[Fields.DEVICES]:
+            if device.get(Fields.DEV_ACTION) == u'Leszerelendő':
+                status = Const.DeviceStatus.TO_UNINSTALL
+            else:
+                status = Const.DeviceStatus.ACTIVE
             try:
                 dev = Device.objects.get(
                     sn=device[Fields.DEV_SN])
+                if dev.status != status:
+                    dev.status = status
+                    dev.save()
             except Device.DoesNotExist:
                 dev_type, _ = DeviceType.objects.get_or_create(
                     name=(device[Fields.DEV_TYPE] or '').strip())
                 dev = Device.objects.create(
                     sn=device[Fields.DEV_SN],
                     type=dev_type,
-                    card_sn=device.get(Fields.DEV_CARD_SN),
+                    status=status,
                 )
-                DeviceOwner.objects.create(device=dev,
-                                           content_type=client.get_content_type_obj(),
-                                           object_id=client.pk)
+                DeviceOwner.objects.create(
+                    device=dev, content_type=client.get_content_type_obj(),
+                    object_id=client.pk)
             except Device.MultipleObjectsReturned:
                 # Handle error, now just leave it, probably some old
                 # inconsistency
                 pass
+            if ticket_cls == UninstallTicket and \
+                    dev.uninstall_ticket != ticket:
+                dev.uninstall_ticket = ticket
+                dev.save()
 
     if 'html' in data:
-        Attachment.objects.create(
+        attachment_cls.objects.create(
             ticket=ticket,
             name='Hibajegy.html',
             _data=data['html'].encode('utf-8'),
-            remark='A matávtól érkezett eredeti hibajegy',
+            remark=u'A matávtól érkezett eredeti hibajegy',
             created_by=request.user,
         )
 
     for att_name, att_content in data['attachments'].iteritems():
-        Attachment.objects.create(
+        attachment_cls.objects.create(
             ticket=ticket,
             name=att_name,
             _data=att_content,
@@ -197,6 +215,20 @@ def create_ticket(request):
         )
 
     return Response({'ticket_id': ticket.pk})
+
+
+@api_view(['POST'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def create_ticket(request):
+    return _create_ticket(Ticket, Attachment, request)
+
+
+@api_view(['POST'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def create_uninstall_ticket(request):
+    return _create_ticket(UninstallTicket, UninstAttachment, request)
 
 
 @api_view(['POST'])
@@ -328,6 +360,20 @@ def download_mmattachment(request, attachment_id):
 @permission_classes((IsAuthenticated,))
 def download_mmthumbnail(request, attachment_id):
     return _thumbnail_from_model(MMAttachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_uninstattachment(request, attachment_id):
+    return _download_from_model(UninstAttachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_uninstthumbnail(request, attachment_id):
+    return _thumbnail_from_model(UninstAttachment, attachment_id)
 
 
 @api_view(['GET'])
