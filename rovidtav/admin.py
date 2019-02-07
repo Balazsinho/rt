@@ -266,6 +266,16 @@ class ClientAdmin(admin.ModelAdmin):
     list_display = ('name', 'mt_id', 'city_name', 'address', 'created_at_fmt')
     inlines = (TicketInline, UninstallTicketInline, DeviceInline)
 
+    def get_inline_instances(self, request, obj=None):
+        if not obj and not request.path.strip('/').endswith('change'):
+            return []
+        return super(ClientAdmin, self).get_inline_instances(request, obj)
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.is_superuser:
+            return ('created_by',)
+        return self.readonly_fields
+
     def city_name(self, obj):
         return u'{} ({})'.format(obj.city.name, obj.city.zip)
 
