@@ -192,7 +192,7 @@ def _create_ticket(ticket_cls, attachment_cls, request):
                 # Handle error, now just leave it, probably some old
                 # inconsistency
                 pass
-            if ticket_cls == UninstallTicket and \
+            if ticket_cls == UninstallTicket and dev and \
                     dev.uninstall_ticket != ticket:
                 dev.uninstall_ticket = ticket
                 dev.save()
