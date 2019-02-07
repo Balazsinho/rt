@@ -1356,6 +1356,9 @@ class UninstallTicketAdmin(
                 return (IsClosedFilter,)
 
     def get_actions(self, request):
+        if not request.user.is_superuser:
+            return []
+
         actions = super(UninstallTicketAdmin, self).get_actions(request)
 
         def _assign(technician, instance, request, queryset):
