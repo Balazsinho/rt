@@ -65,6 +65,12 @@ class MessageAdmin(admin.ModelAdmin):
     search_fields = ('subject', 'body')
     raw_id_fields = ('sender', 'recipient', 'parent_msg')
 
+    def get_model_perms(self, request):
+        # Hide from admin index
+        if not request.user.is_superuser:
+            return {}
+        return super(MessageAdmin, self).get_model_perms(request)
+
     def save_model(self, request, obj, form, change):
         """
         Saves the message for the recipient and looks in the form instance

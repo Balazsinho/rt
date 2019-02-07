@@ -202,6 +202,12 @@ class DeviceAdmin(CustomDjangoObjectActions,
     # change_form_template = os.path.join('rovidtav', 'select2_wide.html')
     change_list_template = os.path.join('rovidtav', 'change_list_noadd.html')
 
+    def get_model_perms(self, request):
+        # Hide from admin index
+        if not request.user.is_superuser:
+            return {}
+        return super(DeviceAdmin, self).get_model_perms(request)
+
     def get_queryset(self, request):
         if request.user.is_superuser:
             return ModelAdminRedirect.get_queryset(self, request)
