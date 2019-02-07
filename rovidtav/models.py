@@ -319,7 +319,6 @@ class DeviceType(BaseEntity):
         return ('name',)
 
 
-
 class Payoff(BaseEntity):
 
     year = models.IntegerField(db_column='ev', verbose_name=u'Év',
@@ -521,7 +520,7 @@ class WorkItemTicket(BaseTicket):
         self._trans(u'Új tulajdonos', prev_owner, owner)
 
 
-class UninstallTicket(WorkItemTicket):
+class UninstallTicket(WorkItemTicket, JsonExtended):
 
     ticket_type = models.ForeignKey(
         TicketType, db_column='tipus', verbose_name=u'Jegy típus',
@@ -548,6 +547,13 @@ class UninstallTicket(WorkItemTicket):
         db_table = 'leszereles_jegy'
         verbose_name = u'Leszerelés jegy'
         verbose_name_plural = u'Leszerelés jegyek'
+
+    class Keys:
+        """
+        The keys under which additional data can be stored without extending
+        the database
+        """
+        COLLECTABLE_MONEY = u'Beszedés'
 
     @staticmethod
     def autocomplete_search_fields():
