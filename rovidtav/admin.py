@@ -1361,7 +1361,7 @@ class UninstallTicketAdmin(
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return (OwnerFilter, IsClosedFilter,
-                        'ticket_tags', 'city', 'city__primer')
+                        'ticket_tags', 'city',)
             else:
                 return (IsClosedFilter,)
 
