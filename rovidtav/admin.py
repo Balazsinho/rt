@@ -1432,6 +1432,8 @@ class UninstallTicketAdmin(
 
     def ticket_type_short(self, obj):
         ttype = unicode(obj.ticket_type)
+        if ttype.startswith('L-Kiemelt'):
+            ttype = u'Begyűjtés ' + ttype[ttype.index('('):]
         if len(ttype) > 46:
             return ttype[:43] + u'...'
         return ttype
