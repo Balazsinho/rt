@@ -1394,7 +1394,7 @@ class UninstallTicketAdmin(
         else:
             fields = ()
         if not is_site_admin(request.user):
-            fields += ('owner', 'ticket_tags')
+            fields += ('ticket_tags',)
             if obj.status not in (u'Kiadva', u'Folyamatban'):
                 fields += ('status', 'closed_at')
         return fields
