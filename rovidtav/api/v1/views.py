@@ -123,7 +123,7 @@ def _create_ticket(ticket_cls, attachment_cls, request):
         city=city,
         address=addr,
         created_by=request.user,
-        created_at=data['mail_date'],
+        created_at=data.get(Fields.DATE_CREATED, data['mail_date']),
         agreed_time_from=time_from,
         agreed_time_to=time_to,
     )

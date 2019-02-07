@@ -104,6 +104,7 @@ class Const(object):
         def uninstall_choices():
             return (
                 (Const.TicketStatus.NEW,) * 2,
+                (Const.TicketStatus.ASSIGNED,) * 2,
                 (Const.TicketStatus.AWAITING_CALL,) * 2,
                 (Const.TicketStatus.CALLED,) * 2,
                 (Const.TicketStatus.DONE_SUCC,) * 2,
