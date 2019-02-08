@@ -1333,7 +1333,7 @@ class UninstallTicketAdmin(
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'address')
-    change_actions = ('new_note',)
+    change_actions = ('new_note', 'assign_to_me')
     inlines = (NoteInline, UninstAttachmentInline, TicketDeviceInline,
                SystemEmailInline)
     ordering = ('-created_at',)
@@ -1385,6 +1385,15 @@ class UninstallTicketAdmin(
                                     action_name, action_label)
         return actions
 
+    def get_change_actions(self, request, object_id, form_url):
+        if not object_id:
+            return []
+        actions = ['new_note']
+        obj = UninstallTicket.objects.get(id=object_id)
+        if not request.user.is_superuser and obj.owner != request.user:
+            actions.insert(0, 'assign_to_me')
+        return actions
+
     def get_inline_instances(self, request, obj=None):
         if not obj and not request.path.strip('/').endswith('change'):
             return []
@@ -1404,7 +1413,7 @@ class UninstallTicketAdmin(
         else:
             fields = ()
         if not is_site_admin(request.user):
-            fields += ('ticket_tags',)
+            fields += ('ticket_tags', 'owner')
             if obj.status not in (u'Kiadva', u'Folyamatban'):
                 fields += ('status', 'closed_at')
         return fields
@@ -1424,6 +1433,12 @@ class UninstallTicketAdmin(
 
     new_note.label = u'Megjegyzés'
     new_note.css_class = 'addlink'
+
+    def assign_to_me(self, request, obj):
+        obj.owner = request.user
+        obj.save(user=request.user)
+
+    assign_to_me.label = u'Felveszem'
 
     def _returnto(self, obj, inline):
         returnto_tab = self.inlines.index(inline)

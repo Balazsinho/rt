@@ -433,7 +433,7 @@ class BaseTicket(BaseHub):
         if self.pk:
             prev_inst = self.__class__.objects.get(pk=self.pk)
             if self._owner_changed(prev_inst):
-                self._owner_trans(prev_inst)
+                self._owner_trans(prev_inst, user=kwargs.get('user'))
 
                 if self.status == Const.TicketStatus.NEW and self.owner:
                     self.status = Const.TicketStatus.ASSIGNED
@@ -510,14 +510,14 @@ class WorkItemTicket(BaseTicket):
     def devices(self):
         return Device.objects.get(client=self.client)
 
-    def _owner_trans(self, prev_inst):
+    def _owner_trans(self, prev_inst, user):
         """
         Creates the ticketevent for an owner change and returns the owners
         """
         prev_owner = Const.NO_OWNER if not prev_inst.owner else \
             prev_inst.owner.username
         owner = Const.NO_OWNER if not self.owner else self.owner.username
-        self._trans(u'Új tulajdonos', prev_owner, owner)
+        self._trans(u'Új tulajdonos', prev_owner, owner, user)
 
 
 class UninstallTicket(WorkItemTicket, JsonExtended):
