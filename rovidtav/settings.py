@@ -28,7 +28,7 @@ ALLOWED_HOSTS = []
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-ADMIN_LOGIN_REDIRECT_URL = '/admin/rovidtav/ticket/'
+ADMIN_LOGIN_REDIRECT_URL = '/admin/rovidtav/'
 
 IMAGE_DOWNSCALE_PX = 900
 IMAGE_THUMB_PX = 180
