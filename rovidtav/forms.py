@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import re
 import datetime
 
 from django.forms.models import ModelChoiceField
