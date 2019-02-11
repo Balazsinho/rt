@@ -133,6 +133,51 @@ class IsClosedFilter(SimpleListFilter):
             return queryset
 
 
+class UninstallIsClosedFilter(SimpleListFilter):
+
+    title = u'Státusz'
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('', None),
+            ('own_open', u'Saját (nyitott)'),
+            ('own_all', u'Saját (mind)'),
+            ('open', u'Nyitott'),
+            ('closed', u'Lezárt'),
+            ('all', u'Mind'),
+        )
+
+    def choices(self, cl):
+        for lookup, title in self.lookup_choices:
+            yield {
+                'selected': self.value() == lookup,
+                'query_string': cl.get_query_string({
+                    self.parameter_name: lookup,
+                }, []),
+                'display': title,
+            }
+
+    def queryset(self, request, queryset):
+        if self.value() is None:
+            self.used_parameters[self.parameter_name] = 'open'
+
+        if self.value() == 'open':
+            return queryset.filter(status__in=(u'Új', u'Kiadva',
+                                               u'Folyamatban'))
+        elif self.value() == 'closed':
+            return queryset.filter(status__in=(u'Lezárva - Kész',
+                                               u'Lezárva - Eredménytelen',
+                                               u'Duplikált'))
+        elif self.value() == 'own_open':
+            return queryset.filter(status__in=(u'Új', u'Kiadva',
+                                               u'Folyamatban'),
+                                   owner=request.user)
+        elif self.value() == 'own_all':
+            return queryset.filter(owner=request.user)
+        elif self.value() == 'all':
+            return queryset
+
 
 #===============================================================================
 # class DeviceOwnerFilter(InputFilter):
