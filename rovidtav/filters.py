@@ -140,7 +140,7 @@ class UninstallIsClosedFilter(SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return (
-            ('', None),
+            (None, u''),
             ('own_open', u'Saját (nyitott)'),
             ('own_all', u'Saját (mind)'),
             ('open', u'Nyitott'),
@@ -160,7 +160,7 @@ class UninstallIsClosedFilter(SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value() is None:
-            self.used_parameters[self.parameter_name] = 'open'
+            self.used_parameters[self.parameter_name] = 'own_open'
 
         if self.value() == 'open':
             return queryset.filter(status__in=(u'Új', u'Kiadva',

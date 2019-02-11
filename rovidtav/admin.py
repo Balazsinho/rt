@@ -46,7 +46,8 @@ from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     SystemEmail, ApplicantAttributes, DeviceOwner, Tag, Const,\
     NetworkTicketMaterial, NetworkTicketWorkItem, MaterialMovement,\
     MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
-    DeviceReassignEvent, WarehouseLocation, UninstallTicket, UninstAttachment
+    DeviceReassignEvent, WarehouseLocation, UninstallTicket, UninstAttachment,\
+    UninstallTicketRule
 from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
@@ -1672,6 +1673,7 @@ admin.site.register(Tag, TagAdmin)
 admin.site.register(Ticket, TicketAdmin)
 admin.site.register(NetworkTicket, NetworkTicketAdmin)
 admin.site.register(UninstallTicket, UninstallTicketAdmin)
+admin.site.register(UninstallTicketRule)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)

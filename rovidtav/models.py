@@ -569,6 +569,26 @@ class UninstallTicket(WorkItemTicket, JsonExtended):
         super(UninstallTicket, self).save(*args, **kwargs)
 
 
+class UninstallTicketRule(BaseEntity):
+
+    primer = models.CharField(db_column='primer', max_length=60,
+                              verbose_name=u'Primer',
+                              null=False, blank=False)
+    assign_to = models.ForeignKey(
+            User, related_name="%(class)s_kiad",
+            related_query_name="%(class)s_kiad",
+            null=False, blank=False, verbose_name=u'Szerelő',
+            limit_choices_to={'groups__name': u'Leszerelő'})
+
+    class Meta:
+        verbose_name = u'Leszerelés jegy szabály'
+        verbose_name_plural = u'Leszerelés jegy szabályok'
+
+    def __unicode__(self):
+        return unicode(u'Primer {} - Szerelő {}'.format(self.primer,
+                                                        self.assign_to))
+
+
 class Device(BaseEntity):
 
     """

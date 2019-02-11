@@ -27,7 +27,7 @@ from rovidtav.api.field_const import Fields
 from rovidtav.models import (
     Client, City, Ticket, TicketType, Note, DeviceType, Device, Attachment,
     DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment, Tag,
-    UninstallTicket, UninstAttachment)
+    UninstallTicket, UninstAttachment, UninstallTicketRule)
 from django.http.response import HttpResponse
 
 
@@ -35,7 +35,7 @@ def _error(data):
     return Response({'error': data})
 
 
-def _create_ticket(ticket_cls, attachment_cls, request):
+def _create_ticket(ticket_cls, attachment_cls, request, post_processor=None):
     req_keys = (Fields.CITY, Fields.ZIP, Fields.STREET, Fields.HOUSE_NUM,
                 Fields.NAME1, Fields.MT_ID, Fields.TASK_TYPE, Fields.TICKET_ID,
                 )  # Fields.PHONE1)
@@ -214,6 +214,9 @@ def _create_ticket(ticket_cls, attachment_cls, request):
             created_by=request.user,
         )
 
+    if post_processor:
+        post_processor(request, ticket)
+
     return Response({'ticket_id': ticket.pk})
 
 
@@ -228,7 +231,15 @@ def create_ticket(request):
 @authentication_classes((SessionAuthentication, BasicAuthentication))
 @permission_classes((IsAuthenticated,))
 def create_uninstall_ticket(request):
-    return _create_ticket(UninstallTicket, UninstAttachment, request)
+
+    def auto_assign(request, ticket):
+        rules = UninstallTicketRule.objects.filter(primer=ticket.city.primer)
+        if rules:
+            rule = rules[0]
+            ticket.owner = rule.assign_to
+            ticket.save(user=request.user)
+
+    return _create_ticket(UninstallTicket, UninstAttachment, request, auto_assign)
 
 
 @api_view(['POST'])
