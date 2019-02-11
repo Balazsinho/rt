@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import codecs
 from copy import copy
 from PIL import Image
 import StringIO
@@ -1335,7 +1336,7 @@ class UninstallTicketAdmin(
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
                      'city__zip', 'ext_id', 'address')
-    change_actions = ('new_note', 'assign_to_me')
+    change_actions = ('new_note', 'assign_to_me', 'uninstall_document')
     inlines = (NoteInline, UninstAttachmentInline, TicketDeviceInline,
                SystemEmailInline)
     ordering = ('-created_at',)
@@ -1390,7 +1391,7 @@ class UninstallTicketAdmin(
     def get_change_actions(self, request, object_id, form_url):
         if not object_id:
             return []
-        actions = ['new_note']
+        actions = ['uninstall_document', 'new_note']
         obj = UninstallTicket.objects.get(id=object_id)
         if not request.user.is_superuser and obj.owner != request.user:
             actions.insert(0, 'assign_to_me')
@@ -1435,6 +1436,27 @@ class UninstallTicketAdmin(
 
     new_note.label = u'Megjegyzés'
     new_note.css_class = 'addlink'
+
+    def uninstall_document(self, request, obj):
+        with codecs.open(os.path.join(settings.PROJECT_DIR, 'templates',
+                               'uninstall_template.html')) as template:
+            template_content = template.read().decode('utf-8')
+        replacements = {
+            'date': datetime.datetime.now().strftime('%Y.%m.%d %H:%M'),
+            'wfms_id': obj.ext_id,
+            'mt_id': obj.client.mt_id,
+            'client_name': obj.client.name,
+            'client_address': u'{} {}'.format(obj.client.city, obj.client.address),
+            'client_phone': obj.client.phone,
+            'year': datetime.datetime.now().strftime('%Y'),
+        }
+        for key, data in replacements.items():
+            template_content = template_content.replace(
+                u'{{' + key + u'}}', data)
+        return HttpResponse(template_content,
+                            content_type='text/html')
+
+    uninstall_document.label = u'Leszerelési lap'
 
     def assign_to_me(self, request, obj):
         obj.owner = request.user
