@@ -468,12 +468,13 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
         if not mm.finalized:
             actions = ['finalize']
         else:
-            actions = ['uninstall_report']
+            actions = []
         if is_site_admin(request.user) and not mm.finalized:
             actions.extend([act for act in self.change_actions
                             if act not in ('finalize',)])
         else:
-            actions.append('new_note')
+            actions.extend(['new_note', 'uninstall_report_telekom',
+                            'uninstall_report_rovidtav'])
         return actions
 
     def get_inline_instances(self, request, obj=None):
