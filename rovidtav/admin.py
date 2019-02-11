@@ -54,7 +54,7 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     DeviceReassignEventForm, WarehouseLocationForm, MaterialMovementForm,\
     WarehouseForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
-    PayoffFilter, ActiveUserFilter
+    PayoffFilter, ActiveUserFilter, UninstallOwnerFilter
 from _collections import defaultdict
 from openpyxl.reader.excel import load_workbook
 from openpyxl.writer.excel import save_virtual_workbook
@@ -1360,7 +1360,7 @@ class UninstallTicketAdmin(
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
-                return (OwnerFilter, IsClosedFilter,
+                return (UninstallOwnerFilter, IsClosedFilter,
                         'ticket_tags', 'city',)
             else:
                 return (IsClosedFilter,)

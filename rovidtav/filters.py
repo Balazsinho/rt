@@ -3,7 +3,7 @@
 from django.contrib.auth.models import User
 from django.contrib.admin.filters import SimpleListFilter
 from rovidtav.admin_helpers import get_technician_choices,\
-    get_network_technician_choices
+    get_network_technician_choices, get_unintall_technician_choices
 from rovidtav.models import Payoff
 
 
@@ -14,6 +14,21 @@ class OwnerFilter(SimpleListFilter):
 
     def lookups(self, request, model_admin):
         return get_technician_choices(only_active=False)
+
+    def queryset(self, request, queryset):
+        if self.value() not in (None, 'all'):
+            return queryset.filter(owner=self.value())
+        else:
+            return queryset
+
+
+class UninstallOwnerFilter(SimpleListFilter):
+
+    title = u'Szerelő'
+    parameter_name = 'owner'
+
+    def lookups(self, request, model_admin):
+        return get_unintall_technician_choices(only_active=False)
 
     def queryset(self, request, queryset):
         if self.value() not in (None, 'all'):
