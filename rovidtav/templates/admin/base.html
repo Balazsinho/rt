@@ -16,6 +16,14 @@
 <link rel="stylesheet" type="text/css" href="{% static "jet/css/themes/"|add:THEME|add:"/jquery-ui.theme.css" %}?cache={{ cache_nullifier }}" class="jquery-ui-stylesheet" />
 <link rel="stylesheet" type="text/css" href="{% static "css/news.css" %}" class="jquery-ui-stylesheet" />
 
+<style>
+@media only screen and (max-width: 600px) {
+	#topmenu{
+		display: none;
+	}
+}
+</style>
+
 {% block extrastyle %}{% endblock %}
 {% if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}" />{% endif %}
 
@@ -183,6 +191,7 @@
 		                    <span class="sidebar-header-menu-icon icon-cross"></span>
 		                </a>
 			            {% if user.is_superuser %}
+			            <span id="topmenu">
 				            <a href="/admin/rovidtav/ticket/" class="sidebar-header-menu quicklink">
 				                <span style="font-size: 0.9em">Jegyek</span>
 				            </a>
@@ -195,6 +204,7 @@
 				            <a href="/reports/" class="sidebar-header-menu quicklink">
 				                <span style="font-size: 0.9em">Riportok</span>
 				            </a>
+				        </span>
 		                {% endif %}
 			            <a href="/messages/" class="sidebar-header-menu quicklink{% if unread_messages %} unread{% endif %}">
 			                <span style="font-size: 1.3em">&#x2709;</span>
