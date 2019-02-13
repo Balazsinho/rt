@@ -914,9 +914,20 @@ class _TicketFields(object):
     client_name.admin_order_field = 'client__name'
 
     def client_phone(self, obj):
-        return obj.client.phone
+
+        def _fmt(phone_num):
+            if not phone_num.startswith('+36') and phone_num:
+                if phone_num.startswith('06') or \
+                        phone_num.startswith('36'):
+                    phone_num = phone_num[2:]
+                phone_num = '+36' + phone_num
+            return phone_num
+
+        return '</p><label></label><p>'.join(
+            map(_fmt, map(unicode.strip, obj.client.phone.split(','))))
 
     client_phone.short_description = u'Telefonszám'
+    client_phone.allow_tags = True
 
     def primer(self, obj):
         return obj.city.primer
