@@ -1439,6 +1439,12 @@ class UninstallTicketAdmin(
     new_note.css_class = 'addlink'
 
     def uninstall_document(self, request, obj):
+
+        def _postfix(replacements, key_prefix):
+            return str(len([k for k in replacements.keys()
+                            if k.startswith(key_prefix)
+                            and replacements[k]]) + 1)
+
         with codecs.open(os.path.join(settings.PROJECT_DIR, 'templates',
                                'uninstall_template.html')) as template:
             template_content = template.read().decode('utf-8')
@@ -1450,10 +1456,34 @@ class UninstallTicketAdmin(
             'client_address': u'{} {}'.format(obj.client.city, obj.client.address),
             'client_phone': obj.client.phone,
             'year': datetime.datetime.now().strftime('%Y'),
+            'card1': '',
+            'card2': '',
+            'card3': '',
+            'stb1': '',
+            'stb2': '',
+            'stb3': '',
+            'owned1': '',
+            'owned2': '',
+            'owned3': '',
+            'rented_stb': 0,
         }
+        for dev in [do.device for do in DeviceOwner.objects.filter(
+                    content_type=ContentTypes.client,
+                    object_id=obj.client.id)]:
+            if 'SMART CARD' in dev.type.name:
+                key = 'card' + _postfix(replacements, 'card')
+                if dev.status == Const.DeviceStatus.TO_UNINSTALL:
+                    replacements[key] = dev.sn
+            else:
+                postfix = _postfix(replacements, 'stb')
+                if dev.status == Const.DeviceStatus.TO_UNINSTALL:
+                    replacements['stb' + postfix] = dev.sn
+                    replacements['owned' + postfix] = u'Bérelt'
+                    replacements['rented_stb'] += 1
+
         for key, data in replacements.items():
             template_content = template_content.replace(
-                u'{{' + key + u'}}', data)
+                u'{{' + key + u'}}', unicode(data))
         return HttpResponse(template_content,
                             content_type='text/html')
 
