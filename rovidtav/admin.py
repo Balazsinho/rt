@@ -921,7 +921,7 @@ class _TicketFields(object):
                         phone_num.startswith('36'):
                     phone_num = phone_num[2:]
                 phone_num = '+36' + phone_num
-            return phone_num
+            return '<a href="tel:{}">{}</a>'.format(phone_num, phone_num)
 
         return '</p><label></label><p>'.join(
             map(_fmt, map(unicode.strip, obj.client.phone.split(','))))
