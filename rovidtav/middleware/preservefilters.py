@@ -25,7 +25,8 @@ class PreserveFilters(object):
             return
 
         if not current_url.namespace == 'admin' or \
-           not current_url.view_name.endswith('_changelist'):
+           not current_url.view_name.endswith('_changelist') or \
+           (request.user and not request.user.is_superuser):
             return
 
         referer_parsed = urlparse(unicode(request.META.get("HTTP_REFERER", None)))
