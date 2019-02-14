@@ -970,7 +970,7 @@ class _TicketFields(object):
 
 class IndividualWorkItemAdmin(admin.ModelAdmin):
 
-    list_display = ('owner', 'created_at_fmt', 'price', 'remarks_short')
+    list_display = ('owner', 'work_date_fmt', 'price', 'remarks_short')
 
     def get_form(self, request, obj=None, **kwargs):
         form = admin.ModelAdmin.get_form(self, request, obj=obj, **kwargs)
@@ -992,10 +992,10 @@ class IndividualWorkItemAdmin(admin.ModelAdmin):
             return qs
         return qs.filter(owner=request.user)
 
-    def created_at_fmt(self, obj):
-        return obj.created_at.strftime('%Y.%m.%d')
+    def work_date_fmt(self, obj):
+        return obj.work_date.strftime('%Y.%m.%d')
 
-    created_at_fmt.short_description = u'Létrehozva'
+    work_date_fmt.short_description = u'Munka dátuma'
 
     def remarks_short(self, obj):
         return obj.remark[:25].strip() + u'...' \

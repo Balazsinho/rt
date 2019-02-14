@@ -366,6 +366,9 @@ class IndividualWorkItem(BaseEntity):
     owner = models.ForeignKey(User, blank=False, db_column='vegezte',
                               related_name='munkavegzo',
                               verbose_name=u'Munkát végezte')
+    work_date = models.DateField(db_column='munka_datum',
+                                 default=datetime.now,
+                                 verbose_name=u'Munka dátuma')
 
     created_at = models.DateTimeField(db_column='letrehozas_datum',
                                       auto_now_add=True,
