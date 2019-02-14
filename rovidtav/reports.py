@@ -4,7 +4,7 @@ from django.forms.fields import ChoiceField
 from model_report.report import reports
 
 from rovidtav.report_helpers import CustomReportAdmin, Label
-from rovidtav.models import Ticket, Note, NetworkTicket
+from rovidtav.models import Ticket, Note, NetworkTicket, IndividualWorkItem
 from _collections import defaultdict
 
 
@@ -330,8 +330,32 @@ class HistoryReport(CustomReportAdmin):
         return qs.filter(is_history=True)
 
 
+class IndividualWIReport(CustomReportAdmin):
+
+    title = u'Egyedi munka riport'
+    model = IndividualWorkItem
+    fields = [
+        'owner__username',
+        'created_at',
+        'price',
+        'remark',
+    ]
+    override_field_labels = {
+        'owner__username': Label(u'Dolgozó'),
+        'created_at': Label(u'Dátum'),
+    }
+    list_filter = ['created_at', 'owner']
+    list_order_by = ('-created_at',)
+    type = 'report'
+    override_field_formats = {
+        'created_at': to_date,
+    }
+    extra_col_map = {}
+
+
 reports.register('osszesito', SummaryList)
 reports.register('riport_cimkek_alapjan', OnDemandList)
 reports.register('halozati_riport_cimkek_alapjan', OnDemandNetworkTicketList)
 reports.register('halozati_jegy_osszesito', NetworkTicketSummaryList)
-reports.register('tortenet', HistoryReport) 
+reports.register('tortenet', HistoryReport)
+reports.register('egyedi_munka_riport', IndividualWIReport)
