@@ -1413,9 +1413,9 @@ class UninstallTicketAdmin(
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return (UninstallOwnerFilter, IsClosedFilter,
-                        'ticket_tags', 'city',)
+                        'ticket_tags', 'city', 'city__primer')
             else:
-                return (UninstallIsClosedFilter,)
+                return (UninstallIsClosedFilter, 'city__primer')
 
     def get_actions(self, request):
         if not request.user.is_superuser:
