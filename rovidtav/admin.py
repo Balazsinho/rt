@@ -976,8 +976,7 @@ class IndividualWorkItemAdmin(admin.ModelAdmin):
         form = admin.ModelAdmin.get_form(self, request, obj=obj, **kwargs)
         if not is_site_admin(request.user):
             form.base_fields['owner'].initial = request.user
-            form.base_fields['owner'].disabled = True
-
+            form.base_fields['owner'].widget = forms.HiddenInput()
         return form
 
     def get_list_filter(self, request):
