@@ -354,6 +354,36 @@ class Payoff(BaseEntity):
         return ('name',)
 
 
+class IndividualWorkItem(BaseEntity):
+
+    price = models.IntegerField(db_column='ar', verbose_name=u'Ár',
+                                null=False, blank=False)
+    remark = models.TextField(db_column='megjegyzes',
+                              verbose_name=u'Megjegyzés',
+                              help_text=u'Írd le mi volt a tevékenység, ha töb'
+                              u'b tételből tevődik össze, sorold fel mik azok',
+                              null=False, blank=False)
+    owner = models.ForeignKey(User, blank=False, db_column='vegezte',
+                              related_name='munkavegzo',
+                              verbose_name=u'Munkát végezte')
+
+    created_at = models.DateTimeField(db_column='letrehozas_datum',
+                                      auto_now_add=True,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, db_column='letrehozas_fh',
+                                   editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'egyedi_munka'
+        verbose_name = u'Egyedi munka'
+        verbose_name_plural = u'Egyedi munkák'
+
+    def __unicode__(self):
+        return u'{} - {} - {}Ft'.format(
+            self.owner, self.created_at.strftime('%Y-%m-%d'), self.price)
+
+
 class TicketType(BaseEntity):
 
     network_ticket = models.BooleanField(default=False,

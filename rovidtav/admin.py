@@ -48,7 +48,7 @@ from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     NetworkTicketMaterial, NetworkTicketWorkItem, MaterialMovement,\
     MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
     DeviceReassignEvent, WarehouseLocation, UninstallTicket, UninstAttachment,\
-    UninstallTicketRule
+    UninstallTicketRule, IndividualWorkItem
 from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
@@ -968,6 +968,43 @@ class _TicketFields(object):
     closed_at_fmt.admin_order_field = ('closed_at')
 
 
+class IndividualWorkItemAdmin(admin.ModelAdmin):
+
+    list_display = ('owner', 'created_at_fmt', 'price', 'remarks_short')
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = admin.ModelAdmin.get_form(self, request, obj=obj, **kwargs)
+        if not is_site_admin(request.user):
+            form.base_fields['owner'].initial = request.user
+            form.base_fields['owner'].disabled = True
+
+        return form
+
+    def get_list_filter(self, request):
+        if hasattr(request, 'user'):
+            if is_site_admin(request.user):
+                return ('owner', 'created_at')
+            else:
+                return []
+
+    def get_queryset(self, request):
+        qs = admin.ModelAdmin.get_queryset(self, request)
+        if is_site_admin(request.user):
+            return qs
+        return qs.filter(owner=request.user)
+
+    def created_at_fmt(self, obj):
+        return obj.created_at.strftime('%Y.%m.%d')
+
+    created_at_fmt.short_description = u'Létrehozva'
+
+    def remarks_short(self, obj):
+        return obj.remark[:25].strip() + u'...' \
+            if len(obj.remark) > 25 else obj.remark
+
+    remarks_short.short_description = u'Megjegyzés'
+
+
 class TicketAdmin(CustomDjangoObjectActions,
                   InlineActionsModelAdminMixin,
                   admin.ModelAdmin,
@@ -1737,6 +1774,7 @@ admin.site.register(Tag, TagAdmin)
 admin.site.register(Ticket, TicketAdmin)
 admin.site.register(NetworkTicket, NetworkTicketAdmin)
 admin.site.register(UninstallTicket, UninstallTicketAdmin)
+admin.site.register(IndividualWorkItem, IndividualWorkItemAdmin)
 admin.site.register(UninstallTicketRule)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
