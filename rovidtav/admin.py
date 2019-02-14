@@ -1384,7 +1384,7 @@ class UninstallTicketAdmin(
     # TODO: check if this is useful
     # list_editable = ('owner', )
     search_fields = ('client__name', 'client__mt_id', 'city__name',
-                     'city__zip', 'ext_id', 'address')
+                     'city__zip', 'ext_id', 'address', 'client__phone')
     change_actions = ('new_note', 'assign_to_me', 'uninstall_document')
     inlines = (NoteInline, UninstAttachmentInline, TicketDeviceInline,
                SystemEmailInline)
@@ -1466,7 +1466,7 @@ class UninstallTicketAdmin(
             fields = ()
         if not is_site_admin(request.user):
             fields += ('ticket_tags', 'owner')
-            if obj and obj.status not in (u'Kiadva', u'Folyamatban'):
+            if obj and obj.status not in (u'Új', u'Kiadva', u'Folyamatban'):
                 fields += ('status', 'closed_at',)
         return fields
 
