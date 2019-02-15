@@ -847,7 +847,7 @@ class DeviceReassignEvent(BaseEntity):
                     owner_prefix = u'Hiba - '
                     owner_str = u' - MT: {}'.format(owner.mt_id)
                 else:
-                    owner_prefix = u'Szerelő - '
+                    owner_prefix = u'Rövidtáv - '
                     owner_str = u' - {}'.format(unicode(owner))
             except Exception as e:
                 owner_prefix = u''
