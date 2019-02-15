@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-from datetime import datetime
 
 from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
 from django.core.urlresolvers import reverse
