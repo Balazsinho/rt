@@ -336,19 +336,19 @@ class IndividualWIReport(CustomReportAdmin):
     model = IndividualWorkItem
     fields = [
         'owner__username',
-        'created_at',
+        'work_date',
         'price',
         'remark',
     ]
     override_field_labels = {
         'owner__username': Label(u'Dolgozó'),
-        'created_at': Label(u'Dátum'),
+        'work_date': Label(u'Dátum'),
     }
-    list_filter = ['created_at', 'owner']
-    list_order_by = ('-created_at',)
+    list_filter = ['work_date', 'owner']
+    list_order_by = ('-work_date',)
     type = 'report'
     override_field_formats = {
-        'created_at': to_date,
+        'work_date': to_date,
     }
     extra_col_map = {}
 
