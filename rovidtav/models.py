@@ -12,7 +12,6 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes import fields
 from multiselectfield import MultiSelectField
 from django.db.utils import IntegrityError
 
@@ -837,10 +836,23 @@ class DeviceReassignEvent(BaseEntity):
         uninst_ticket = self.device.uninstall_ticket
         if uninst_ticket:
             client = uninst_ticket.client
-            return u'{} (WFMS: {}, MT: {} )'.format(
-                self.device.sn, uninst_ticket.ext_id, client.mt_id)
+            return u'Leszerelt - {}  - MT: {} WFMS: {}'.format(
+                self.device.sn, client.mt_id, uninst_ticket.ext_id)
         else:
-            return self.device.sn
+            try:
+                owner = self.device.owner.owner
+                client_ct = ContentType.objects.get(
+                    app_label='rovidtav', model='client')
+                if owner.get_content_type_obj() == client_ct:
+                    owner_prefix = u'Hiba - '
+                    owner_str = u' - MT: {}'.format(owner.mt_id)
+                else:
+                    owner_prefix = u'Szerelő - '
+                    owner_str = u' - {}'.format(unicode(owner))
+            except Exception as e:
+                owner_prefix = u''
+                owner_str = u''
+            return u'{}{} {}'.format(owner_prefix, self.device.sn, owner_str)
 
 
 class Ticket(WorkItemTicket, JsonExtended):
