@@ -1865,7 +1865,8 @@ class NetworkTicketNetworkElementAdmin(CustomDjangoObjectActions,
     list_filter = ('city__name', )
     list_display = ('ext_id', 'full_address', 'type')
     readonly_fields = ('created_at', 'created_by', 'ext_id', 'city', 'ticket')
-    fields = ('ext_id', 'full_address', 'ticket', 'ticket_tags', 'type')
+    fields = ('ext_id', 'full_address', 'ticket',  'status', 'type',
+              'ticket_tags')
     inlines = (NoteInline, NTNEAttachmentInline, NTNEMaterialInline,
                NTNEWorkItemInline)
     change_actions = ('new_note', 'new_attachment', 'new_material',
