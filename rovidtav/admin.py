@@ -1688,6 +1688,8 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
 
     def get_readonly_fields(self, request, obj=None):
         fields = self.readonly_fields
+        if obj:
+            fields += ('city',)
         if not is_site_admin(request.user):
             fields += ('owner', 'address', 'ticket_types', 'ticket_tags',
                        'city', 'closed_at', 'onu', 'master_sn',
@@ -1714,7 +1716,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         form = super(NetworkTicketAdmin, self).get_form(request, obj, **kwargs)
         if is_site_admin(request.user):
             self._hide_icons(form, ('owner',))
-            self._hide_icons(form, ('city',))
+            # self._hide_icons(form, ('city',))
         return form
 
     def get_queryset(self, request):
