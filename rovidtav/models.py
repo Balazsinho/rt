@@ -1039,6 +1039,13 @@ class NetworkTicketNetworkElement(BaseHub):
     ext_id = models.CharField(max_length=50, verbose_name=u'Azonosító')
     type = models.ForeignKey(NTNEType, null=False, blank=False,
                              verbose_name=u'Típus')
+    status = models.IntegerField(
+        null=False, blank=False, verbose_name=u'Típus', default=1,
+        choices=(
+            (1, u'OK'),
+            (2, u'Javítás'),
+            (3, u'Csere'),
+        ))
 
     class Meta:
         db_table = 'halozati_jegy_elem'
