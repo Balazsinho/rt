@@ -265,6 +265,10 @@ class ReadOnlyTabularInline(ReadOnlyInline, admin.TabularInline):
     template = os.path.join('admin', 'readOnlyInline.html')
 
 
+class ReadOnlyTabularInlineDumb(ReadOnlyInline, admin.TabularInline):
+    template = os.path.join('admin', 'readOnlyInlineDumb.html')
+
+
 class ReadOnlyCompactInline(ReadOnlyInline, CompactInline):
     template = os.path.join('admin', 'edit_inline', 'compact.html')
 

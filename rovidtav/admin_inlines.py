@@ -10,7 +10,7 @@ from rovidtav.admin_helpers import (
     ReadOnlyTabularInline, ShowCalcFields, GenericReadOnlyInline,
     RemoveInlineAction, ReadOnlyStackedInline, CustomInlineActionsMixin,
     GenericReadOnlyStackedInline, ReadOnlyCompactInline,
-    GenericReadOnlyCompactInline)
+    GenericReadOnlyCompactInline, ReadOnlyTabularInlineDumb)
 from rovidtav.models import (
     Attachment, Ticket, Note, TicketMaterial, TicketWorkItem, DeviceOwner,
     SystemEmail, NTAttachment, NetworkTicketMaterial, NetworkTicketWorkItem,
@@ -300,13 +300,13 @@ class UninstallTicketInline(TicketInline):
     f_ticket_link.short_description = u'Jegy'
 
 
-class NTNEInline(ShowCalcFields, ReadOnlyTabularInline):
+class NTNEInline(ShowCalcFields, ReadOnlyTabularInlineDumb):
 
     model = NetworkTicketNetworkElement
     fields = ('f_ext_id_link', 'type', 'address', 'status')
 
     def get_queryset(self, request):
-        return ReadOnlyTabularInline.get_queryset(self, request) \
+        return super(NTNEInline, self).get_queryset(request) \
             .prefetch_related('type')
 
     def f_ext_id_link(self, obj):
