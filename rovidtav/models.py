@@ -1040,11 +1040,12 @@ class NetworkTicketNetworkElement(BaseHub):
     type = models.ForeignKey(NTNEType, null=False, blank=False,
                              verbose_name=u'Típus')
     status = models.IntegerField(
-        null=False, blank=False, verbose_name=u'Státusz', default=1,
+        null=False, blank=False, verbose_name=u'Státusz', default=0,
         choices=(
-            (1, u'OK'),
-            (2, u'Javítás'),
-            (3, u'Csere'),
+            (0, u'Ellenőrizendő'),
+            (1, u'Vizsgálva - OK'),
+            (2, u'Javítandó'),
+            (3, u'Javítva'),
         ))
 
     class Meta:
