@@ -303,7 +303,7 @@ class UninstallTicketInline(TicketInline):
 class NTNEInline(ShowCalcFields, ReadOnlyTabularInline):
 
     model = NetworkTicketNetworkElement
-    fields = ('f_ext_id_link', 'type', 'address')
+    fields = ('f_ext_id_link', 'type', 'address', 'status')
 
     def get_queryset(self, request):
         return ReadOnlyTabularInline.get_queryset(self, request) \
