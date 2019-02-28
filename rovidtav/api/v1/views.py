@@ -27,7 +27,7 @@ from rovidtav.api.field_const import Fields
 from rovidtav.models import (
     Client, City, Ticket, TicketType, Note, DeviceType, Device, Attachment,
     DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment, Tag,
-    UninstallTicket, UninstAttachment, UninstallTicketRule)
+    UninstallTicket, UninstAttachment, UninstallTicketRule, NTNEAttachment)
 from django.http.response import HttpResponse
 
 
@@ -385,6 +385,20 @@ def download_uninstattachment(request, attachment_id):
 @permission_classes((IsAuthenticated,))
 def download_uninstthumbnail(request, attachment_id):
     return _thumbnail_from_model(UninstAttachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_ntneattachment(request, attachment_id):
+    return _download_from_model(NTNEAttachment, attachment_id)
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def download_ntnethumbnail(request, attachment_id):
+    return _thumbnail_from_model(NTNEAttachment, attachment_id)
 
 
 @api_view(['GET'])

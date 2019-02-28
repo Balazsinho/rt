@@ -998,6 +998,58 @@ class NetworkTicket(BaseTicket):
                                          self.address))
 
 
+class NTNEType(BaseEntity):
+
+    type_str = models.CharField(
+        db_column='tipus_megnevezes',
+        help_text=(u'Az eszköz típusa'),
+        max_length=150, verbose_name=u'Típus megnevezés')
+    type = models.CharField(
+        db_column='fajta', max_length=20,
+        help_text=(u'Az eszköz fajtája'),
+        choices=(
+            ('A', u'Erősítő'),
+            ('T', u'Tap'),
+            ('D', u'Vonali leágazó'),
+            ('S', u'Vonali elosztó'),
+            ('O', u'Onu'),
+            ('P', u'Tápegység'),
+            ('I', u'Tápinzerter'),
+            ('EEP', u'EEP'),
+        ))
+
+    class Meta:
+        db_table = 'halozati_jegy_elem_tipus'
+        verbose_name = u'Hálózati elem típus'
+        verbose_name_plural = u'Hálózati elem típusok'
+
+    def __unicode__(self):
+        return unicode(u'{} - {}'.format(self.get_type_display(),
+                                         self.type_str))
+
+
+class NetworkTicketNetworkElement(BaseHub):
+
+    address = models.CharField(db_column='cim', max_length=120,
+                               verbose_name=u'Cím')
+    city = models.ForeignKey(City, db_column='telepules',
+                             verbose_name=u'Település')
+    ticket = models.ForeignKey(NetworkTicket, null=False, blank=False,
+                               verbose_name=u'Hálózati jegy')
+    ext_id = models.CharField(max_length=50, verbose_name=u'Azonosító')
+    type = models.ForeignKey(NTNEType, null=False, blank=False,
+                             verbose_name=u'Típus')
+
+    class Meta:
+        db_table = 'halozati_jegy_elem'
+        verbose_name = u'Hálózati elem'
+        verbose_name_plural = u'Hálózati elemek'
+
+    def __unicode__(self):
+        return unicode(u'{} - {}'.format(
+            self.id, self.type))
+
+
 class Note(BaseEntity):
 
     content_type = models.ForeignKey(ContentType)
@@ -1139,6 +1191,11 @@ class TicketMaterial(BaseMaterial):
     ticket = models.ForeignKey(Ticket, db_column='jegy',
                                related_name='anyag_jegy',
                                verbose_name=u'Jegy')
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=True, blank=True, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Szerelő'})
 
     class Meta:
         db_table = 'anyag_jegy'
@@ -1151,11 +1208,34 @@ class NetworkTicketMaterial(BaseMaterial):
     ticket = models.ForeignKey(NetworkTicket, db_column='halozat_jegy',
                                related_name='anyag_halozat_jegy',
                                verbose_name=u'Jegy')
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=True, blank=True, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Hálózat szerelő'})
 
     class Meta:
         db_table = 'anyag_halozat_jegy'
         verbose_name = u'Hálózat Jegy Anyag'
         verbose_name_plural = u'Hálüzat Jegy Anyagok'
+
+
+class NTNEMaterial(BaseMaterial):
+
+    network_element = models.ForeignKey(
+        NetworkTicketNetworkElement, db_column='halozat_jegy_elem',
+        related_name='anyag_halozat_jegy_elem',
+        verbose_name=u'Hálózati elem')
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=False, blank=False, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Hálózat szerelő'})
+
+    class Meta:
+        db_table = 'anyag_halozat_jegy_halozati_elem'
+        verbose_name = u'Hálózati elem anyag'
+        verbose_name_plural = u'Hálüzati elem anyagok'
 
 
 class MaterialMovementMaterial(BaseMaterial):
@@ -1196,12 +1276,6 @@ class WorkItem(BaseEntity):
                                      verbose_name=u'Csoportos anyag ár')
     given_price = models.IntegerField(db_column='kiadott_ar',
                                       verbose_name=u'Kiadott ár', default=0)
-    # technology = models.IntegerField(
-    #    db_column='technologia',
-    #    choices=Const.get_tech_choices(),
-    #    null=True, blank=True,
-    #    verbose_name=u'Technológia',
-    # )
     technologies = MultiSelectField(
         db_column='technologiak',
         choices=Const.get_tech_choices(),
@@ -1233,6 +1307,11 @@ class TicketWorkItem(BaseEntity):
     amount = models.FloatField(db_column='mennyiseg',
                                verbose_name=u'Mennyiség',
                                default=1)
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=True, blank=True, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Szerelő'})
 
     created_at = models.DateTimeField(auto_now_add=True, editable=False,
                                       verbose_name=u'Létrehozva')
@@ -1259,6 +1338,11 @@ class NetworkTicketWorkItem(BaseEntity):
     amount = models.FloatField(db_column='mennyiseg',
                                verbose_name=u'Mennyiség',
                                default=1)
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=True, blank=True, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Hálózat szerelő'})
 
     created_at = models.DateTimeField(auto_now_add=True, editable=False,
                                       verbose_name=u'Létrehozva')
@@ -1269,6 +1353,38 @@ class NetworkTicketWorkItem(BaseEntity):
         db_table = 'munka_halozat_jegy'
         verbose_name = u'Hálózat Munka'
         verbose_name_plural = u'Hálózat Munkák'
+
+    def __unicode__(self):
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
+
+
+class NTNEWorkItem(BaseEntity):
+
+    network_element = models.ForeignKey(
+        NetworkTicketNetworkElement, db_column='halozati_elem',
+        related_name='munka_halozati_elem',
+        verbose_name=u'Halózati elem')
+    work_item = models.ForeignKey(
+        WorkItem, db_column='munka', verbose_name=u'Munka')
+    amount = models.FloatField(
+        db_column='mennyiseg', verbose_name=u'Mennyiség',
+        default=1)
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=False, blank=False, verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Hálózat szerelő'})
+
+    created_at = models.DateTimeField(auto_now_add=True, editable=False,
+                                      verbose_name=u'Létrehozva')
+    created_by = models.ForeignKey(User, editable=False,
+                                   verbose_name=u'Létrehozó')
+
+    class Meta:
+        db_table = 'munka_halozat_jegy_elem'
+        verbose_name = u'Hálózati elem munka'
+        verbose_name_plural = u'Hálózati elem munkák'
 
     def __unicode__(self):
         amount = int(self.amount) if self.amount % 1 == 0 else self.amount
@@ -1353,6 +1469,22 @@ class NTAttachment(BaseAttachment):
 
     class Meta:
         db_table = 'halo_jegy_csatolmany'
+        verbose_name = u'File'
+        verbose_name_plural = u'Fileok'
+
+
+class NTNEAttachment(BaseAttachment):
+
+    """
+    Network ticket network element attachment
+    """
+
+    network_element = models.ForeignKey(
+        NetworkTicketNetworkElement, db_column='halozati_elem',
+        verbose_name=u'Hálózati elem')
+
+    class Meta:
+        db_table = 'halozati_elem_csatolmany'
         verbose_name = u'File'
         verbose_name_plural = u'Fileok'
 

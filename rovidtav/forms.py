@@ -12,7 +12,8 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      TicketType, NetworkTicketMaterial, NetworkTicketWorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
-    DeviceReassignEvent, Warehouse, WarehouseLocation, DeviceType
+    DeviceReassignEvent, Warehouse, WarehouseLocation, DeviceType, NTNEWorkItem,\
+    NTNEMaterial
 from rovidtav.admin_helpers import ContentTypes, find_device_type
 from django.core.exceptions import ValidationError
 
@@ -46,6 +47,55 @@ class MMAttachmentForm(AttachmentForm):
         }
 
 
+class NTNEAttachmentForm(AttachmentForm):
+
+    class Meta:
+        fields = ('network_element', '_data', 'remark')
+        widgets = {
+          'network_element': forms.HiddenInput(),
+        }
+
+
+class NTAttachmentForm(forms.ModelForm):
+
+    _data = forms.CharField(label=u'File', widget=forms.FileInput())
+    name = forms.CharField(widget=forms.HiddenInput(), required=False)
+    deviceupload = forms.CharField(widget=forms.HiddenInput(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(NTAttachmentForm, self).__init__(*args, **kwargs)
+        if kwargs.get('initial', {}).get('deviceupload') is not None:
+            self.fields['remark'].widget = forms.HiddenInput()
+
+    class Meta:
+        fields = ('ticket', '_data', 'remark')
+        widgets = {
+          'ticket': forms.HiddenInput(),
+        }
+
+    def clean__data(self):
+        if '_data' in self.files:
+            if self.data.get('deviceupload'):
+                allowed_ext = ('.xls', '.xlsx')
+                if not self.files['_data'].name.endswith(allowed_ext):
+                    raise ValidationError(
+                        u'Az eszköz felvitel fileok csak {} kiterjesztésűek '
+                        u'lehetnek'.format(u', '.join(allowed_ext)))
+            return self.files['_data'].read()
+
+    def clean_name(self):
+        if '_data' in self.files:
+            return self.files['_data'].name
+
+    def save(self, commit=True):
+        if self.data.get('deviceupload'):
+            return self.instance
+        return super(NTAttachmentForm, self).save(commit=commit)
+
+    def save_m2m(self):
+        pass
+
+
 class WarehouseForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
@@ -61,7 +111,18 @@ class WarehouseForm(forms.ModelForm):
         fields = '__all__'
 
 
-class TicketMaterialForm(forms.ModelForm):
+class HandleOwner(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super(HandleOwner, self).__init__(*args, **kwargs)
+        owner_id = kwargs.get('initial', {}).get('owner')
+        if 'owner' in self.fields and owner_id:
+            owner = User.objects.get(id=owner_id)
+            self.fields['owner'].initial = owner
+            self.fields['owner'].widget = forms.HiddenInput()
+
+
+class TicketMaterialForm(HandleOwner):
 
     material = ModelChoiceField(
         Material.objects.all(),
@@ -115,7 +176,7 @@ class MMMaterialForm(forms.ModelForm):
         pass
 
 
-class TicketWorkItemForm(forms.ModelForm):
+class TicketWorkItemForm(HandleOwner):
 
     work_item = ModelChoiceField(
         WorkItem.objects.all(),
@@ -141,7 +202,7 @@ class TicketWorkItemForm(forms.ModelForm):
         fields = '__all__'
 
 
-class NetworkTicketMaterialForm(forms.ModelForm):
+class NetworkTicketMaterialForm(HandleOwner):
 
     material = ModelChoiceField(
         Material.objects.all(),
@@ -164,7 +225,27 @@ class NetworkTicketMaterialForm(forms.ModelForm):
         fields = '__all__'
 
 
-class NetworkTicketWorkItemForm(forms.ModelForm):
+class NTNEWorkItemForm(HandleOwner):
+
+    class Meta:
+        model = NTNEWorkItem
+        widgets = {
+          'network_element': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
+class NTNEMaterialForm(HandleOwner):
+
+    class Meta:
+        model = NTNEMaterial
+        widgets = {
+          'network_element': forms.HiddenInput(),
+        }
+        fields = '__all__'
+
+
+class NetworkTicketWorkItemForm(HandleOwner):
 
     work_item = ModelChoiceField(
         WorkItem.objects.all(),

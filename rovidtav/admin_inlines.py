@@ -16,7 +16,8 @@ from rovidtav.models import (
     SystemEmail, NTAttachment, NetworkTicketMaterial, NetworkTicketWorkItem,
     MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
     DeviceReassignEvent, WarehouseLocation, Device, MaterialMovement,
-    UninstAttachment, UninstallTicket)
+    UninstAttachment, UninstallTicket, NTNEWorkItem, NTNEMaterial,
+    NTNEAttachment, NetworkTicketNetworkElement)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -118,6 +119,13 @@ class MMAttachmentInline(BaseAttachmentInline):
     attachment_lnk = 'mmattachment'
 
 
+class NTNEAttachmentInline(BaseAttachmentInline):
+
+    model = NTNEAttachment
+    thumbnail_lnk = 'ntnethumbnail'
+    attachment_lnk = 'ntneattachment'
+
+
 class BaseMaterialInline(ShowCalcFields):
 
     """
@@ -125,7 +133,7 @@ class BaseMaterialInline(ShowCalcFields):
     """
 
     fields = ('f_material_name', 'f_material_category', 'amount',
-              'f_material_unit', 'f_material_comes_from', )
+              'f_material_unit', 'owner')
     verbose_name = u'Anyag'
     verbose_name_plural = u'Anyagok'
     ordering = ('-created_at',)
@@ -163,14 +171,26 @@ class NetworkMaterialInline(RemoveInlineAction, BaseMaterialInline,
     model = NetworkTicketMaterial
 
 
+class NTNEMaterialInline(RemoveInlineAction, BaseMaterialInline,
+                         ReadOnlyCompactInline):
+
+    model = NTNEMaterial
+
+
 class MMMaterialInline(RemoveInlineAction, BaseMaterialInline,
                        CompactInline):
+
+    fields = ('f_material_name', 'f_material_category', 'amount',
+              'f_material_unit')
 
     model = MaterialMovementMaterial
     extra = 0
 
 
 class MMMaterialReadonlyInline(BaseMaterialInline, ReadOnlyCompactInline):
+
+    fields = ('f_material_name', 'f_material_category', 'amount',
+              'f_material_unit')
 
     model = MaterialMovementMaterial
     extra = 0
@@ -193,7 +213,7 @@ class BaseWorkItemInline(RemoveInlineAction,
     """
 
     fields = ('f_workitem_name', 'f_art_number', 'amount',
-              'f_workitem_art_price', 'f_workitem_total_price')
+              'f_workitem_art_price', 'f_workitem_total_price', 'owner')
     verbose_name = u'Munka'
     verbose_name_plural = u'Munkák'
     ordering = ('work_item__art_number',)
@@ -239,6 +259,11 @@ class NetworkWorkItemInline(BaseWorkItemInline):
     model = NetworkTicketWorkItem
 
 
+class NTNEWorkItemInline(BaseWorkItemInline):
+
+    model = NTNEWorkItem
+
+
 class TicketInline(ShowCalcFields, ReadOnlyTabularInline):
 
     """
@@ -273,6 +298,23 @@ class UninstallTicketInline(TicketInline):
 
     f_ticket_link.allow_tags = True
     f_ticket_link.short_description = u'Jegy'
+
+
+class NTNEInline(ShowCalcFields, ReadOnlyTabularInline):
+
+    model = NetworkTicketNetworkElement
+    fields = ('f_ext_id_link', 'type', 'address')
+
+    def get_queryset(self, request):
+        return ReadOnlyTabularInline.get_queryset(self, request) \
+            .prefetch_related('type')
+
+    def f_ext_id_link(self, obj):
+        return (u'<a href="/admin/rovidtav/networkticketnetworkelement/{}/change">{}</a>'
+                u''.format(obj.pk, unicode(obj.ext_id)))
+
+    f_ext_id_link.allow_tags = True
+    f_ext_id_link.short_description = u'Eszköz ID'
 
 
 class PayoffTicketInline(ShowCalcFields, ReadOnlyTabularInline):

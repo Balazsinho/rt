@@ -5,6 +5,7 @@ import codecs
 from copy import copy
 from PIL import Image
 import StringIO
+from io import BytesIO
 import zipfile
 import datetime
 from email.mime.multipart import MIMEMultipart
@@ -25,6 +26,7 @@ from django.contrib.auth.models import Group
 from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
+from openpyxl import load_workbook
 
 from rovidtav import settings
 
@@ -40,7 +42,8 @@ from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     NetworkMaterialInline, NetworkWorkItemInline, PayoffTicketInline,\
     MMMaterialInline, MMAttachmentInline, WarehouseMaterialInline,\
     WarehouseDeviceInline, MMMaterialReadonlyInline, WarehouseLocationInline,\
-    DeviceTypeDeviceInline, UninstAttachmentInline, UninstallTicketInline
+    DeviceTypeDeviceInline, UninstAttachmentInline, UninstallTicketInline,\
+    NTNEAttachmentInline, NTNEMaterialInline, NTNEWorkItemInline, NTNEInline
 from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     Ticket, Note, TicketType, MaterialCategory, Material, TicketMaterial,\
     WorkItem, TicketWorkItem, Payoff, NetworkTicket, NTAttachment,\
@@ -48,13 +51,15 @@ from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     NetworkTicketMaterial, NetworkTicketWorkItem, MaterialMovement,\
     MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
     DeviceReassignEvent, WarehouseLocation, UninstallTicket, UninstAttachment,\
-    UninstallTicketRule, IndividualWorkItem
+    UninstallTicketRule, IndividualWorkItem, NetworkTicketNetworkElement,\
+    NTNEType, NTNEMaterial, NTNEAttachment, NTNEWorkItem
 from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
     WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
     DeviceReassignEventForm, WarehouseLocationForm, MaterialMovementForm,\
-    WarehouseForm
+    WarehouseForm, NTNEAttachmentForm, NTNEWorkItemForm, NTNEMaterialForm,\
+    NTAttachmentForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter, UninstallOwnerFilter,\
     UninstallIsClosedFilter
@@ -72,6 +77,18 @@ class HideOnAdmin(admin.ModelAdmin):
     def get_model_perms(self, request):
         # Hide from admin index
         return {}
+
+
+class HandleMWIOwner(object):
+
+    """
+    Handles the material and workitem owners
+    """
+
+    def _owner(self, request):
+        if is_site_admin(request.user):
+            return ''
+        return '&owner={}'.format(request.user.pk)
 
 
 class CustomUserAdmin(UserAdmin):
@@ -117,9 +134,77 @@ class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
                 pass
 
 
+class NTAttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
+
+    form = NTAttachmentForm
+
+    def _clean(self, cell):
+        """
+        Splits the data by the semicolons, removes everything that is empty
+        or trash data. Returns a list of useful values if more than 1,
+        otherwise a single string
+        """
+        values = [v for v in unicode(cell.value).split(';') if v]
+        return values if len(values) > 1 else values[0]
+
+    def _get_address(self, raw_address):
+        """
+        Returns City object and address
+        """
+        zip = int(raw_address[1])
+        try:
+            city = City.objects.get(zip=zip)
+        except City.DoesNotExist:
+            city = City.objects.create(name=raw_address[0], zip=zip)
+        street = raw_address[2]
+        house_num = u'/'.join(raw_address[3:])
+        return city, u' '.join((street, house_num))
+
+    def save_model(self, request, obj, form, change):
+        if form.data.get('deviceupload'):
+            xls_file = load_workbook(form.files[u'_data'].file)
+            ws = xls_file.worksheets[0]
+            for row in ws.iter_rows():
+                raw_address, ext_id, type_str, dev_type, _ = map(self._clean, row)
+                city, address = self._get_address(raw_address)
+                dev_type_obj, _ = NTNEType.objects.get_or_create(type_str=type_str,
+                                                                 type=dev_type)
+                NetworkTicketNetworkElement.objects.get_or_create(
+                    address=address, city=city, ticket=form.instance.ticket,
+                    ext_id=ext_id, type=dev_type_obj)
+            return
+
+        super(NTAttachmentAdmin, self).save_model(request, obj, form, change)
+        if obj.is_image() and not obj.name.lower().startswith('imdb'):
+            temp_buff = StringIO.StringIO()
+            temp_buff.write(obj.data)
+            temp_buff.seek(0)
+
+            img = Image.open(temp_buff)
+            pixels = settings.IMAGE_DOWNSCALE_PX
+            img.thumbnail((pixels, pixels), Image.ANTIALIAS)
+            temp_buff = StringIO.StringIO()
+            temp_buff.name = obj.name
+            img.save(temp_buff, exif=img.info.get('exif', b''))
+            temp_buff.seek(0)
+
+            obj._data = temp_buff.read()
+            obj.save()
+            try:
+                obj.ticket.refresh_has_images()
+            except AttributeError:
+                # We're not maintaining the boolean for having images
+                pass
+
+
 class MMAttachmentAdmin(AttachmentAdmin):
 
     form = MMAttachmentForm
+
+
+class NTNEAttachmentAdmin(AttachmentAdmin):
+
+    form = NTNEAttachmentForm
 
 
 class MMMaterialAdmin(ModelAdminRedirect, HideOnAdmin):
@@ -149,7 +234,7 @@ class CityAdmin(HideOnAdmin, admin.ModelAdmin):
     list_display = ('name', 'zip', 'primer', 'onuk')
 
 
-class WarehouseMaterialAdmin(HideOnAdmin, admin.ModelAdmin):
+class GenericHideAndRedirect(HideOnAdmin, ModelAdminRedirect):
 
     pass
 
@@ -335,13 +420,13 @@ class MaterialAdmin(admin.ModelAdmin):
     tech_display.short_description = u'Technológia'
 
 
-class TicketMaterialAdmin(HideOnAdmin, ModelAdminRedirect):
+class TicketMaterialAdmin(GenericHideAndRedirect):
 
     form = TicketMaterialForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
 
-class NetworkTicketMaterialAdmin(HideOnAdmin, ModelAdminRedirect):
+class NetworkTicketMaterialAdmin(GenericHideAndRedirect):
 
     form = NetworkTicketMaterialForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
@@ -393,35 +478,41 @@ class DeviceTypeAdmin(CustomDjangoObjectActions,
     apply_on_devices.short_description = u'Futtatás típus nélküli eszközökre'
 
 
-class TicketWorkItemAdmin(HideOnAdmin, ModelAdminRedirect):
+class TicketWorkItemAdmin(GenericHideAndRedirect):
 
     form = TicketWorkItemForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
 
-class NetworkTicketWorkItemAdmin(HideOnAdmin, ModelAdminRedirect):
+class NetworkTicketWorkItemAdmin(GenericHideAndRedirect):
 
     form = NetworkTicketWorkItemForm
     change_form_template = os.path.join('rovidtav', 'select2_wide.html')
 
 
-class NoteAdmin(HideOnAdmin, ModelAdminRedirect):
+class NTNEWorkItemAdmin(GenericHideAndRedirect):
+
+    form = NTNEWorkItemForm
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
+
+class NTNEMaterialAdmin(GenericHideAndRedirect):
+
+    form = NTNEMaterialForm
+    change_form_template = os.path.join('rovidtav', 'select2_wide.html')
+
+
+class NoteAdmin(GenericHideAndRedirect):
 
     form = NoteForm
 
 
-class MaterialCategoryAdmin(HideOnAdmin, admin.ModelAdmin):
-
-    pass
-
-
-class TicketTypeAdmin(HideOnAdmin, admin.ModelAdmin):
+class TicketTypeAdmin(GenericHideAndRedirect):
 
     form = TicketTypeForm
 
 
-class DeviceReassignEventAdmin(HideOnAdmin, ModelAdminRedirect,
-                               admin.ModelAdmin):
+class DeviceReassignEventAdmin(GenericHideAndRedirect):
 
     form = DeviceReassignEventForm
     add_form_template = os.path.join('rovidtav', 'device_quickadd.html')
@@ -542,7 +633,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
 
         date_collected_col = 29 if exp_remote else 15
         worksheet.cell(column=date_collected_col, row=row_idx,
-                       value=ticket.date_collected)
+                       value=ticket.date_collected or ticket.closed_at)
         act_devices_startcol = 30 if exp_remote else 16
         for idx, dev in enumerate(act_devices):
             worksheet.cell(column=act_devices_startcol+idx*4, row=row_idx,
@@ -1007,7 +1098,7 @@ class IndividualWorkItemAdmin(admin.ModelAdmin):
 class TicketAdmin(CustomDjangoObjectActions,
                   InlineActionsModelAdminMixin,
                   admin.ModelAdmin,
-                  HideIcons, _TicketFields):
+                  HideIcons, _TicketFields, HandleMWIOwner):
 
     # =========================================================================
     # PARAMETERS
@@ -1290,15 +1381,17 @@ class TicketAdmin(CustomDjangoObjectActions,
     new_attachment.css_class = 'addlink'
 
     def new_material(self, request, obj):
-        return redirect('/admin/rovidtav/ticketmaterial/add/?ticket={}&next={}'
-                        ''.format(obj.pk, self._returnto(obj, MaterialInline)))
+        return redirect('/admin/rovidtav/ticketmaterial/add/?ticket={}{}&next={}'
+                        ''.format(obj.pk, self._owner(request),
+                                  self._returnto(obj, MaterialInline)))
 
     new_material.label = u'Anyag'
     new_material.css_class = 'addlink'
 
     def new_workitem(self, request, obj):
-        return redirect('/admin/rovidtav/ticketworkitem/add/?ticket={}&next={}'
-                        ''.format(obj.pk, self._returnto(obj, WorkItemInline)))
+        return redirect('/admin/rovidtav/ticketworkitem/add/?ticket={}{}&next={}'
+                        ''.format(obj.pk, self._owner(request),
+                                  self._returnto(obj, WorkItemInline)))
 
     new_workitem.label = u'Munka'
     new_workitem.css_class = 'addlink'
@@ -1560,7 +1653,7 @@ class UninstallTicketAdmin(
 
 class NetworkTicketAdmin(CustomDjangoObjectActions,
                          InlineActionsModelAdminMixin,
-                         admin.ModelAdmin, HideIcons):
+                         admin.ModelAdmin, HideIcons, HandleMWIOwner):
 
     list_per_page = 200
     list_display_links = None
@@ -1569,9 +1662,9 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
                     'closed_at_fmt', 'owner_display', 'status',
                     'ticket_tags_nice')
     change_actions = ('new_note', 'new_attachment', 'new_material',
-                      'new_workitem',)
+                      'new_workitem', 'upload_devices')
     inlines = (NoteInline, NTAttachmentInline, NetworkMaterialInline,
-               NetworkWorkItemInline)
+               NetworkWorkItemInline, NTNEInline)
     ordering = ('-created_at',)
     search_fields = ('city__name', 'city__zip', 'address',
                      'master_sn')
@@ -1610,6 +1703,13 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         del actions['delete_selected']
         return actions
 
+    def get_change_actions(self, request, object_id, form_url):
+        actions = CustomDjangoObjectActions.get_change_actions(
+            self, request, object_id, form_url)
+        if not is_site_admin(request.user):
+            actions = [a for a in actions if a not in ('upload_devices',)]
+        return actions
+
     def get_form(self, request, obj=None, **kwargs):
         form = super(NetworkTicketAdmin, self).get_form(request, obj, **kwargs)
         if is_site_admin(request.user):
@@ -1618,7 +1718,10 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         return form
 
     def get_queryset(self, request):
-        qs = super(NetworkTicketAdmin, self).get_queryset(request)
+        qs = super(NetworkTicketAdmin, self).get_queryset(request) \
+            .prefetch_related('networkticketnetworkelement_set') \
+            .prefetch_related('networkticketnetworkelement_set__type')
+
         if hasattr(request, 'user'):
             if is_site_admin(request.user):
                 return qs
@@ -1713,6 +1816,13 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         return ('/admin/rovidtav/networkticket/{}/change/#/tab/inline_{}/'
                 ''.format(obj.pk, returnto_tab))
 
+    def upload_devices(self, request, obj):
+        return redirect('/admin/rovidtav/ntattachment/add/?ticket={}&'
+                        'deviceupload=1&next={}'
+                        ''.format(obj.pk, self._returnto(obj, NTNEInline)))
+
+    upload_devices.label = u'Elemek feltöltése'
+
     def new_note(self, request, obj):
         return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
                         '{}&next={}'.format(obj.get_content_type(),
@@ -1731,15 +1841,89 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     new_attachment.css_class = 'addlink'
 
     def new_material(self, request, obj):
-        return redirect('/admin/rovidtav/networkticketmaterial/add/?ticket={}&next={}'
-                        ''.format(obj.pk, self._returnto(obj, NetworkMaterialInline)))
+        return redirect('/admin/rovidtav/networkticketmaterial/add/?ticket={}{}&next={}'
+                        ''.format(obj.pk, self._owner(request),
+                                  self._returnto(obj, NetworkMaterialInline)))
 
     new_material.label = u'Anyag'
     new_material.css_class = 'addlink'
 
     def new_workitem(self, request, obj):
-        return redirect('/admin/rovidtav/networkticketworkitem/add/?ticket={}&next={}'
-                        ''.format(obj.pk, self._returnto(obj, NetworkWorkItemInline)))
+        return redirect('/admin/rovidtav/networkticketworkitem/add/?ticket={}{}&next={}'
+                        ''.format(obj.pk,  self._owner(request),
+                                  self._returnto(obj, NetworkWorkItemInline)))
+
+    new_workitem.label = u'Munka'
+    new_workitem.css_class = 'addlink'
+
+
+class NetworkTicketNetworkElementAdmin(CustomDjangoObjectActions,
+                                       InlineActionsModelAdminMixin,
+                                       admin.ModelAdmin, HandleMWIOwner):
+
+    search_fields = ('ext_id', 'address', 'city__name')
+    list_filter = ('city__name', )
+    list_display = ('ext_id', 'full_address', 'type')
+    readonly_fields = ('created_at', 'created_by', 'ext_id', 'city', 'ticket')
+    fields = ('ext_id', 'full_address', 'ticket', 'ticket_tags', 'type')
+    inlines = (NoteInline, NTNEAttachmentInline, NTNEMaterialInline,
+               NTNEWorkItemInline)
+    change_actions = ('new_note', 'new_attachment', 'new_material',
+                      'new_workitem',)
+
+    def get_fields(self, request, obj=None):
+        if obj:
+            return admin.ModelAdmin.get_fields(self, request, obj=obj)
+        else:
+            return [f for f in admin.ModelAdmin.get_fields(self, request, obj=obj)
+                    if f not in ('full_address',)] + ['city', 'address']
+
+    def get_readonly_fields(self, request, obj=None):
+        if not obj:
+            return ('created_at', 'created_by')
+        return admin.ModelAdmin.get_readonly_fields(self, request, obj=obj) + \
+            ('full_address',)
+
+    def full_address(self, obj):
+        return u'{} {}, {}'.format(obj.city.zip, obj.city.name,
+                                   obj.address)
+
+    full_address.short_description = u'Cím'
+
+    def _returnto(self, obj, inline):
+        returnto_tab = self.inlines.index(inline)
+        return ('/admin/rovidtav/networkticketnetworkelement/{}/change/#/tab/'
+                'inline_{}/'.format(obj.pk, returnto_tab))
+
+    def new_note(self, request, obj):
+        return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
+                        '{}&next={}'.format(obj.get_content_type(),
+                                            obj.pk,
+                                            self._returnto(obj, NoteInline)))
+
+    new_note.label = u'Megjegyzés'
+    new_note.css_class = 'addlink'
+
+    def new_attachment(self, request, obj):
+        return redirect('/admin/rovidtav/ntneattachment/add/?network_element='
+                        '{}&next={}'.format(
+                            obj.pk, self._returnto(obj, NTNEAttachmentInline)))
+
+    new_attachment.label = u'File'
+    new_attachment.css_class = 'addlink'
+
+    def new_material(self, request, obj):
+        return redirect('/admin/rovidtav/ntnematerial/add/?network_element={}{}&next={}'
+                        ''.format(obj.pk, self._owner(request),
+                                  self._returnto(obj, NTNEMaterialInline)))
+
+    new_material.label = u'Anyag'
+    new_material.css_class = 'addlink'
+
+    def new_workitem(self, request, obj):
+        return redirect('/admin/rovidtav/ntneworkitem/add/?network_element={}{}&next={}'
+                        ''.format(obj.pk, self._owner(request),
+                                  self._returnto(obj, NTNEWorkItemInline)))
 
     new_workitem.label = u'Munka'
     new_workitem.css_class = 'addlink'
@@ -1778,17 +1962,23 @@ admin.site.register(UninstallTicketRule)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
-admin.site.register(NTAttachment, AttachmentAdmin)
+admin.site.register(NTAttachment, NTAttachmentAdmin)
 admin.site.register(UninstAttachment, AttachmentAdmin)
 admin.site.register(NetworkTicketMaterial, NetworkTicketMaterialAdmin)
 admin.site.register(NetworkTicketWorkItem, NetworkTicketWorkItemAdmin)
+admin.site.register(NetworkTicketNetworkElement,
+                    NetworkTicketNetworkElementAdmin)
+admin.site.register(NTNEType, GenericHideAndRedirect)
+admin.site.register(NTNEMaterial, NTNEMaterialAdmin)
+admin.site.register(NTNEWorkItem, NTNEWorkItemAdmin)
+admin.site.register(NTNEAttachment, NTNEAttachmentAdmin)
 
 admin.site.register(MaterialMovement, MaterialMovementAdmin)
 admin.site.register(MaterialMovementMaterial, MMMaterialAdmin)
 admin.site.register(MMAttachment, MMAttachmentAdmin)
 admin.site.register(Warehouse, WarehouseAdmin)
 admin.site.register(WarehouseLocation, WarehouseLocationAdmin)
-admin.site.register(WarehouseMaterial, WarehouseMaterialAdmin)
+admin.site.register(WarehouseMaterial, GenericHideAndRedirect)
 admin.site.register(DeviceReassignEvent, DeviceReassignEventAdmin)
 
 admin.site.register(WorkItem, WorkItemAdmin)
@@ -1799,5 +1989,5 @@ admin.site.register(DeviceOwner, DeviceOwnerAdmin)
 admin.site.register(DeviceType, DeviceTypeAdmin)
 
 admin.site.register(Material, MaterialAdmin)
-admin.site.register(MaterialCategory, MaterialCategoryAdmin)
+admin.site.register(MaterialCategory, GenericHideAndRedirect)
 admin.site.register(TicketMaterial, TicketMaterialAdmin)

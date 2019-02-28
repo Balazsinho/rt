@@ -15,13 +15,12 @@ Including another URLconf
 """
 from django.conf.urls import url
 
-from rovidtav.api.v1.views import (create_ticket, add_ticket_attachment,
-                                   download_attachment, download_thumbnail,
-                                   download_ntattachment, download_ntthumbnail,
-                                   download_mmattachment, download_mmthumbnail,
-                                   email_stats, create_uninstall_ticket,
-                                   download_uninstattachment,
-                                   download_uninstthumbnail)
+from rovidtav.api.v1.views import \
+    create_ticket, add_ticket_attachment, download_attachment, \
+    download_thumbnail, download_ntattachment, download_ntthumbnail, \
+    download_mmattachment, download_mmthumbnail, email_stats, \
+    create_uninstall_ticket, download_uninstattachment, \
+    download_uninstthumbnail, download_ntnethumbnail, download_ntneattachment
 
 
 urlpatterns = [
@@ -33,7 +32,9 @@ urlpatterns = [
     url(r'^ntattachment/(?P<attachment_id>\d+)$', download_ntattachment),
     url(r'^ntthumbnail/(?P<attachment_id>\d+)$', download_ntthumbnail),
     url(r'^mmattachment/(?P<attachment_id>\d+)$', download_mmattachment),
-    url(r'^mmthumbnail/(?P<attachment_id>\d+)$', download_mmthumbnail),
+    url(r'^mmthumbnail/(?P<attachment_id>\d+)$', download_ntnethumbnail),
+    url(r'^ntneattachment/(?P<attachment_id>\d+)$', download_ntneattachment),
+    url(r'^ntnethumbnail/(?P<attachment_id>\d+)$', download_ntnethumbnail),
     url(r'^uninstattachment/(?P<attachment_id>\d+)$', download_uninstattachment),
     url(r'^uninstthumbnail/(?P<attachment_id>\d+)$', download_uninstthumbnail),
     url(r'^email_stats$', email_stats),
