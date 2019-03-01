@@ -53,6 +53,9 @@
             {% for field in line %}
               {% if not field.field.is_hidden %}
               <td{% if field.field.name %} class="field-{{ field.field.name }}"{% endif %}>
+			  {% if forloop.first %}
+				  {% if inline_admin_form.needs_explicit_pk_field %}{{ inline_admin_form.pk_field.field }}{% endif %}
+			  {% endif %}
 			  
 			  {% if field.is_readonly %}
                   <p>{{ field.contents }}</p>

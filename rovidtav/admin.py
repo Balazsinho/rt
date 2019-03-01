@@ -1864,8 +1864,8 @@ class NetworkTicketNetworkElementAdmin(CustomDjangoObjectActions,
                                        admin.ModelAdmin, HandleMWIOwner):
 
     search_fields = ('ext_id', 'address', 'city__name')
-    list_filter = ('city__name', )
-    list_display = ('ext_id', 'full_address', 'type')
+    list_filter = ('city__name', 'ticket__onu')
+    list_display = ('ext_id', 'full_address', 'type', 'onu')
     readonly_fields = ('created_at', 'created_by', 'ext_id', 'city', 'ticket')
     fields = ('ext_id', 'full_address', 'ticket',  'status', 'type',
               'ticket_tags')
@@ -1880,6 +1880,11 @@ class NetworkTicketNetworkElementAdmin(CustomDjangoObjectActions,
         else:
             return [f for f in admin.ModelAdmin.get_fields(self, request, obj=obj)
                     if f not in ('full_address',)] + ['city', 'address']
+
+    def get_queryset(self, request):
+        return admin.ModelAdmin.get_queryset(self, request) \
+            .prefetch_related('ticket') \
+            .prefetch_related('city')
 
     def get_readonly_fields(self, request, obj=None):
         if not obj:
@@ -1903,6 +1908,11 @@ class NetworkTicketNetworkElementAdmin(CustomDjangoObjectActions,
                                    obj.address)
 
     full_address.short_description = u'Cím'
+
+    def onu(self, obj):
+        return obj.ticket.onu
+
+    onu.short_description = u'Onu'
 
     def _returnto(self, obj, inline):
         returnto_tab = self.inlines.index(inline)
