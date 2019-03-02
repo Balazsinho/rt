@@ -147,26 +147,34 @@ class NTAttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
         values = [v for v in unicode(cell.value).split(';') if v]
         return values if len(values) > 1 else values[0]
 
-    def _get_address(self, raw_address):
+    def _get_address(self, raw_address, ticket):
         """
         Returns City object and address
         """
-        zip = int(raw_address[1])
-        try:
-            city = City.objects.get(zip=zip)
-        except City.DoesNotExist:
-            city = City.objects.create(name=raw_address[0], zip=zip)
-        street = raw_address[2]
-        house_num = u'/'.join(raw_address[3:])
-        return city, u' '.join((street, house_num))
+        if type(raw_address) == list:
+            zip_code = int(raw_address[1])
+            try:
+                city = City.objects.get(zip=zip_code)
+            except City.DoesNotExist:
+                city = City.objects.create(name=raw_address[0], zip=zip_code)
+            street = raw_address[2]
+            house_num = u'/'.join(raw_address[3:])
+            return city, u' '.join((street, house_num))
+        else:
+            return ticket.city, raw_address
 
     def save_model(self, request, obj, form, change):
         if form.data.get('deviceupload'):
             xls_file = load_workbook(form.files[u'_data'].file)
             ws = xls_file.worksheets[0]
             for row in ws.iter_rows():
-                raw_address, ext_id, type_str, dev_type, _ = map(self._clean, row)
-                city, address = self._get_address(raw_address)
+                try:
+                    raw_address, ext_id, type_str, dev_type, _ = map(self._clean, row)
+                except ValueError:
+                    raw_address, ext_id, type_str, dev_type = map(self._clean, row)
+                if dev_type not in ('EEP',):
+                    dev_type = dev_type[0]
+                city, address = self._get_address(raw_address, obj.ticket)
                 dev_type_obj, _ = NTNEType.objects.get_or_create(type_str=type_str,
                                                                  type=dev_type)
                 NetworkTicketNetworkElement.objects.get_or_create(
