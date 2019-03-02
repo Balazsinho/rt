@@ -1899,9 +1899,10 @@ class NetworkTicketNetworkElementAdmin(CustomDjangoObjectActions,
             .get_change_actions(request, object_id, form_url)
 
     def get_inline_instances(self, request, obj=None):
-        if not obj:
+        if not obj and not request.path.split('#')[0].strip('/').endswith('change'):
             return []
-        return admin.ModelAdmin.get_inline_instances(self, request, obj=obj)
+        return super(NetworkTicketNetworkElementAdmin, self) \
+            .get_inline_instances(request, obj)
 
     def full_address(self, obj):
         return u'{} {}, {}'.format(obj.city.zip, obj.city.name,
