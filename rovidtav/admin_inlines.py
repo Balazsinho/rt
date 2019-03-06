@@ -302,6 +302,7 @@ class UninstallTicketInline(TicketInline):
 
 class NTNEInline(ShowCalcFields, ReadOnlyTabularInlineDumb):
 
+    ordering = ['status']
     model = NetworkTicketNetworkElement
     fields = ('f_ext_id_link', 'type', 'address', 'status')
 
