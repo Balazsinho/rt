@@ -4,7 +4,8 @@ from django.forms.fields import ChoiceField
 from model_report.report import reports
 
 from rovidtav.report_helpers import CustomReportAdmin, Label
-from rovidtav.models import Ticket, Note, NetworkTicket, IndividualWorkItem
+from rovidtav.models import Ticket, Note, NetworkTicket, IndividualWorkItem,\
+    NTNEWorkItem, NTNEMaterial
 from _collections import defaultdict
 
 
@@ -308,6 +309,61 @@ class NetworkTicketSummaryList(CustomReportAdmin):
         return ctx
 
 
+class NetworkElementWorkSummaryList(CustomReportAdmin):
+
+    title = u'Hálózati elem munka összesítő lista'
+    model = NTNEWorkItem
+    extra_columns_first_col = 4
+
+    fields = [
+        'network_element__address',
+        'network_element__city__name',
+        'network_element__status',
+        'network_element__created_at',
+    ]
+    list_filter = ['network_element__city__name',
+                   'owner',
+                   'network_element__created_at']
+    list_filter_classes = {
+        'network_element__city__name': ChoiceField,
+    }
+    extra_col_map = {}
+    override_field_formats = {
+        'network_element__created_at': to_date,
+    }
+
+    def _calc_extra_from_qs(self, qs):
+        ids = [obj.network_element.id for obj in qs]
+        all_tws = NTNEWorkItem.objects.filter(network_element_id__in=ids)
+        workitem_keys = set()
+        id_extra_map = defaultdict(dict)
+        for workitem in qs:
+            tws = [tw for tw in all_tws if tw.network_element==workitem.network_element]
+            workitem_keys |= set([tw.work_item for tw in tws])
+            id_extra_map[workitem.pk].update({tw.work_item.art_number: workitem.amount})
+            price = tw.work_item.art_price * workitem.amount
+            if id_extra_map[workitem.pk]:
+                id_extra_map[workitem.pk][u'Ár összesen'] = int(price)
+                id_extra_map[workitem.pk][u'Szerelő'] = workitem.owner
+
+            # tms = [tm for tm in all_tms if tm.network_element==ticket]
+            # material_keys |= set([tm.material for tm in tms])
+            # id_extra_map[ticket.pk].update(dict([(tm.material.sn, tm.amount) for tm in tms]))
+            # try:
+            #     id_extra_map[ticket.pk][u'Szerelő'] = u', '.join([u.username for u in ticket.owner.all()])
+            # except AttributeError:
+            #   pass
+
+        workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number)
+        # material_keys = sorted(list(material_keys), key=lambda x: x.sn)
+        # wo_offsets = list(enumerate(workitem_keys + material_keys))
+        self.calculated_columns = [(self.extra_columns_first_col, u'Szerelő')]
+        self.calculated_columns.extend([(e[0]+self.extra_columns_first_col+1, e[1].art_number) for e in enumerate(workitem_keys)])
+        self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
+        self.extra_col_map = id_extra_map
+        self.id_url_map = dict([(t.network_element.address, '/admin/rovidtav/networkticketnetworkelement/{}/change'.format(t.pk)) for t in qs])
+
+
 class HistoryReport(CustomReportAdmin):
 
     title = u'Jegy történet riport'
@@ -357,5 +413,6 @@ reports.register('osszesito', SummaryList)
 reports.register('riport_cimkek_alapjan', OnDemandList)
 reports.register('halozati_riport_cimkek_alapjan', OnDemandNetworkTicketList)
 reports.register('halozati_jegy_osszesito', NetworkTicketSummaryList)
+reports.register('halozati_elem_osszesito', NetworkElementWorkSummaryList)
 reports.register('tortenet', HistoryReport)
 reports.register('egyedi_munka_riport', IndividualWIReport)
