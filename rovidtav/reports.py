@@ -317,6 +317,8 @@ class NetworkElementWorkSummaryList(CustomReportAdmin):
 
     fields = [
         'network_element__address',
+        'network_element__type__type_str',
+        'network_element__type__type',
         'network_element__city__name',
         'network_element__status',
         'network_element__created_at',
