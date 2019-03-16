@@ -352,13 +352,17 @@ class NetworkElementWorkSummaryList(CustomReportAdmin):
         workitem_keys = set()
         id_extra_map = defaultdict(dict)
         for workitem in qs:
-            tws = [tw for tw in all_tws if tw.network_element==workitem.network_element]
+            tws = [tw for tw in all_tws if tw.network_element == workitem.network_element and
+                   tw.owner == workitem.owner]
             workitem_keys |= set([tw.work_item for tw in tws])
-            id_extra_map[workitem.pk].update({tw.work_item.art_number: workitem.amount})
-            price = tw.work_item.art_price * workitem.amount
-            if id_extra_map[workitem.pk]:
-                id_extra_map[workitem.pk][u'Ár összesen'] = int(price)
-                id_extra_map[workitem.pk][u'Szerelő'] = workitem.owner
+            for tw in tws:
+                id_extra_map[workitem.pk].update({tw.work_item.art_number: tw.amount})
+                price = tw.work_item.art_price * tw.amount
+                if id_extra_map[workitem.pk] and u'Ár összesen' in id_extra_map[workitem.pk]:
+                    id_extra_map[workitem.pk][u'Ár összesen'] += int(price)
+                else:
+                    id_extra_map[workitem.pk][u'Ár összesen'] = int(price)
+                    id_extra_map[workitem.pk][u'Szerelő'] = workitem.owner
 
             # tms = [tm for tm in all_tms if tm.network_element==ticket]
             # material_keys |= set([tm.material for tm in tms])
@@ -376,6 +380,24 @@ class NetworkElementWorkSummaryList(CustomReportAdmin):
         self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
         self.extra_col_map = id_extra_map
         self.id_url_map = dict([(t.network_element.address, '/admin/rovidtav/networkticketnetworkelement/{}/change'.format(t.pk)) for t in qs])
+
+    def get_rows(self, request, groupby_data=None, filter_kwargs={}, filter_related_fields={}):
+        # We deduplicate the rows
+        rows = CustomReportAdmin.get_rows(self, request, groupby_data=groupby_data, filter_kwargs=filter_kwargs, filter_related_fields=filter_related_fields)
+        return rows
+        dedup_rows = []
+        for row in rows[0][1]:
+            row_val = [col.value for col in row]
+            append = True
+            for dedup_row in dedup_rows:
+                dedup_row_val = [col.value for col in dedup_row]
+                if row_val == dedup_row_val:
+                    append = False
+                    break
+            if append:
+                dedup_rows.append(row)
+        rows[0][1] = dedup_rows
+        return rows
 
 
 class HistoryReport(CustomReportAdmin):
