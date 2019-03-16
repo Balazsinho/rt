@@ -22,7 +22,7 @@ def to_status_str(status, instance=None):
         (2, u'Javítandó'),
         (3, u'Javítva'),))
     if status:
-        return status_dict.get(status, '')
+        return status_dict.get(status, status)
     return ''
 
 
@@ -324,15 +324,15 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
 
     title = u'Hálózati elem összesítő lista'
     model = NTNEWorkItem
-    extra_columns_first_col = 4
+    extra_columns_first_col = 6
 
     fields = [
         'network_element__address',
         'network_element__type__type_str',
         'network_element__type__type',
         'network_element__city__name',
-        'network_element__status',
         'network_element__created_at',
+        'network_element__status',
     ]
     list_filter = ['network_element__city__name',
                    'owner',
@@ -344,6 +344,11 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
     override_field_formats = {
         'network_element__created_at': to_date,
         'network_element__status': to_status_str,
+    }
+    override_field_labels = {
+        'network_element__type__type_str': Label(u'Megnevezés'),
+        'network_element__type__type': Label(u'Eszköz típus'),
+        'network_element__city__name': Label(u'Település'),
     }
 
     def _calc_extra_from_qs(self, qs):
