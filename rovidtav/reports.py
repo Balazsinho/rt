@@ -384,7 +384,6 @@ class NetworkElementWorkSummaryList(CustomReportAdmin):
     def get_rows(self, request, groupby_data=None, filter_kwargs={}, filter_related_fields={}):
         # We deduplicate the rows
         rows = CustomReportAdmin.get_rows(self, request, groupby_data=groupby_data, filter_kwargs=filter_kwargs, filter_related_fields=filter_related_fields)
-        return rows
         dedup_rows = []
         for row in rows[0][1]:
             row_val = [col.value for col in row]
