@@ -411,3 +411,23 @@ class CustomReportAdmin(ReportAdmin):
             return context
         finally:
             globals()['_cache_class'] = {}
+
+
+class DedupedReportRows(CustomReportAdmin):
+
+    def get_rows(self, request, groupby_data=None, filter_kwargs={}, filter_related_fields={}):
+        # We deduplicate the rows
+        rows = CustomReportAdmin.get_rows(self, request, groupby_data=groupby_data, filter_kwargs=filter_kwargs, filter_related_fields=filter_related_fields)
+        dedup_rows = []
+        for row in rows[0][1]:
+            row_val = [col.value for col in row]
+            append = True
+            for dedup_row in dedup_rows:
+                dedup_row_val = [col.value for col in dedup_row]
+                if row_val == dedup_row_val:
+                    append = False
+                    break
+            if append:
+                dedup_rows.append(row)
+        rows[0][1] = dedup_rows
+        return rows

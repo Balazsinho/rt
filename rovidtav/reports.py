@@ -3,7 +3,7 @@ from django.forms.fields import ChoiceField
 
 from model_report.report import reports
 
-from rovidtav.report_helpers import CustomReportAdmin, Label
+from rovidtav.report_helpers import CustomReportAdmin, Label, DedupedReportRows
 from rovidtav.models import Ticket, Note, NetworkTicket, IndividualWorkItem,\
     NTNEWorkItem, NTNEMaterial
 from _collections import defaultdict
@@ -320,7 +320,7 @@ class NetworkTicketSummaryList(CustomReportAdmin):
         return ctx
 
 
-class NetworkElementWorkSummaryList(CustomReportAdmin):
+class NetworkElementWorkSummaryList(DedupedReportRows):
 
     title = u'Hálózati elem munka összesítő lista'
     model = NTNEWorkItem
@@ -349,7 +349,9 @@ class NetworkElementWorkSummaryList(CustomReportAdmin):
     def _calc_extra_from_qs(self, qs):
         ids = [obj.network_element.id for obj in qs]
         all_tws = NTNEWorkItem.objects.filter(network_element_id__in=ids)
+        all_tms = NTNEMaterial.objects.filter(network_element_id__in=ids)
         workitem_keys = set()
+        material_keys = set()
         id_extra_map = defaultdict(dict)
         for workitem in qs:
             tws = [tw for tw in all_tws if tw.network_element == workitem.network_element and
@@ -364,39 +366,27 @@ class NetworkElementWorkSummaryList(CustomReportAdmin):
                     id_extra_map[workitem.pk][u'Ár összesen'] = int(price)
                     id_extra_map[workitem.pk][u'Szerelő'] = workitem.owner
 
-            # tms = [tm for tm in all_tms if tm.network_element==ticket]
-            # material_keys |= set([tm.material for tm in tms])
-            # id_extra_map[ticket.pk].update(dict([(tm.material.sn, tm.amount) for tm in tms]))
-            # try:
-            #     id_extra_map[ticket.pk][u'Szerelő'] = u', '.join([u.username for u in ticket.owner.all()])
-            # except AttributeError:
-            #   pass
+            tms = [tm for tm in all_tms if tm.network_element == workitem.network_element and
+                   tm.owner == workitem.owner]
+            material_keys |= set([tm.material for tm in tms])
+            for tm in tms:
+                id_extra_map[workitem.pk].update({tm.material.sn: tm.amount})
 
         workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number)
-        # material_keys = sorted(list(material_keys), key=lambda x: x.sn)
-        # wo_offsets = list(enumerate(workitem_keys + material_keys))
+        material_keys = sorted(list(material_keys), key=lambda x: x.sn)
+        wo_offsets = list(enumerate(workitem_keys + material_keys))
         self.calculated_columns = [(self.extra_columns_first_col, u'Szerelő')]
-        self.calculated_columns.extend([(e[0]+self.extra_columns_first_col+1, e[1].art_number) for e in enumerate(workitem_keys)])
-        self.calculated_columns.append((len(self.calculated_columns + self.fields), u'Ár összesen'))
+        self.calculated_columns.extend(
+            [(e[0]+self.extra_columns_first_col+1, e[1].art_number
+              if hasattr(e[1], 'art_number') else e[1].sn)
+             for e in wo_offsets])
+        self.calculated_columns.append(
+            (len(self.calculated_columns + self.fields), u'Ár összesen'))
         self.extra_col_map = id_extra_map
-        self.id_url_map = dict([(t.network_element.address, '/admin/rovidtav/networkticketnetworkelement/{}/change'.format(t.pk)) for t in qs])
-
-    def get_rows(self, request, groupby_data=None, filter_kwargs={}, filter_related_fields={}):
-        # We deduplicate the rows
-        rows = CustomReportAdmin.get_rows(self, request, groupby_data=groupby_data, filter_kwargs=filter_kwargs, filter_related_fields=filter_related_fields)
-        dedup_rows = []
-        for row in rows[0][1]:
-            row_val = [col.value for col in row]
-            append = True
-            for dedup_row in dedup_rows:
-                dedup_row_val = [col.value for col in dedup_row]
-                if row_val == dedup_row_val:
-                    append = False
-                    break
-            if append:
-                dedup_rows.append(row)
-        rows[0][1] = dedup_rows
-        return rows
+        self.id_url_map = dict(
+            [(t.network_element.address,
+              '/admin/rovidtav/networkticketnetworkelement/{}/change'.format(t.pk))
+             for t in qs])
 
 
 class HistoryReport(CustomReportAdmin):
