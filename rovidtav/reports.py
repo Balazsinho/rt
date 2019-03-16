@@ -352,6 +352,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
     }
 
     def _calc_extra_from_qs(self, qs):
+        ct = None
         ids = [obj.network_element.id for obj in qs]
         all_tws = NTNEWorkItem.objects.filter(network_element_id__in=ids)
         all_tms = NTNEMaterial.objects.filter(network_element_id__in=ids)
@@ -359,8 +360,11 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
         material_keys = set()
         id_extra_map = defaultdict(dict)
         for workitem in qs:
+            ct = ct or workitem.network_element.get_content_type()
             tws = [tw for tw in all_tws if tw.network_element == workitem.network_element and
                    tw.owner == workitem.owner]
+            notes = Note.objects.filter(content_type=ct, object_id=workitem.network_element.id)
+            id_extra_map[workitem.pk][u'Megjegyzések'] = ' --- '.join([n.remark for n in notes])
             workitem_keys |= set([tw.work_item for tw in tws])
             for tw in tws:
                 id_extra_map[workitem.pk].update({tw.work_item.art_number: tw.amount})
@@ -387,6 +391,8 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
              for e in wo_offsets])
         self.calculated_columns.append(
             (len(self.calculated_columns + self.fields), u'Ár összesen'))
+        self.calculated_columns.append(
+            (len(self.calculated_columns + self.fields), u'Megjegyzések'))
         self.extra_col_map = id_extra_map
         self.id_url_map = dict(
             [(t.network_element.address,
