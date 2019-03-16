@@ -322,7 +322,7 @@ class NetworkTicketSummaryList(CustomReportAdmin):
 
 class NetworkElementWorkSummaryList(DedupedReportRows):
 
-    title = u'Hálózati elem munka összesítő lista'
+    title = u'Hálózati elem összesítő lista'
     model = NTNEWorkItem
     extra_columns_first_col = 4
 
