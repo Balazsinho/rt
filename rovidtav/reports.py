@@ -15,6 +15,17 @@ def to_date(dt, instance=None):
     return ''
 
 
+def to_status_str(status, instance=None):
+    status_dict = dict((
+        (0, u'Ellenőrizendő'),
+        (1, u'Vizsgálva - OK'),
+        (2, u'Javítandó'),
+        (3, u'Javítva'),))
+    if status:
+        return status_dict.get(status, '')
+    return ''
+
+
 class SummaryList(CustomReportAdmin):
 
     title = u'Összesítő lista'
@@ -332,6 +343,7 @@ class NetworkElementWorkSummaryList(CustomReportAdmin):
     extra_col_map = {}
     override_field_formats = {
         'network_element__created_at': to_date,
+        'network_element__status': to_status_str,
     }
 
     def _calc_extra_from_qs(self, qs):
