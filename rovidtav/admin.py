@@ -1089,7 +1089,12 @@ class IndividualWorkItemAdmin(CustomDjangoObjectActions,
         if not is_site_admin(request.user) and not obj:
             form.base_fields['owner'].initial = request.user
             form.base_fields['owner'].widget = forms.HiddenInput()
-        return  form
+        return form
+
+    def get_inline_instances(self, request, obj=None):
+        if not obj and not request.path.strip('/').endswith('change'):
+            return []
+        return super(IndividualWorkItemAdmin, self).get_inline_instances(request, obj)
 
     def get_readonly_fields(self, request, obj=None):
         if not obj:
