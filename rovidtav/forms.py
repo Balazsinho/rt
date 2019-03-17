@@ -56,6 +56,15 @@ class NTNEAttachmentForm(AttachmentForm):
         }
 
 
+class IWIAttachmentForm(AttachmentForm):
+
+    class Meta:
+        fields = ('work_item', '_data', 'remark')
+        widgets = {
+          'work_item': forms.HiddenInput(),
+        }
+
+
 class NTAttachmentForm(forms.ModelForm):
 
     _data = forms.CharField(label=u'File', widget=forms.FileInput())

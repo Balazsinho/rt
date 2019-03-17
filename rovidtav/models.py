@@ -1497,6 +1497,22 @@ class NTNEAttachment(BaseAttachment):
         verbose_name_plural = u'Fileok'
 
 
+class IWIAttachment(BaseAttachment):
+
+    """
+    Individual work item attachment
+    """
+
+    work_item = models.ForeignKey(
+        IndividualWorkItem, db_column='egyedi_munka',
+        verbose_name=u'Egyedi munka')
+
+    class Meta:
+        db_table = 'egyedi_munka_csatolmany'
+        verbose_name = u'File'
+        verbose_name_plural = u'Fileok'
+
+
 class MMAttachment(BaseAttachment):
 
     materialmovement = models.ForeignKey(

@@ -43,7 +43,8 @@ from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     MMMaterialInline, MMAttachmentInline, WarehouseMaterialInline,\
     WarehouseDeviceInline, MMMaterialReadonlyInline, WarehouseLocationInline,\
     DeviceTypeDeviceInline, UninstAttachmentInline, UninstallTicketInline,\
-    NTNEAttachmentInline, NTNEMaterialInline, NTNEWorkItemInline, NTNEInline
+    NTNEAttachmentInline, NTNEMaterialInline, NTNEWorkItemInline, NTNEInline,\
+    IWIAttachmentInline
 from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     Ticket, Note, TicketType, MaterialCategory, Material, TicketMaterial,\
     WorkItem, TicketWorkItem, Payoff, NetworkTicket, NTAttachment,\
@@ -52,14 +53,14 @@ from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
     DeviceReassignEvent, WarehouseLocation, UninstallTicket, UninstAttachment,\
     UninstallTicketRule, IndividualWorkItem, NetworkTicketNetworkElement,\
-    NTNEType, NTNEMaterial, NTNEAttachment, NTNEWorkItem
+    NTNEType, NTNEMaterial, NTNEAttachment, NTNEWorkItem, IWIAttachment
 from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
     WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
     DeviceReassignEventForm, WarehouseLocationForm, MaterialMovementForm,\
     WarehouseForm, NTNEAttachmentForm, NTNEWorkItemForm, NTNEMaterialForm,\
-    NTAttachmentForm
+    NTAttachmentForm, IWIAttachmentForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter, UninstallOwnerFilter,\
     UninstallIsClosedFilter
@@ -213,6 +214,11 @@ class MMAttachmentAdmin(AttachmentAdmin):
 class NTNEAttachmentAdmin(AttachmentAdmin):
 
     form = NTNEAttachmentForm
+
+
+class IWIAttachmentAdmin(AttachmentAdmin):
+
+    form = IWIAttachmentForm
 
 
 class MMMaterialAdmin(ModelAdminRedirect, HideOnAdmin):
@@ -1067,16 +1073,30 @@ class _TicketFields(object):
     closed_at_fmt.admin_order_field = ('closed_at')
 
 
-class IndividualWorkItemAdmin(admin.ModelAdmin):
+class IndividualWorkItemAdmin(CustomDjangoObjectActions,
+                              InlineActionsModelAdminMixin,
+                              admin.ModelAdmin, HideIcons):
 
     list_display = ('owner', 'work_date_fmt', 'price', 'remarks_short')
+    inlines = (IWIAttachmentInline,)
+    change_actions = ['new_attachment']
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
     def get_form(self, request, obj=None, **kwargs):
         form = admin.ModelAdmin.get_form(self, request, obj=obj, **kwargs)
-        if not is_site_admin(request.user):
+        if not is_site_admin(request.user) and not obj:
             form.base_fields['owner'].initial = request.user
             form.base_fields['owner'].widget = forms.HiddenInput()
-        return form
+        return  form
+
+    def get_readonly_fields(self, request, obj=None):
+        if not obj:
+            return []
+        if not is_site_admin(request.user):
+            return ('price', 'owner')
+        return []
 
     def get_list_filter(self, request):
         if hasattr(request, 'user'):
@@ -1101,6 +1121,19 @@ class IndividualWorkItemAdmin(admin.ModelAdmin):
             if len(obj.remark) > 25 else obj.remark
 
     remarks_short.short_description = u'Megjegyzés'
+
+    def _returnto(self, obj, inline):
+        returnto_tab = self.inlines.index(inline)
+        return ('/admin/rovidtav/individualworkitem/{}/change/#/tab/inline_{}/'
+                ''.format(obj.pk, returnto_tab))
+
+    def new_attachment(self, request, obj):
+        return redirect('/admin/rovidtav/iwiattachment/add/?work_item'
+                        '={}&next={}'.format(
+                            obj.pk, self._returnto(obj, IWIAttachmentInline)))
+
+    new_attachment.label = u'File'
+    new_attachment.css_class = 'addlink'
 
 
 class TicketAdmin(CustomDjangoObjectActions,
@@ -1991,6 +2024,7 @@ admin.site.register(Ticket, TicketAdmin)
 admin.site.register(NetworkTicket, NetworkTicketAdmin)
 admin.site.register(UninstallTicket, UninstallTicketAdmin)
 admin.site.register(IndividualWorkItem, IndividualWorkItemAdmin)
+admin.site.register(IWIAttachment, IWIAttachmentAdmin)
 admin.site.register(UninstallTicketRule)
 admin.site.register(ApplicantAttributes)
 admin.site.register(Note, NoteAdmin)

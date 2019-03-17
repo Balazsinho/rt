@@ -20,7 +20,8 @@ from rovidtav.api.v1.views import \
     download_thumbnail, download_ntattachment, download_ntthumbnail, \
     download_mmattachment, download_mmthumbnail, email_stats, \
     create_uninstall_ticket, download_uninstattachment, \
-    download_uninstthumbnail, download_ntnethumbnail, download_ntneattachment
+    download_uninstthumbnail, download_ntnethumbnail, download_ntneattachment,\
+    download_iwiattachment, download_iwithumbnail
 
 
 urlpatterns = [
@@ -37,5 +38,7 @@ urlpatterns = [
     url(r'^ntnethumbnail/(?P<attachment_id>\d+)$', download_ntnethumbnail),
     url(r'^uninstattachment/(?P<attachment_id>\d+)$', download_uninstattachment),
     url(r'^uninstthumbnail/(?P<attachment_id>\d+)$', download_uninstthumbnail),
+    url(r'^iwiattachment/(?P<attachment_id>\d+)$', download_iwiattachment),
+    url(r'^iwithumbnail/(?P<attachment_id>\d+)$', download_iwithumbnail),
     url(r'^email_stats$', email_stats),
 ]

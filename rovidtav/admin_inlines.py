@@ -17,7 +17,7 @@ from rovidtav.models import (
     MMAttachment, MaterialMovementMaterial, WarehouseMaterial,
     DeviceReassignEvent, WarehouseLocation, Device, MaterialMovement,
     UninstAttachment, UninstallTicket, NTNEWorkItem, NTNEMaterial,
-    NTNEAttachment, NetworkTicketNetworkElement)
+    NTNEAttachment, NetworkTicketNetworkElement, IWIAttachment)
 
 
 class IndirectGenericInlineFormSet(BaseGenericInlineFormSet):
@@ -124,6 +124,13 @@ class NTNEAttachmentInline(BaseAttachmentInline):
     model = NTNEAttachment
     thumbnail_lnk = 'ntnethumbnail'
     attachment_lnk = 'ntneattachment'
+
+
+class IWIAttachmentInline(BaseAttachmentInline):
+
+    model = IWIAttachment
+    thumbnail_lnk = 'iwithumbnail'
+    attachment_lnk = 'iwiattachment'
 
 
 class BaseMaterialInline(ShowCalcFields):
