@@ -1009,6 +1009,7 @@ class NTNEType(BaseEntity):
         help_text=(u'Az eszköz fajtája'),
         choices=(
             ('A', u'Erősítő'),
+            ('E', u'Erősítő'),
             ('T', u'Tap'),
             ('D', u'Vonali leágazó'),
             ('S', u'Vonali elosztó'),
