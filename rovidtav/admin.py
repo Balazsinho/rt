@@ -1910,8 +1910,8 @@ class NetworkTicketNetworkElementAdmin(CustomDjangoObjectActions,
                                        admin.ModelAdmin, HandleMWIOwner):
 
     search_fields = ('ext_id', 'address', 'city__name')
-    list_filter = ('city__name', 'ticket__onu')
-    list_display = ('ext_id', 'full_address', 'type', 'onu')
+    list_filter = ('city__name', 'ticket__onu', 'status')
+    list_display = ('ext_id', 'full_address', 'type', 'onu', 'status')
     readonly_fields = ('created_at', 'created_by', 'ext_id', 'city', 'ticket')
     fields = ('ext_id', 'full_address', 'ticket',  'status', 'type',
               'ticket_tags')
