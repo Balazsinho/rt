@@ -1719,7 +1719,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
               'psu_placement', 'ticket_types',
               'ticket_tags', 'owner', 'status', 'closed_at']
     readonly_fields = ('full_address',)
-    list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_tags')
+    list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_types')
     actions = ['download_action']
 
     class Media:
