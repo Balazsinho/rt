@@ -419,6 +419,8 @@ class DedupedReportRows(CustomReportAdmin):
         # We deduplicate the rows
         rows = CustomReportAdmin.get_rows(self, request, groupby_data=groupby_data, filter_kwargs=filter_kwargs, filter_related_fields=filter_related_fields)
         dedup_rows = []
+        if not rows or not rows[0]:
+            return []
         for row in rows[0][1]:
             row_val = [col.value for col in row]
             append = True
