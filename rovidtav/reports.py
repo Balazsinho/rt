@@ -330,11 +330,11 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
         'network_element__address',
         'network_element__type__type_str',
         'network_element__type__type',
-        'network_element__city__name',
+        'network_element__city__onuk',
         'network_element__created_at',
         'network_element__status',
     ]
-    list_filter = ['network_element__city__name',
+    list_filter = ['network_element__city__onuk',
                    'owner',
                    'network_element__created_at']
     list_filter_classes = {
@@ -346,6 +346,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
         'network_element__status': to_status_str,
     }
     override_field_labels = {
+        'network_element__city__onuk': Label(u'Onu'),
         'network_element__type__type_str': Label(u'Megnevezés'),
         'network_element__type__type': Label(u'Eszköz típus'),
         'network_element__city__name': Label(u'Település'),
