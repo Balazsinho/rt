@@ -330,15 +330,15 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
         'network_element__address',
         'network_element__type__type_str',
         'network_element__type__type',
-        'network_element__city__onuk',
+        'network_element__ticket__onu',
         'network_element__created_at',
         'network_element__status',
     ]
-    list_filter = ['network_element__city__onuk',
+    list_filter = ['network_element__ticket__onu',
                    'owner',
                    'network_element__created_at']
     list_filter_classes = {
-        'network_element__city__onuk': ChoiceField,
+        'network_element__ticket__onu': ChoiceField,
     }
     extra_col_map = {}
     override_field_formats = {
