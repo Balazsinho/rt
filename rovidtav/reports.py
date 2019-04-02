@@ -338,7 +338,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
                    'owner',
                    'network_element__created_at']
     list_filter_classes = {
-        'network_element__city__name': ChoiceField,
+        'network_element__city__onuk': ChoiceField,
     }
     extra_col_map = {}
     override_field_formats = {
