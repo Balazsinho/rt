@@ -357,6 +357,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
 
     def _calc_extra_from_qs(self, qs):
         ct = None
+        sep = ' \r\n'
         ids = [obj.network_element.id for obj in qs]
         all_tws = NTNEWorkItem.objects.filter(network_element_id__in=ids)
         all_tms = NTNEMaterial.objects.filter(network_element_id__in=ids)
@@ -372,7 +373,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
             workitem_keys |= set([tw.work_item for tw in tws])
             for tw in tws:
                 id_extra_map[workitem.pk].update(
-                    {tw.work_item.art_number + ' \n' + self._short(tw.work_item.name): tw.amount})
+                    {tw.work_item.art_number + sep + self._short(tw.work_item.name): tw.amount})
                 price = tw.work_item.art_price * tw.amount
                 if id_extra_map[workitem.pk] and u'Ár összesen' in id_extra_map[workitem.pk]:
                     id_extra_map[workitem.pk][u'Ár összesen'] += int(price)
@@ -385,15 +386,15 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
             material_keys |= set([tm.material for tm in tms])
             for tm in tms:
                 id_extra_map[workitem.pk].update(
-                    {tm.material.sn + ' \n' + self._short(tm.material.name): tm.amount})
+                    {tm.material.sn + sep + self._short(tm.material.name): tm.amount})
 
-        workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number + ' \n' + self._short(x.name))
-        material_keys = sorted(list(material_keys), key=lambda x: x.sn + ' \n' + self._short(x.name))
+        workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number + sep + self._short(x.name))
+        material_keys = sorted(list(material_keys), key=lambda x: x.sn + sep + self._short(x.name))
         wo_offsets = list(enumerate(workitem_keys + material_keys))
         self.calculated_columns = [(self.extra_columns_first_col, u'Szerelő')]
         self.calculated_columns.extend(
-            [(e[0]+self.extra_columns_first_col+1, e[1].art_number + ' \n' + self._short(e[1].name)
-              if hasattr(e[1], 'art_number') else e[1].sn + ' \n' + self._short(e[1].name))
+            [(e[0]+self.extra_columns_first_col+1, e[1].art_number + sep + self._short(e[1].name)
+              if hasattr(e[1], 'art_number') else e[1].sn + sep + self._short(e[1].name))
              for e in wo_offsets])
         self.calculated_columns.append(
             (len(self.calculated_columns + self.fields), u'Ár összesen'))
