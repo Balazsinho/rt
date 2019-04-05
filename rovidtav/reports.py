@@ -329,7 +329,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
     fields = [
         'network_element__address',
         'network_element__type__type_str',
-        'network_element__type__type',
+        'network_element__ext_id',
         'network_element__ticket__onu',
         'network_element__created_at',
         'network_element__status',
@@ -352,6 +352,9 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
         'network_element__city__name': Label(u'Település'),
     }
 
+    def _short(self, name):
+        return (name[:10] + '...') if len(name) > 13 else name
+
     def _calc_extra_from_qs(self, qs):
         ct = None
         ids = [obj.network_element.id for obj in qs]
@@ -368,7 +371,8 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
             id_extra_map[workitem.pk][u'Megjegyzések'] = ' --- '.join([n.remark for n in notes])
             workitem_keys |= set([tw.work_item for tw in tws])
             for tw in tws:
-                id_extra_map[workitem.pk].update({tw.work_item.art_number: tw.amount})
+                id_extra_map[workitem.pk].update(
+                    {tw.work_item.art_number + ' \n' + self._short(tw.work_item.name): tw.amount})
                 price = tw.work_item.art_price * tw.amount
                 if id_extra_map[workitem.pk] and u'Ár összesen' in id_extra_map[workitem.pk]:
                     id_extra_map[workitem.pk][u'Ár összesen'] += int(price)
@@ -380,15 +384,16 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
                    tm.owner == workitem.owner]
             material_keys |= set([tm.material for tm in tms])
             for tm in tms:
-                id_extra_map[workitem.pk].update({tm.material.sn: tm.amount})
+                id_extra_map[workitem.pk].update(
+                    {tm.material.sn + ' \n' + self._short(tm.material.name): tm.amount})
 
-        workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number)
-        material_keys = sorted(list(material_keys), key=lambda x: x.sn)
+        workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number + ' \n' + self._short(x.name))
+        material_keys = sorted(list(material_keys), key=lambda x: x.sn + ' \n' + self._short(x.name))
         wo_offsets = list(enumerate(workitem_keys + material_keys))
         self.calculated_columns = [(self.extra_columns_first_col, u'Szerelő')]
         self.calculated_columns.extend(
-            [(e[0]+self.extra_columns_first_col+1, e[1].art_number
-              if hasattr(e[1], 'art_number') else e[1].sn)
+            [(e[0]+self.extra_columns_first_col+1, e[1].art_number + ' \n' + self._short(e[1].name)
+              if hasattr(e[1], 'art_number') else e[1].sn + ' \n' + self._short(e[1].name))
              for e in wo_offsets])
         self.calculated_columns.append(
             (len(self.calculated_columns + self.fields), u'Ár összesen'))
