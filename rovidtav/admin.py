@@ -172,7 +172,7 @@ class NTAttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
                 try:
                     raw_address, ext_id, type_str, dev_type, _ = map(self._clean, row)
                 except ValueError:
-                    raw_address, ext_id, type_str, dev_type = map(self._clean, row)
+                    raw_address, ext_id, type_str, dev_type = map(self._clean, row)[:4]
                 if dev_type not in ('EEP',):
                     dev_type = dev_type[0]
                 city, address = self._get_address(raw_address, obj.ticket)
