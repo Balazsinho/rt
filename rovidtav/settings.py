@@ -29,6 +29,7 @@ ALLOWED_HOSTS = []
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 ADMIN_LOGIN_REDIRECT_URL = '/admin/rovidtav/'
+WKHTMLTOPDF_EXEC = '/usr/local/bin/wkhtmltopdf'
 
 IMAGE_DOWNSCALE_PX = 900
 IMAGE_THUMB_PX = 180

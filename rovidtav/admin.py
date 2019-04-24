@@ -67,6 +67,8 @@ from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
 from _collections import defaultdict
 from openpyxl.reader.excel import load_workbook
 from openpyxl.writer.excel import save_virtual_workbook
+import pdfkit
+from rovidtav.settings import WKHTMLTOPDF_EXEC
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -1670,8 +1672,10 @@ class UninstallTicketAdmin(
         for key, data in replacements.items():
             template_content = template_content.replace(
                 u'{{' + key + u'}}', unicode(data))
-        return HttpResponse(template_content,
-                            content_type='text/html')
+        config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_EXEC)
+        pdfdoc = pdfkit.from_string(template_content, False, configuration=config)
+        return HttpResponse(pdfdoc,
+                            content_type='application/pdf')
 
     uninstall_document.label = u'Leszerelési lap'
 
