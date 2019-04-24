@@ -40,6 +40,7 @@ SMTP_PASS = ''
 EMAIL_SENDER = ''
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000
+DATA_UPLOAD_MAX_MEMORY_SIZE = 15242880
 
 # Changing this value to a random number or string here will
 # force CSS and JS browser cache refresh

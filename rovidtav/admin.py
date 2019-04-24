@@ -1785,27 +1785,6 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
         return super(NetworkTicketAdmin, self).get_inline_instances(request,
                                                                     obj)
 
-    def download_action(self, request, queryset):
-        temp = StringIO.StringIO()
-        with zipfile.ZipFile(temp, 'w') as archive:
-            for ticket in queryset:
-                attachments = []
-                for att in NTAttachment.objects.filter(ticket=ticket):
-                    if att.is_image():
-                        attachments.append(att)
-                for att in attachments:
-                    addr = ticket.address.replace(u'/', u'-')
-                    archive.writestr(u'{}/{}'.format(addr, att.name), att.data)
-
-        temp.seek(0)
-        response = HttpResponse(temp,
-                                content_type='application/force-download')
-        fname = datetime.datetime.now().strftime('halozat_jegyek_%y%m%d%H%M.zip')
-        response['Content-Disposition'] = 'attachment; filename="{}"'.format(fname)
-        return response
-
-    download_action.short_description = u'Letöltés ZIP-ben'
-
     def address_link(self, obj):
         return (u'<a href="/admin/rovidtav/networkticket/{}/change#'
                 u'/tab/inline_0/">{}</a>'.format(obj.pk, obj.address))
@@ -1858,6 +1837,43 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
     # =========================================================================
     # ACTIONS
     # =========================================================================
+
+    def download_action(self, request, queryset):
+        temp = StringIO.StringIO()
+        att_count = 0
+        with zipfile.ZipFile(temp, 'w') as archive:
+            for ticket in queryset:
+                attachments = []
+                for att in NTAttachment.objects.filter(ticket=ticket):
+                    if att.is_image():
+                        name = ticket.address.replace(u'/', u'-') + u'_{}'.format(att.name)
+                        attachments.append((name, att))
+                        att_count += 1
+                elements = NetworkTicketNetworkElement.objects\
+                    .filter(ticket=ticket)
+                for idx, att in enumerate(
+                        NTNEAttachment.objects
+                        .filter(network_element__in=elements)
+                        .prefetch_related('network_element')):
+                    if att.is_image():
+                        ext = att.name.split('.')[-1]
+                        name = '{}_{}.{}'.format(att.network_element.ext_id, str(idx+1), ext)
+                        attachments.append((name, att))
+                        att_count += 1
+                for name, att in attachments:
+                    archive.writestr(name, att.data)
+
+        if att_count == 0:
+            messages.add_message(request, messages.INFO, u'A kiválasztott jegyek nem tartalmaznak képeket')
+            return
+        fname = datetime.datetime.now().strftime('halozat_jegyek_%y%m%d%H%M.zip')
+        temp.seek(0)
+        response = HttpResponse(temp,
+                                content_type='application/force-download')
+        response['Content-Disposition'] = 'attachment; filename="{}"'.format(fname)
+        return response
+
+    download_action.short_description = u'Letöltés ZIP-ben'
 
     def _returnto(self, obj, inline):
         returnto_tab = self.inlines.index(inline)
