@@ -42,7 +42,7 @@ class BaseAttachmentInline(RemoveInlineAction,
                            ShowCalcFields,
                            ReadOnlyStackedInline):
 
-    fields = ('f_thumbnail', 'f_created')
+    fields = ('f_thumbnail', 'f_created', 'f_comments')
     ordering = ('-created_at',)
     template = os.path.join('admin', 'edit_inline', 'attachment_stacked.html')
     extra = 0
@@ -67,6 +67,9 @@ class BaseAttachmentInline(RemoveInlineAction,
     def f_created(self, obj):
         created_at = obj.created_at.strftime('%Y-%m-%d %H:%M')
         return u'{} - {}'.format(obj.created_by, created_at)
+
+    def f_comments(self, obj):
+        return obj.remark or ''
 
     def f_thumbnail(self, obj):
         if obj.is_image():
