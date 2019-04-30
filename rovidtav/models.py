@@ -14,6 +14,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
 from multiselectfield import MultiSelectField
 from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError
 
 
 def delivery_num():
@@ -21,6 +22,11 @@ def delivery_num():
     prefix = 'R-{}'.format(today_str)
     today_delivery_cnt = len(MaterialMovement.objects.filter(delivery_num__startswith=prefix))
     return '{}-{}'.format(prefix, today_delivery_cnt+1)
+
+
+def art_num_validator(value):
+    if not re.match('^[\d,]+$', value):
+        raise ValidationError(u'Csak számok és vessző megengedett')
 
 
 class Const(object):
@@ -1275,7 +1281,8 @@ class WorkItem(BaseEntity):
     name = models.CharField(db_column='nev', max_length=300,
                             verbose_name=u'Név')
     art_number = models.CharField(db_column='tetelszam', max_length=40,
-                                  verbose_name=u'Tételszám', default=0)
+                                  verbose_name=u'Tételszám', default=0,
+                                  unique=True, validators=[art_num_validator])
     remark = models.TextField(db_column='definicio',
                               null=True, blank=True,
                               verbose_name=u'Definíció')
