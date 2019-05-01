@@ -13,7 +13,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
     DeviceReassignEvent, Warehouse, WarehouseLocation, DeviceType, NTNEWorkItem,\
-    NTNEMaterial
+    NTNEMaterial, NetworkTicket
 from rovidtav.admin_helpers import ContentTypes, find_device_type
 from django.core.exceptions import ValidationError
 
@@ -221,9 +221,15 @@ class NetworkTicketMaterialForm(HandleOwner):
 
     def __init__(self, *args, **kwargs):
         super(NetworkTicketMaterialForm, self).__init__(*args, **kwargs)
-        suggestions = Material.objects.filter(
-            Q(technologies__contains=Const.HALOZAT) |
-            Q(technologies__contains=Const.MIND))
+        ticket_id = kwargs.get('initial', {}).get('ticket')
+        suggestions_q = Q(technologies__contains=Const.HALOZAT)
+        if ticket_id:
+            ticket = NetworkTicket.objects.get(pk=kwargs['initial']['ticket'])
+            for tech in ticket.technologies:
+                suggestions_q |= Q(technologies__contains=tech)
+        else:
+            suggestions_q |= Q(technologies__contains=Const.MIND)
+        suggestions = Material.objects.filter(suggestions_q)
         self.fields['material'].queryset = suggestions
 
     class Meta:
@@ -486,3 +492,10 @@ class WarehouseLocationForm(forms.ModelForm):
         widgets = {
             'warehouse': forms.HiddenInput(),
         }
+
+
+class NetworkTicketForm(forms.ModelForm):
+
+    technologies = forms.MultipleChoiceField(choices=Const.get_tech_choices(),
+                                             required=False,
+                                             label=u'Technológia')

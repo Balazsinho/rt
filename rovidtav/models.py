@@ -994,6 +994,13 @@ class NetworkTicket(BaseTicket):
     )
     has_images = models.BooleanField(default=False, verbose_name=u'Kép')
 
+    technologies = MultiSelectField(
+        db_column='technologiak',
+        choices=Const.get_tech_choices(),
+        null=True, blank=True,
+        verbose_name=u'Technológia',
+    )
+
     class Meta:
         db_table = 'halozat_jegy'
         verbose_name = u'Hálózat jegy'

@@ -60,7 +60,7 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     WorkItemForm, MaterialForm, MMAttachmentForm, MMMaterialForm,\
     DeviceReassignEventForm, WarehouseLocationForm, MaterialMovementForm,\
     WarehouseForm, NTNEAttachmentForm, NTNEWorkItemForm, NTNEMaterialForm,\
-    NTAttachmentForm, IWIAttachmentForm
+    NTAttachmentForm, IWIAttachmentForm, NetworkTicketForm
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter, UninstallOwnerFilter,\
     UninstallIsClosedFilter
@@ -1721,10 +1721,11 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
 
     fields = ['city', 'address', 'onu', 'master_sn',
               'psu_placement', 'ticket_types',
-              'ticket_tags', 'owner', 'status', 'closed_at']
+              'ticket_tags', 'technologies', 'owner', 'status', 'closed_at']
     readonly_fields = ('full_address',)
     list_filter = ('onu', NetworkOwnerFilter, IsClosedFilter, 'ticket_types')
     actions = ['download_action']
+    form = NetworkTicketForm
 
     class Media:
         js = ('js/network_ticket.js',)
