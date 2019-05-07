@@ -482,9 +482,11 @@ class MaterialForm(forms.ModelForm):
     technologies = forms.MultipleChoiceField(choices=Const.get_tech_choices(),
                                              required=False,
                                              label=u'Technológia')
-    integrate_here = forms.ModelChoiceField(queryset=Material.objects.all(),
-                                            required=False,
-                                            label=u'Anyag egyesítése ide')
+    integrate_here = forms.ModelChoiceField(
+        queryset=Material.objects.all(), required=False,
+        label=u'Anyag egyesítése ide',
+        help_text=u'Az itt kiválasztott anyag minden előfordulása átíródik az '
+        u'éppen szerkesztett anyagra, a kiválasztott anyag törlődik')
 
     def save(self, commit=True):
         if self.cleaned_data['integrate_here']:
