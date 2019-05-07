@@ -13,7 +13,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
     DeviceReassignEvent, Warehouse, WarehouseLocation, DeviceType, NTNEWorkItem,\
-    NTNEMaterial, NetworkTicket
+    NTNEMaterial, NetworkTicket, BaseMaterial
 from rovidtav.admin_helpers import ContentTypes, find_device_type
 from django.core.exceptions import ValidationError
 
@@ -482,6 +482,18 @@ class MaterialForm(forms.ModelForm):
     technologies = forms.MultipleChoiceField(choices=Const.get_tech_choices(),
                                              required=False,
                                              label=u'Technológia')
+    integrate_here = forms.ModelChoiceField(queryset=Material.objects.all(),
+                                            required=False,
+                                            label=u'Anyag egyesítése ide')
+
+    def save(self, commit=True):
+        if self.cleaned_data['integrate_here']:
+            integrate_here = self.cleaned_data['integrate_here']
+            for cls in BaseMaterial.__subclasses__():
+                cls.objects.filter(material=integrate_here) \
+                    .update(material=self.instance)
+            integrate_here.delete()
+        return super(MaterialForm, self).save(commit)
 
 
 class WarehouseLocationForm(forms.ModelForm):
