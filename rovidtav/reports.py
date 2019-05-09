@@ -373,7 +373,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
             workitem_keys |= set([tw.work_item for tw in tws])
             for tw in tws:
                 id_extra_map[workitem.pk].update(
-                    {tw.work_item.art_number + sep + self._short(tw.work_item.name): tw.amount})
+                    {tw.work_item.art_number + sep + self._short(tw.work_item.name): str(tw.amount).replace(".", ",")})
                 price = tw.work_item.art_price * tw.amount
                 if id_extra_map[workitem.pk] and u'Ár összesen' in id_extra_map[workitem.pk]:
                     id_extra_map[workitem.pk][u'Ár összesen'] += int(price)
@@ -386,7 +386,7 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
             material_keys |= set([tm.material for tm in tms])
             for tm in tms:
                 id_extra_map[workitem.pk].update(
-                    {tm.material.sn + sep + self._short(tm.material.name): tm.amount})
+                    {tm.material.sn + sep + self._short(tm.material.name): str(tm.amount).replace(".", ",")})
 
         workitem_keys = sorted(list(workitem_keys), key=lambda x: x.art_number + sep + self._short(x.name))
         material_keys = sorted(list(material_keys), key=lambda x: x.sn + sep + self._short(x.name))
