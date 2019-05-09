@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 import re
+import datetime
 
 from xlwt import Workbook, easyxf
 from django import forms
@@ -416,16 +417,22 @@ class CustomReportAdmin(ReportAdmin):
 class DedupedReportRows(CustomReportAdmin):
 
     def get_rows(self, request, groupby_data=None, filter_kwargs={}, filter_related_fields={}):
+
+        def _process(data):
+            if isinstance(data, datetime.datetime):
+                return data.strftime('%Y%m%d')
+            return data
+
         # We deduplicate the rows
         rows = CustomReportAdmin.get_rows(self, request, groupby_data=groupby_data, filter_kwargs=filter_kwargs, filter_related_fields=filter_related_fields)
         dedup_rows = []
         if not rows or not rows[0]:
             return []
         for row in rows[0][1]:
-            row_val = [col.value for col in row]
+            row_val = [_process(col.value) for col in row]
             append = True
             for dedup_row in dedup_rows:
-                dedup_row_val = [col.value for col in dedup_row]
+                dedup_row_val = [_process(col.value) for col in dedup_row]
                 if row_val == dedup_row_val:
                     append = False
                     break
