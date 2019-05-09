@@ -331,18 +331,18 @@ class NetworkElementWorkSummaryList(DedupedReportRows):
         'network_element__type__type_str',
         'network_element__ext_id',
         'network_element__ticket__onu',
-        'network_element__created_at',
+        'created_at',
         'network_element__status',
     ]
     list_filter = ['network_element__ticket__onu',
                    'owner',
-                   'network_element__created_at']
+                   'created_at']
     list_filter_classes = {
         'network_element__ticket__onu': ChoiceField,
     }
     extra_col_map = {}
     override_field_formats = {
-        'network_element__created_at': to_date,
+        'created_at': to_date,
         'network_element__status': to_status_str,
     }
     override_field_labels = {
