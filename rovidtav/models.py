@@ -1320,98 +1320,82 @@ class WorkItem(BaseEntity):
         return ('name', 'art_number')
 
 
-class TicketWorkItem(BaseEntity):
+class WorkItemBase(BaseEntity):
 
-    ticket = models.ForeignKey(Ticket, db_column='jegy',
-                               related_name='munka_jegy',
-                               verbose_name=u'Jegy')
     work_item = models.ForeignKey(WorkItem, db_column='munka',
                                   verbose_name=u'Munka')
     amount = models.FloatField(db_column='mennyiseg',
                                verbose_name=u'Mennyiség',
                                default=1)
-    owner = models.ForeignKey(
-        User, related_name="%(class)s_tulajdonos",
-        related_query_name="%(class)s_tulajdonos",
-        null=True, blank=True, verbose_name=u'Szerelő',
-        limit_choices_to={'groups__name': u'Szerelő'})
-
     created_at = models.DateTimeField(auto_now_add=True, editable=False,
                                       verbose_name=u'Létrehozva')
     created_by = models.ForeignKey(User, editable=False,
                                    verbose_name=u'Létrehozó')
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
+        return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
+
+
+class TicketWorkItem(WorkItemBase):
+
+    ticket = models.ForeignKey(Ticket, db_column='jegy',
+                               related_name='munka_jegy',
+                               verbose_name=u'Jegy')
+
+    owner = models.ForeignKey(
+        User, related_name="%(class)s_tulajdonos",
+        related_query_name="%(class)s_tulajdonos",
+        null=True, blank=True,
+        verbose_name=u'Szerelő',
+        limit_choices_to={'groups__name': u'Szerelő'})
 
     class Meta:
         db_table = 'munka_jegy'
         verbose_name = u'Munka'
         verbose_name_plural = u'Munkák'
 
-    def __unicode__(self):
-        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
-        return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
 
-
-class NetworkTicketWorkItem(BaseEntity):
+class NetworkTicketWorkItem(WorkItemBase):
 
     ticket = models.ForeignKey(NetworkTicket, db_column='halozat_jegy',
                                related_name='munka_halozat_jegy',
                                verbose_name=u'Jegy')
-    work_item = models.ForeignKey(WorkItem, db_column='munka',
-                                  verbose_name=u'Munka')
-    amount = models.FloatField(db_column='mennyiseg',
-                               verbose_name=u'Mennyiség',
-                               default=1)
+
     owner = models.ForeignKey(
         User, related_name="%(class)s_tulajdonos",
         related_query_name="%(class)s_tulajdonos",
-        null=True, blank=True, verbose_name=u'Szerelő',
+        null=True, blank=True,
+        verbose_name=u'Szerelő',
         limit_choices_to={'groups__name': u'Hálózat szerelő'})
-
-    created_at = models.DateTimeField(auto_now_add=True, editable=False,
-                                      verbose_name=u'Létrehozva')
-    created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létrehozó')
 
     class Meta:
         db_table = 'munka_halozat_jegy'
         verbose_name = u'Hálózat Munka'
         verbose_name_plural = u'Hálózat Munkák'
 
-    def __unicode__(self):
-        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
-        return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
 
-
-class NTNEWorkItem(BaseEntity):
+class NTNEWorkItem(WorkItemBase):
 
     network_element = models.ForeignKey(
         NetworkTicketNetworkElement, db_column='halozati_elem',
         related_name='munka_halozati_elem',
         verbose_name=u'Halózati elem')
-    work_item = models.ForeignKey(
-        WorkItem, db_column='munka', verbose_name=u'Munka')
-    amount = models.FloatField(
-        db_column='mennyiseg', verbose_name=u'Mennyiség',
-        default=1)
+
     owner = models.ForeignKey(
         User, related_name="%(class)s_tulajdonos",
         related_query_name="%(class)s_tulajdonos",
-        null=False, blank=False, verbose_name=u'Szerelő',
+        null=False, blank=False,
+        verbose_name=u'Szerelő',
         limit_choices_to={'groups__name': u'Hálózat szerelő'})
-
-    created_at = models.DateTimeField(auto_now_add=True, editable=False,
-                                      verbose_name=u'Létrehozva')
-    created_by = models.ForeignKey(User, editable=False,
-                                   verbose_name=u'Létrehozó')
 
     class Meta:
         db_table = 'munka_halozat_jegy_elem'
         verbose_name = u'Hálózati elem munka'
         verbose_name_plural = u'Hálózati elem munkák'
-
-    def __unicode__(self):
-        amount = int(self.amount) if self.amount % 1 == 0 else self.amount
-        return u'{}, mennyiség: {}'.format(unicode(self.work_item), amount)
 
 
 class BaseAttachment(BaseEntity):
@@ -1582,3 +1566,28 @@ class SystemEmail(BaseEntity):
         db_table = 'rendszeremail'
         verbose_name = u'Rendszer email'
         verbose_name_plural = u'Rendszer emailek'
+
+
+class MaterialWorkitemRule(BaseEntity):
+
+    ADD_ONE = 0
+    ADD_EQUAL = 1
+
+    material = models.ForeignKey(Material, verbose_name=u'Anyag')
+    workitem = models.ForeignKey(WorkItem, verbose_name=u'Munka')
+    amount = models.IntegerField(
+        null=False, blank=False,
+        verbose_name=u'Adjon hozzá', default=ADD_ONE,
+        choices=(
+            (ADD_ONE, u'Egyet'),
+            (ADD_EQUAL, u'Annyit, amennyi az anyag'),
+        ))
+
+    class Meta:
+        verbose_name = u'Anyag auto-munka szabály'
+        verbose_name_plural = u'Anyag auto-munka szabályok'
+
+    def __unicode__(self):
+        return unicode(u'{} esetén hozzáad {} ({})'
+                       u''.format(self.material, self.workitem,
+                                  self.get_amount_display()))

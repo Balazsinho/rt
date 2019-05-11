@@ -8,6 +8,7 @@ import StringIO
 from io import BytesIO
 import zipfile
 import datetime
+import random
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.header import Header
@@ -53,7 +54,8 @@ from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
     MaterialMovementMaterial, Warehouse, WarehouseMaterial, MMAttachment,\
     DeviceReassignEvent, WarehouseLocation, UninstallTicket, UninstAttachment,\
     UninstallTicketRule, IndividualWorkItem, NetworkTicketNetworkElement,\
-    NTNEType, NTNEMaterial, NTNEAttachment, NTNEWorkItem, IWIAttachment
+    NTNEType, NTNEMaterial, NTNEAttachment, NTNEWorkItem, IWIAttachment,\
+    MaterialWorkitemRule
 from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
     TicketWorkItemForm, DeviceOwnerForm, TicketForm, TicketTypeForm,\
     NetworkTicketWorkItemForm, NetworkTicketMaterialForm, PayoffForm,\
@@ -769,42 +771,42 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
     def finalize(self, request, obj):
 
         def _substract(warehouse, movement):
+            to_go = movement.amount
             for material in WarehouseMaterial.objects.filter(
                     material=movement.material, warehouse=warehouse):
                 if movement.amount < material.amount:
                     material.amount -= movement.amount
                     material.save()
-                elif material.amount < movement.amount:
-                    # add message ?
+                    break
+                elif material.amount < to_go:
+                    to_go -= movement.amount
                     material.delete()
-                else:
-                    material.delete()
+
+            if to_go:
+                # Some elements remained and could not be sobstracted
+                # ADD MESSAGE?
+                pass
+
+            return to_go
 
         for movement in MaterialMovementMaterial.objects.filter(materialmovement=obj):
             # Substract from source
-            try:
-                _substract(obj.source, movement)
-            except WarehouseMaterial.DoesNotExist:
-                # add message
-                pass
-            except WarehouseMaterial.MultipleObjectsReturned:
-                # merge them and add message and substract
-                pass
+            _substract(obj.source, movement)
 
             # Add to target
-            try:
-                material = WarehouseMaterial.objects.get(
-                    material=movement.material, warehouse=obj.target)
+            material = WarehouseMaterial.objects.filter(
+                material=movement.material, warehouse=obj.target)
+            if not material:
+                WarehouseMaterial.objects.create(
+                    material=movement.material, warehouse=obj.target,
+                    amount=movement.amount, created_by=request.user,
+                    location=movement.location_to)
+            else:
+                material = random.choice(material)
                 material.amount += movement.amount
                 if movement.location_to:
                     material.location = movement.location_to
                 material.save()
-            except WarehouseMaterial.DoesNotExist:
-                WarehouseMaterial.objects.create(material=movement.material,
-                                                 warehouse=obj.target,
-                                                 amount=movement.amount,
-                                                 created_by=request.user,
-                                                 location=movement.location_to)
 
         to_warehouse = obj.target.owner is None
         for dre in DeviceReassignEvent.objects.filter(materialmovement=obj):
@@ -2053,6 +2055,7 @@ admin.site.register(IndividualWorkItem, IndividualWorkItemAdmin)
 admin.site.register(IWIAttachment, IWIAttachmentAdmin)
 admin.site.register(UninstallTicketRule)
 admin.site.register(ApplicantAttributes)
+admin.site.register(MaterialWorkitemRule)
 admin.site.register(Note, NoteAdmin)
 admin.site.register(Attachment, AttachmentAdmin)
 admin.site.register(NTAttachment, NTAttachmentAdmin)

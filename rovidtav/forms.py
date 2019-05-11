@@ -13,7 +13,7 @@ from .models import (Ticket, Note, Material, TicketMaterial, WorkItem,
                      Payoff)
 from rovidtav.models import MaterialMovementMaterial, MaterialMovement,\
     DeviceReassignEvent, Warehouse, WarehouseLocation, DeviceType, NTNEWorkItem,\
-    NTNEMaterial, NetworkTicket, BaseMaterial
+    NTNEMaterial, NetworkTicket, BaseMaterial, MaterialWorkitemRule
 from rovidtav.admin_helpers import ContentTypes, find_device_type
 from django.core.exceptions import ValidationError
 
@@ -131,6 +131,42 @@ class HandleOwner(forms.ModelForm):
             self.fields['owner'].widget = forms.HiddenInput()
 
 
+class AddAutoWorkitem(object):
+
+    # material to workitem model map
+    MODEL_MAP = {
+        TicketMaterial: TicketWorkItem,
+        NetworkTicketMaterial: NetworkTicketWorkItem,
+        NTNEMaterial: NTNEWorkItem,
+    }
+
+    def save(self, commit=True):
+        result = super(AddAutoWorkitem, self).save(commit)
+        material = self.cleaned_data['material']
+        target = self.cleaned_data.get('ticket') or \
+            self.cleaned_data.get('network_element')
+        rules = MaterialWorkitemRule.objects.filter(material=material)
+        material_model = self.Meta.model
+        workitem_model = self.MODEL_MAP.get(material_model)
+        if not workitem_model:
+            return result
+        for rule in rules:
+            target_attr = 'ticket' if hasattr(workitem_model, 'ticket') \
+                else 'network_element'
+            work_item = rule.workitem
+            amount = self.cleaned_data['amount'] \
+                if rule.amount == MaterialWorkitemRule.ADD_EQUAL else 1
+            owner = self.cleaned_data['owner']
+            workitem_data = {
+                'owner': owner,
+                'work_item': work_item,
+                'amount': amount,
+                target_attr: target
+            }
+            workitem_model.objects.get_or_create(**workitem_data)
+        return result
+
+
 class TicketMaterialForm(HandleOwner):
 
     material = ModelChoiceField(
@@ -211,7 +247,7 @@ class TicketWorkItemForm(HandleOwner):
         fields = '__all__'
 
 
-class NetworkTicketMaterialForm(HandleOwner):
+class NetworkTicketMaterialForm(AddAutoWorkitem, HandleOwner):
 
     material = ModelChoiceField(
         Material.objects.all(),
