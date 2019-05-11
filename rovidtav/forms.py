@@ -221,7 +221,7 @@ class MMMaterialForm(forms.ModelForm):
         pass
 
 
-class TicketWorkItemForm(HandleOwner):
+class TicketWorkItemForm(AddAutoWorkitem, HandleOwner):
 
     work_item = ModelChoiceField(
         WorkItem.objects.all(),
@@ -286,7 +286,7 @@ class NTNEWorkItemForm(HandleOwner):
         fields = '__all__'
 
 
-class NTNEMaterialForm(HandleOwner):
+class NTNEMaterialForm(AddAutoWorkitem, HandleOwner):
 
     class Meta:
         model = NTNEMaterial
