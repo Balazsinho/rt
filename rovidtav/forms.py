@@ -143,9 +143,11 @@ class AddAutoWorkitem(object):
     def save(self, commit=True):
         result = super(AddAutoWorkitem, self).save(commit)
         material = self.cleaned_data['material']
+        rules = MaterialWorkitemRule.objects.filter(material=material)
+        if not rules:
+            return result
         target = self.cleaned_data.get('ticket') or \
             self.cleaned_data.get('network_element')
-        rules = MaterialWorkitemRule.objects.filter(material=material)
         material_model = self.Meta.model
         workitem_model = self.MODEL_MAP.get(material_model)
         if not workitem_model:
@@ -167,7 +169,7 @@ class AddAutoWorkitem(object):
         return result
 
 
-class TicketMaterialForm(HandleOwner):
+class TicketMaterialForm(HandleOwner, AddAutoWorkitem):
 
     material = ModelChoiceField(
         Material.objects.all(),
@@ -221,7 +223,7 @@ class MMMaterialForm(forms.ModelForm):
         pass
 
 
-class TicketWorkItemForm(AddAutoWorkitem, HandleOwner):
+class TicketWorkItemForm(HandleOwner):
 
     work_item = ModelChoiceField(
         WorkItem.objects.all(),
