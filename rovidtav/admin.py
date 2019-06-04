@@ -1864,7 +1864,10 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
                         .prefetch_related('network_element')):
                     if att.is_image():
                         ext = att.name.split('.')[-1]
-                        name = '{}_{}.{}'.format(att.network_element.ext_id, str(idx+1), ext)
+                        name = u'{}_{}_{}.{}'.format(
+                            att.network_element.ext_id,
+                            att.network_element.address,
+                            str(idx+1), ext)
                         attachments.append((name, att))
                         att_count += 1
                 for name, att in attachments:
