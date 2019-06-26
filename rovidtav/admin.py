@@ -27,7 +27,7 @@ from django.contrib.auth.models import Group
 from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
-from openpyxl import load_workbook
+from openpyxl import Workbook
 
 from rovidtav import settings
 
@@ -553,7 +553,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                NoteInline]
     change_actions = ['finalize', 'new_material', 'new_device',
                       'new_attachment', 'new_note', 'uninstall_report_telekom',
-                      'uninstall_report_rovidtav']
+                      'uninstall_report_rovidtav', 'device_summary']
     add_form_template = os.path.join('rovidtav', 'select2.html')
     readonly_fields = ['delivery_num', 'created_at']
     form = MaterialMovementForm
@@ -583,7 +583,7 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                             if act not in ('finalize',)])
         else:
             actions.extend(['new_note', 'uninstall_report_telekom',
-                            'uninstall_report_rovidtav'])
+                            'uninstall_report_rovidtav', 'device_summary'])
         return actions
 
     def get_inline_instances(self, request, obj=None):
@@ -735,6 +735,35 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
                                       obj, row_idx=3)
 
     uninstall_report_telekom.label = u'Leszerelés xls (Telekom)'
+
+    def device_summary(self, request, obj):
+        workbook = Workbook()
+        worksheet = workbook.get_active_sheet()
+        d = defaultdict(int)
+        for e in obj.devicereassignevent_set.all():
+            if e.device.type:
+                d[e.device.type.name] += 1
+
+        worksheet.cell(column=1, row=1, value=u'Típus')
+        worksheet.cell(column=2, row=1, value=u'Darabszám')
+        row_idx = 2
+        for dev_type, dev_count in d.items():
+            tcell = worksheet.cell(column=1, row=row_idx, value=dev_type)
+            worksheet.cell(column=2, row=row_idx, value=dev_count)
+            worksheet.column_dimensions[tcell.column].width = 50
+            row_idx += 1
+
+        # ws.row_dimensions[row_idx].height = 12
+        data = save_virtual_workbook(workbook)
+
+        response = HttpResponse(
+            content=data,
+            content_type='application/vnd.ms-excel', status=200)
+        response['Content-Disposition'] = ('attachment; filename=osszesito_{}'
+                                           '.xlsx'.format(obj.delivery_num))
+        return response
+
+    device_summary.label = u'Eszköz összesítő'
 
     def new_note(self, request, obj):
         return redirect('/admin/rovidtav/note/add/?content_type={}&object_id='
