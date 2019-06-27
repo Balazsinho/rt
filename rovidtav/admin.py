@@ -743,6 +743,8 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
         for e in obj.devicereassignevent_set.all():
             if e.device.type:
                 d[e.device.type.name] += 1
+            else:
+                d[u'Ismeretlen'] += 1
 
         worksheet.cell(column=1, row=1, value=u'Típus')
         worksheet.cell(column=2, row=1, value=u'Darabszám')
