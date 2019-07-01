@@ -466,7 +466,9 @@ def material_accounting(request):
             try:
                 wh = Warehouse.objects.get(owner=owner)
             except Warehouse.DoesNotExist:
-                errors.append('NO WAREHOUSE {}'.format(str(owner)))
+                err = 'NO WAREHOUSE {}'.format(str(owner))
+                if err not in errors:
+                    errors.append(err)
                 items_failed += 1
                 continue
             materials = wh.warehousematerial_set.filter(material=material_item.material)
