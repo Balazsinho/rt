@@ -449,7 +449,6 @@ def material_accounting(request):
     for material_cls in Accountable.__subclasses__():
         for material_item in material_cls.objects.filter(accounted=False):
             try:
-                print material_item.ticket.owner.first()
                 owner = material_item.owner or material_item.ticket.owner
                 if owner.__class__ != User:
                     raise AttributeError
