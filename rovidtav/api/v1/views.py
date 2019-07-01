@@ -28,7 +28,7 @@ from rovidtav.models import (
     Client, City, Ticket, TicketType, Note, DeviceType, Device, Attachment,
     DeviceOwner, SystemEmail, Const, NTAttachment, MMAttachment, Tag,
     UninstallTicket, UninstAttachment, UninstallTicketRule, NTNEAttachment,
-    IWIAttachment)
+    IWIAttachment, Accountable, Warehouse)
 from django.http.response import HttpResponse
 
 
@@ -436,3 +436,55 @@ def email_stats(request):
         })
     except Exception as e:
         return Response({'error': e})
+
+
+@api_view(['GET'])
+@authentication_classes((SessionAuthentication, BasicAuthentication))
+@permission_classes((IsAuthenticated,))
+def material_accounting(request):
+    items_accounted = 0
+    items_failed = 0
+    errors = []
+    for material_cls in Accountable.__subclasses__():
+        for material_item in material_cls.objects.filter(accounted=False):
+            try:
+                print material_item.ticket.owner.first()
+                owner = material_item.owner or material_item.ticket.owner.first().owner
+            except AttributeError:
+                # Neither ticket, not material has an owner
+                items_failed += 1
+                errors.append('NO OWNER {} ID {}'.format(material_cls.__name__, material_item.id))
+                continue
+            except Exception as e:
+                items_failed += 1
+                errors.append(str(e))
+                # raise e
+                continue
+
+            try:
+                wh = Warehouse.objects.get(owner=owner)
+            except Warehouse.DoesNotExist:
+                errors.append('NO WAREHOUSE {}'.format(str(owner)))
+                items_failed += 1
+                continue
+            materials = wh.warehousematerial_set.filter(material=material_item.material)
+            if not materials:
+                items_accounted += 1
+                material_item.accounted = True
+                material_item.save()
+                continue
+            whmaterial = materials[0]
+            if material_item.amount > whmaterial.amount:
+                whmaterial.delete()
+            else:
+                whmaterial.amount -= material_item.amount
+                whmaterial.save()
+            items_accounted += 1
+            material_item.accounted = True
+            material_item.save()
+
+    return Response({
+        'accounted': items_accounted,
+        'failed': items_failed,
+        'errors': errors,
+    })

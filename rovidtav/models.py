@@ -817,7 +817,7 @@ class MaterialMovement(BaseHub):
 
     class Meta:
         db_table = 'anyagmozgas'
-        verbose_name = u'Anyagmozgás'
+        verbose_name = u'Anyagmozgás' 
         verbose_name_plural = u'Anyagmozgások'
 
     def __unicode__(self):
@@ -1208,7 +1208,15 @@ class BaseMaterial(BaseEntity):
         return u'{}, mennyiség: {}'.format(unicode(self.material), amount)
 
 
-class TicketMaterial(BaseMaterial):
+class Accountable(models.Model):
+
+    accounted = models.BooleanField(default=False)
+
+    class Meta:
+        abstract = True
+
+
+class TicketMaterial(BaseMaterial, Accountable):
 
     ticket = models.ForeignKey(Ticket, db_column='jegy',
                                related_name='anyag_jegy',
@@ -1225,7 +1233,7 @@ class TicketMaterial(BaseMaterial):
         verbose_name_plural = u'Jegy Anyagok'
 
 
-class NetworkTicketMaterial(BaseMaterial):
+class NetworkTicketMaterial(BaseMaterial, Accountable):
 
     ticket = models.ForeignKey(NetworkTicket, db_column='halozat_jegy',
                                related_name='anyag_halozat_jegy',
@@ -1242,7 +1250,7 @@ class NetworkTicketMaterial(BaseMaterial):
         verbose_name_plural = u'Hálüzat Jegy Anyagok'
 
 
-class NTNEMaterial(BaseMaterial):
+class NTNEMaterial(BaseMaterial, Accountable):
 
     network_element = models.ForeignKey(
         NetworkTicketNetworkElement, db_column='halozat_jegy_elem',

@@ -21,24 +21,30 @@ from rovidtav.api.v1.views import \
     download_mmattachment, download_mmthumbnail, email_stats, \
     create_uninstall_ticket, download_uninstattachment, \
     download_uninstthumbnail, download_ntnethumbnail, download_ntneattachment,\
-    download_iwiattachment, download_iwithumbnail
+    download_iwiattachment, download_iwithumbnail, material_accounting
 
 
 urlpatterns = [
+    # Creation/control endpoitns
     url(r'^ticket/create', create_ticket),
     url(r'^ticket/attachment', add_ticket_attachment),
     url(r'^uninstall_ticket/create', create_uninstall_ticket),
+    url(r'^material_accounting', material_accounting),
+
+    # Statictics endpoints
+    url(r'^email_stats$', email_stats),
+
+    # Attachment related endpoints
     url(r'^attachment/(?P<attachment_id>\d+)$', download_attachment),
     url(r'^thumbnail/(?P<attachment_id>\d+)$', download_thumbnail),
     url(r'^ntattachment/(?P<attachment_id>\d+)$', download_ntattachment),
     url(r'^ntthumbnail/(?P<attachment_id>\d+)$', download_ntthumbnail),
     url(r'^mmattachment/(?P<attachment_id>\d+)$', download_mmattachment),
-    url(r'^mmthumbnail/(?P<attachment_id>\d+)$', download_ntnethumbnail),
+    url(r'^mmthumbnail/(?P<attachment_id>\d+)$', download_mmthumbnail),
     url(r'^ntneattachment/(?P<attachment_id>\d+)$', download_ntneattachment),
     url(r'^ntnethumbnail/(?P<attachment_id>\d+)$', download_ntnethumbnail),
     url(r'^uninstattachment/(?P<attachment_id>\d+)$', download_uninstattachment),
     url(r'^uninstthumbnail/(?P<attachment_id>\d+)$', download_uninstthumbnail),
     url(r'^iwiattachment/(?P<attachment_id>\d+)$', download_iwiattachment),
     url(r'^iwithumbnail/(?P<attachment_id>\d+)$', download_iwithumbnail),
-    url(r'^email_stats$', email_stats),
 ]
