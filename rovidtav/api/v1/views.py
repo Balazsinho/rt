@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.decorators import authentication_classes
 from rest_framework.decorators import permission_classes
+from django.contrib.auth.models import User
 
 try:
     from rovidtav.settings import IMAGE_THUMB_PX, STATIC_ROOT
@@ -449,7 +450,9 @@ def material_accounting(request):
         for material_item in material_cls.objects.filter(accounted=False):
             try:
                 print material_item.ticket.owner.first()
-                owner = material_item.owner or material_item.ticket.owner.first().owner
+                owner = material_item.owner or material_item.ticket.owner
+                if owner.__class__ != User:
+                    raise AttributeError
             except AttributeError:
                 # Neither ticket, not material has an owner
                 items_failed += 1
