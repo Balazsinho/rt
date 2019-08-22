@@ -1359,15 +1359,22 @@ class TicketAdmin(CustomDjangoObjectActions,
         notify = obj.save()
         if notify and obj.owner and obj.owner.email:
             try:
-                ticket_html = Attachment.objects.get(ticket=obj,
-                                                     name='Hibajegy.html')
+                ticket_html = Attachment.objects.get(
+                    ticket=obj, name='Hibajegy.html').data
             except Attachment.DoesNotExist:
-                ticket_html = None
+                ticket_html = ''
             ticket_url = ('{}/admin/rovidtav/ticket/{}'
                           ''.format(settings.SELF_URL, obj.pk))
 
+            html_maxlen = 100000
+            if ticket_html and len(ticket_html) > html_maxlen:
+                ticket_html = ticket_html[:html_maxlen].decode('utf-8') + u'...'
+                ticket_html += u'<div class="messageBox"><h2 style="' \
+                    u'color: #000;">A teljes jegy a hossza miatt itt ' \
+                    u'nem jeleníthető meg, kérlek nyisd meg az alkalmazásban' \
+                    u'</h2></div>'
             ctx = {'ticket_url': ticket_url,
-                   'ticket_html': ticket_html.data if ticket_html else ''}
+                   'ticket_html': ticket_html}
 
             msg = MIMEMultipart('alternative')
             msg['Subject'] = u'Új jegy - {} {} - Task Nr: {}'.format(
