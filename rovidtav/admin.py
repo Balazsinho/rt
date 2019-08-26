@@ -71,6 +71,8 @@ from openpyxl.reader.excel import load_workbook
 from openpyxl.writer.excel import save_virtual_workbook
 import pdfkit
 from rovidtav.settings import WKHTMLTOPDF_EXEC
+from email.mime.base import MIMEBase
+from email import encoders
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -1367,30 +1369,31 @@ class TicketAdmin(CustomDjangoObjectActions,
                           ''.format(settings.SELF_URL, obj.pk))
 
             html_maxlen = 100000
+            attachment = None
             if ticket_html and len(ticket_html) > html_maxlen:
-                ticket_html = ticket_html[:html_maxlen].decode('utf-8') + u'...'
-                ticket_html += u'<div class="messageBox"><h2 style="' \
-                    u'color: #000;">A teljes jegy a hossza miatt itt ' \
-                    u'nem jeleníthető meg, kérlek nyisd meg az alkalmazásban' \
-                    u'</h2></div>'
+                attachment = MIMEBase("application", "octet-stream")
+                attachment.set_payload(ticket_html)
+                encoders.encode_base64(attachment)
+                attachment.add_header(
+                    u'Content-Disposition',
+                    u'attachment; filename=hibajegy.html',
+                )
             ctx = {'ticket_url': ticket_url,
-                   'ticket_html': ticket_html}
+                   'ticket_html': '' if attachment else ticket_html,
+                   'ticket_too_long': bool(attachment)}
 
-            msg = MIMEMultipart('alternative')
+            msg = MIMEMultipart()
             msg['Subject'] = u'Új jegy - {} {} - Task Nr: {}'.format(
                 obj.city.name, obj.address, obj.ext_id)
             msg_from = formataddr((str(Header(u'Rövidtáv rendszer', 'utf-8')), settings.EMAIL_SENDER))
             msg['From'] = msg_from
             msg['To'] = obj.owner.email
-            plain_template = render_to_string('assign_notification.txt',
-                                              context={'ticket': obj})
             html_template = render_to_string('assign_notification.html',
                                              context=ctx)
-            part1 = MIMEText(plain_template, 'plain', 'utf-8')
-            part2 = MIMEText(html_template, 'html', 'utf-8')
+            msg.attach(MIMEText(html_template, 'html', 'utf-8'))
 
-            msg.attach(part1)
-            msg.attach(part2)
+            if attachment:
+                msg.attach(attachment)
 
             send_assign_mail(msg, obj)
 

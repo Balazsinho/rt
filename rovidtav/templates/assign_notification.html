@@ -18,6 +18,12 @@
 				A jegy adminisztációja (lezárás, anyagok, munkák felvétele) az adminisztrációs felületen keresztül lehetséges.
 				A jegyet <a href={{ ticket_url }}>erre a linkre kattintva</a> éred el az adminisztrációs felületen.
 			</p>
+
+			{% if ticket_too_long %}
+			<p>
+				A jegy a mérete miatt csatolmányként lett az emailhez hozzáadva.
+			</p>
+			{% endif %}
 		</div>
 	</body>
 </html>
