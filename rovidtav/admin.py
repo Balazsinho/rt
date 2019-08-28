@@ -159,16 +159,16 @@ class NTAttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
         Returns City object and address
         """
         if type(raw_address) == list:
-            zip_code = int(raw_address[1])
-            try:
-                city = City.objects.get(zip=zip_code)
-            except City.DoesNotExist:
-                city = City.objects.create(name=raw_address[0], zip=zip_code)
-            street = raw_address[2]
-            house_num = u'/'.join(raw_address[3:])
-            return city, u' '.join((street, house_num))
+            if raw_address[1].isdigit():
+                offset = 1
+            else:
+                offset = 0
+            street = raw_address[1+offset]
+            house_num = u'/'.join(raw_address[2+offset:])
+            address = u' '.join((street, house_num))
         else:
-            return ticket.city, raw_address
+            address = raw_address
+        return ticket.city, address
 
     def save_model(self, request, obj, form, change):
         if form.data.get('deviceupload'):
