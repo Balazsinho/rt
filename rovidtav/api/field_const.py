@@ -43,6 +43,8 @@ class Fields(object):
     EXTRA_DEV_TYPE = 'extra_dev_type'
     EXTRA_DEV_CODE = 'extra_dev_code'
 
+    FLIP_ID = 'flip_id'
+
     # ======================================================================
     # MUNKALAP - RÉGI FORMÁTUM
     # ======================================================================

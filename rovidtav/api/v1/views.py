@@ -64,7 +64,7 @@ def _create_ticket(ticket_cls, attachment_cls, request, post_processor=None):
         zip=int(data[Fields.ZIP]),
     )
 
-    mt_id = str(data[Fields.MT_ID])
+    mt_id = str(data.get(Fields.FLIP_ID) or data.get(Fields.MT_ID))
     addr = u'{} {}'.format(data[Fields.STREET],
                            data[Fields.HOUSE_NUM])
 
@@ -149,6 +149,10 @@ def _create_ticket(ticket_cls, attachment_cls, request, post_processor=None):
             DeviceOwner.objects.create(device=dev,
                                        content_type=client.get_content_type_obj(),
                                        object_id=client.pk)
+
+    if data.get(Fields.FLIP_ID):
+        tag, _ = Tag.objects.get_or_create(name='Flip')
+        ticket.ticket_tags.add(tag)
 
     if Fields.REMARKS in data and data[Fields.REMARKS]:
         Note.objects.create(
