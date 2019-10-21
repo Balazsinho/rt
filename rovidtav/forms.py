@@ -20,7 +20,7 @@ from django.core.exceptions import ValidationError
 
 class AttachmentForm(forms.ModelForm):
 
-    _data = forms.CharField(label=u'File', widget=forms.FileInput())
+    _data = forms.CharField(label=u'File', widget=forms.FileInput(attrs={"multiple": "multiple"}))
     name = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
@@ -31,11 +31,29 @@ class AttachmentForm(forms.ModelForm):
 
     def clean__data(self):
         if '_data' in self.files:
-            return self.files['_data'].read()
+            return [f.read() for f in self.files.getlist('_data')]
 
     def clean_name(self):
         if '_data' in self.files:
-            return self.files['_data'].name
+            return [f.name for f in self.files.getlist('_data')]
+
+    def save(self, commit=True):
+        for idx, name in enumerate(self.cleaned_data['name']):
+            cls = self.instance.__class__
+            values = {
+                '_data': self.cleaned_data['_data'][idx],
+                'name': name,
+            }
+            for field in self.Meta.fields:
+                if field not in ('_data', 'name'):
+                    values[field] = getattr(self.instance, field)
+
+            new = cls.objects.create(**values)
+
+        return new
+
+    def save_m2m(self):
+        pass
 
 
 class MMAttachmentForm(AttachmentForm):
