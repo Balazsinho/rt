@@ -758,10 +758,16 @@ class MaterialMovementAdmin(CustomDjangoObjectActions,
             row_idx += 1
 
         row_idx += 2
-        worksheet.cell(column=1, row=row_idx, value=u'Szériaszámok')
+        worksheet.cell(column=2, row=row_idx, value=u'Szériaszám')
+        worksheet.cell(column=1, row=row_idx, value=u'Típus')
         for e in obj.devicereassignevent_set.all():
             row_idx += 1
-            worksheet.cell(column=1, row=row_idx, value=e.device.sn)
+            worksheet.cell(column=2, row=row_idx, value=e.device.sn)
+            if e.device.type:
+                t = e.device.type.name
+            else:
+                t = u'Ismeretlen'
+            worksheet.cell(column=1, row=row_idx, value=t)
 
         # ws.row_dimensions[row_idx].height = 12
         data = save_virtual_workbook(workbook)
