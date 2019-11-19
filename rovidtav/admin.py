@@ -545,7 +545,7 @@ class DeviceReassignEventAdmin(GenericHideAndRedirect):
 class MaterialMovementAdmin(CustomDjangoObjectActions,
                             InlineActionsModelAdminMixin,
                             admin.ModelAdmin):
-    list_per_page = 200
+    list_per_page = 50
     list_display_links = None
     list_display = ('from_to', 'mm_link', 'created', 'materials_count',
                     'devices_count', 'fin_icon')
