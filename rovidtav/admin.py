@@ -3,9 +3,7 @@
 import os
 import codecs
 from copy import copy
-from PIL import Image
 import StringIO
-from io import BytesIO
 import zipfile
 import datetime
 import random
@@ -43,7 +41,7 @@ from rovidtav.admin_inlines import AttachmentInline, DeviceInline, NoteInline,\
     NetworkMaterialInline, NetworkWorkItemInline, PayoffTicketInline,\
     MMMaterialInline, MMAttachmentInline, WarehouseMaterialInline,\
     WarehouseDeviceInline, MMMaterialReadonlyInline, WarehouseLocationInline,\
-    DeviceTypeDeviceInline, UninstAttachmentInline, UninstallTicketInline,\
+    UninstAttachmentInline, UninstallTicketInline,\
     NTNEAttachmentInline, NTNEMaterialInline, NTNEWorkItemInline, NTNEInline,\
     IWIAttachmentInline
 from rovidtav.models import Attachment, City, Client, Device, DeviceType,\
@@ -117,29 +115,6 @@ class AttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
 
     form = AttachmentForm
 
-    def save_model(self, request, obj, form, change):
-        super(AttachmentAdmin, self).save_model(request, obj, form, change)
-        if obj.is_image() and not obj.name.lower().startswith('imdb'):
-            temp_buff = StringIO.StringIO()
-            temp_buff.write(obj.data)
-            temp_buff.seek(0)
-
-            img = Image.open(temp_buff)
-            pixels = settings.IMAGE_DOWNSCALE_PX
-            img.thumbnail((pixels, pixels), Image.ANTIALIAS)
-            temp_buff = StringIO.StringIO()
-            temp_buff.name = obj.name
-            img.save(temp_buff, exif=img.info.get('exif', b''))
-            temp_buff.seek(0)
-
-            obj._data = temp_buff.read()
-            obj.save()
-            try:
-                obj.ticket.refresh_has_images()
-            except AttributeError:
-                # We're not maintaining the boolean for having images
-                pass
-
 
 class NTAttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
 
@@ -190,26 +165,6 @@ class NTAttachmentAdmin(HideOnAdmin, ModelAdminRedirect):
             return
 
         super(NTAttachmentAdmin, self).save_model(request, obj, form, change)
-        if obj.is_image() and not obj.name.lower().startswith('imdb'):
-            temp_buff = StringIO.StringIO()
-            temp_buff.write(obj.data)
-            temp_buff.seek(0)
-
-            img = Image.open(temp_buff)
-            pixels = settings.IMAGE_DOWNSCALE_PX
-            img.thumbnail((pixels, pixels), Image.ANTIALIAS)
-            temp_buff = StringIO.StringIO()
-            temp_buff.name = obj.name
-            img.save(temp_buff, exif=img.info.get('exif', b''))
-            temp_buff.seek(0)
-
-            obj._data = temp_buff.read()
-            obj.save()
-            try:
-                obj.ticket.refresh_has_images()
-            except AttributeError:
-                # We're not maintaining the boolean for having images
-                pass
 
 
 class MMAttachmentAdmin(AttachmentAdmin):

@@ -4,9 +4,11 @@ import os
 import re
 import json
 import base64
+import StringIO
 from datetime import datetime
 
 from unidecode import unidecode
+from PIL import Image
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -15,6 +17,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from multiselectfield import MultiSelectField
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
+from rovidtav import settings
 
 
 def delivery_num():
@@ -1456,10 +1459,31 @@ class BaseAttachment(BaseEntity):
         # Check if the data is already encoded b64
         r = re.compile(r'^(?:[A-Za-z0-9+/]{4})*'
                        r'(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$')
+
         if not r.match(self._data):
+            if self.is_image() and not self.name.lower().startswith('imdb'):
+                temp_buff = StringIO.StringIO()
+                temp_buff.write(self._data)
+                temp_buff.seek(0)
+
+                img = Image.open(temp_buff)
+                pixels = settings.IMAGE_DOWNSCALE_PX
+                img.thumbnail((pixels, pixels), Image.ANTIALIAS)
+                temp_buff = StringIO.StringIO()
+                temp_buff.name = self.name
+                img.save(temp_buff, exif=img.info.get('exif', b''))
+                temp_buff.seek(0)
+                self._data = temp_buff.read()
+
             self._data = base64.b64encode(self._data)
 
         super(BaseAttachment, self).save(*args, **kwargs)
+
+        try:
+            self.ticket.refresh_has_images()
+        except AttributeError:
+            # We're not maintaining the boolean for having images
+            pass
 
 
 class Attachment(BaseAttachment):
