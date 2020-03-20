@@ -1870,7 +1870,7 @@ class NetworkTicketAdmin(CustomDjangoObjectActions,
                         NTNEAttachment.objects
                         .filter(network_element__in=elements)
                         .prefetch_related('network_element')):
-                    if att.is_image():
+                    if att.is_image() or att.name.endswith(('.xls', '.xlsx')):
                         ext = att.name.split('.')[-1]
                         name = u'{}_{}_{}.{}'.format(
                             att.network_element.ext_id,
