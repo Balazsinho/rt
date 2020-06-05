@@ -1,4 +1,4 @@
-Django==1.10.1
+Django==1.11.29
 django-jet==1.0.1
 django-object-actions==0.8.2
 djangorestframework==3.4.6
