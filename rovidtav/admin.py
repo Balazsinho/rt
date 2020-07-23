@@ -1339,7 +1339,11 @@ class TicketAdmin(CustomDjangoObjectActions,
             attachment = None
             if ticket_html and len(ticket_html) > html_maxlen:
                 attachment = MIMEBase("application", "octet-stream")
-                attachment.set_payload(ticket_html)
+                try:
+                    attachment.set_payload(ticket_html.encode('utf-8'))
+                except Exception as e:
+                    print e
+                    attachment.set_payload(ticket_html)
                 encoders.encode_base64(attachment)
                 attachment.add_header(
                     u'Content-Disposition',
