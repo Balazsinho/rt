@@ -11,8 +11,10 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr
-import pytz
+from _collections import defaultdict
 
+import pytz
+import pdfkit
 from django import forms
 from unidecode import unidecode
 from django.contrib import admin
@@ -26,9 +28,11 @@ from django.http.response import HttpResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, render
 from openpyxl import Workbook
+from openpyxl.reader.excel import load_workbook
+from openpyxl.writer.excel import save_virtual_workbook
 
 from rovidtav import settings
-
+from rovidtav.settings import WKHTMLTOPDF_EXEC
 from inline_actions.admin import InlineActionsModelAdminMixin
 from rovidtav.admin_helpers import ModelAdminRedirect, is_site_admin,\
     CustomDjangoObjectActions, HideIcons, SpecialOrderingChangeList,\
@@ -64,13 +68,6 @@ from rovidtav.forms import AttachmentForm, NoteForm, TicketMaterialForm,\
 from rovidtav.filters import OwnerFilter, IsClosedFilter, NetworkOwnerFilter,\
     PayoffFilter, ActiveUserFilter, UninstallOwnerFilter,\
     UninstallIsClosedFilter
-from _collections import defaultdict
-from openpyxl.reader.excel import load_workbook
-from openpyxl.writer.excel import save_virtual_workbook
-import pdfkit
-from rovidtav.settings import WKHTMLTOPDF_EXEC
-from email.mime.base import MIMEBase
-from email import encoders
 
 # ============================================================================
 # MODELADMIN CLASSSES
@@ -1335,16 +1332,14 @@ class TicketAdmin(CustomDjangoObjectActions,
             ticket_url = ('{}/admin/rovidtav/ticket/{}'
                           ''.format(settings.SELF_URL, obj.pk))
 
-            html_maxlen = 100000
+            html_maxlen = 20000
             attachment = None
             if ticket_html and len(ticket_html) > html_maxlen:
-                attachment = MIMEBase("application", "octet-stream")
                 try:
-                    attachment.set_payload(ticket_html.encode('utf-8'))
-                except Exception as e:
-                    print e
-                    attachment.set_payload(ticket_html)
-                encoders.encode_base64(attachment)
+                    attachment = \
+                        MIMEText(ticket_html.encode('utf-8'), 'html', 'UTF-8')
+                except Exception:
+                    attachment = MIMEText(ticket_html, 'html', 'UTF-8')
                 attachment.add_header(
                     u'Content-Disposition',
                     u'attachment; filename=hibajegy.html',
