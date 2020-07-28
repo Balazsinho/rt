@@ -1332,7 +1332,7 @@ class TicketAdmin(CustomDjangoObjectActions,
             ticket_url = ('{}/admin/rovidtav/ticket/{}'
                           ''.format(settings.SELF_URL, obj.pk))
 
-            html_maxlen = 20000
+            html_maxlen = 100000
             attachment = None
             if ticket_html and len(ticket_html) > html_maxlen:
                 try:
