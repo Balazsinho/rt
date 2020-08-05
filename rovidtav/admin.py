@@ -1241,7 +1241,8 @@ class TicketAdmin(CustomDjangoObjectActions,
             for ticket in queryset:
                 attachments = []
                 for att in Attachment.objects.filter(ticket=ticket):
-                    if att.is_image() and not att.name.lower().startswith('imdb'):
+                    if (att.is_image() and not att.name.lower().startswith('imdb')) or \
+                             att.name.endswith('.pdf'):
                         attachments.append(att)
                 for att in attachments:
                     archive.writestr('{}/{}'.format(ticket.ext_id, unidecode(att.name)),
