@@ -1550,6 +1550,11 @@ class UninstallTicketAdmin(
     #def has_delete_permission(self, request, obj=None):
     #    return False
 
+    def lookup_allowed(self, key, value):
+        if key in ('city__primer'):
+            return True
+        return super(UninstallTicketAdmin, self).lookup_allowed(key, value)
+
     def get_fields(self, request, obj=None):
         if obj:
             return self.fields
